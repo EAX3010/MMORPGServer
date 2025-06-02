@@ -139,7 +139,6 @@
         signature.CopyTo(_buffer.Span[_position..]);
         _position += SIGNATURE_SIZE;
 
-        // Update the length field like in FinalizePacket
     }
 
     public ReadOnlyMemory<byte> GetFinalizedMemory()
