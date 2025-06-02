@@ -14,7 +14,7 @@ namespace MMORPGServer
             // Configure Network services
             builder.Services.AddSingleton<IGameServer, ConquerGameServer>();
             builder.Services.AddSingleton<INetworkManager, NetworkManager>();
-            builder.Services.AddSingleton<IPacketHandler, ConquerPacketHandler>();
+            builder.Services.AddSingleton<IPacketHandler, PacketHandler>();
 
             // Configure Security services
             builder.Services.AddTransient<IDHKeyExchange, DiffieHellmanKeyExchange>();

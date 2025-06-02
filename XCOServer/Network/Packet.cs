@@ -1,4 +1,4 @@
-﻿public sealed class ConquerPacket : IDisposable
+﻿public sealed class Packet : IDisposable
 {
     private const string CLIENT_SIGNATURE = "TQClient";
     private const string SERVER_SIGNATURE = "TQServer";
@@ -15,7 +15,7 @@
     public bool IsComplete => _position >= HEADER_SIZE + SIGNATURE_SIZE && HasValidSignature();
 
     // Constructor for incoming packets from span
-    public ConquerPacket(ReadOnlySpan<byte> data)
+    public Packet(ReadOnlySpan<byte> data)
     {
         _memoryOwner = null;
         _buffer = data.ToArray();
@@ -23,7 +23,7 @@
     }
 
     // Constructor for incoming packets from array with offset and length
-    public ConquerPacket(byte[] data, int offset, int length)
+    public Packet(byte[] data, int offset, int length)
     {
         _memoryOwner = null;
         var packetData = new byte[length];
@@ -33,7 +33,7 @@
     }
 
     // Constructor for incoming packets from array
-    public ConquerPacket(byte[] data)
+    public Packet(byte[] data)
     {
         _memoryOwner = null;
         _buffer = (byte[])data.Clone();
@@ -41,7 +41,7 @@
     }
 
     // Constructor for outgoing packets
-    public ConquerPacket(ushort type, bool isServer = true, int capacity = 1024)
+    public Packet(ushort type, bool isServer = true, int capacity = 1024)
     {
         _memoryOwner = MemoryPool<byte>.Shared.Rent(capacity);
         _buffer = _memoryOwner.Memory;
@@ -57,8 +57,8 @@
         WriteUInt16(type);
     }
 
-    public ConquerPacketWriter CreateWriter() => new(this);
-    public ConquerPacketReader CreateReader() => new(this);
+    public PacketWriter CreateWriter() => new(this);
+    public PacketReader CreateReader() => new(this);
 
     public void SeekForward(int amount) => Seek(_position + amount);
 
@@ -142,10 +142,12 @@
         // Update the length field like in FinalizePacket
     }
 
-    public ReadOnlyMemory<byte> ToMemory()
+    public ReadOnlyMemory<byte> GetFinalizedMemory()
     {
         return _buffer[.._position];
     }
+
+
 
     private bool HasValidSignature()
     {
@@ -161,46 +163,42 @@
     public bool TryExtractDHKey(out string dhKey)
     {
         dhKey = string.Empty;
-        var originalPosition = _position;
+        var originalPosition = _position; // Save position to restore it later
 
         try
         {
+            // 1. Seek to position 11 to read the offset.
             Seek(11);
+
+            // 2. Read the base offset and calculate the final offset.
+            // This matches the logic from your working code.
             var offset = ReadUInt32() + 4 + 11;
 
             if (offset > 0 && offset < _buffer.Length)
             {
+                // 3. Seek to the calculated offset where the key information is stored.
                 Seek((int)offset);
 
-                // Skip P and G parameters
-                var pLength = ReadUInt32();
-                if (pLength > 0 && _position + pLength < _buffer.Length)
+                // 4. Read the size of the key string.
+                var keySize = ReadUInt32();
+
+                if (keySize > 0 && _position + keySize <= _buffer.Length)
                 {
-                    SeekForward((int)pLength);
-
-                    var gLength = ReadUInt32();
-                    if (gLength > 0 && _position + gLength < _buffer.Length)
-                    {
-                        SeekForward((int)gLength);
-
-                        // Now read the actual DH key
-                        var keySize = ReadUInt32();
-                        if (keySize > 0 && _position + keySize <= _buffer.Length)
-                        {
-                            var keyBytes = _buffer.Span.Slice(_position, (int)keySize);
-                            dhKey = Encoding.ASCII.GetString(keyBytes);
-                            return !string.IsNullOrEmpty(dhKey);
-                        }
-                    }
+                    // 5. Read the key itself.
+                    var keyBytes = _buffer.Span.Slice(_position, (int)keySize);
+                    dhKey = Encoding.ASCII.GetString(keyBytes);
+                    return !string.IsNullOrEmpty(dhKey);
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore parsing errors
+            // It's generally better to log the exception for debugging purposes.
+            // logger.LogWarning(ex, "Failed to parse DH key from packet.");
         }
         finally
         {
+            // Restore the original position of the packet reader.
             _position = originalPosition;
         }
 

@@ -1,11 +1,11 @@
 ﻿namespace MMORPGServer.Network
 {
-    public ref struct ConquerPacketReader
+    public ref struct PacketReader
     {
         private readonly ReadOnlySpan<byte> _data;
         private int _position;
 
-        internal ConquerPacketReader(ConquerPacket packet)
+        internal PacketReader(Packet packet)
         {
             _data = packet.Data;
             _position = 4; // Skip length and type

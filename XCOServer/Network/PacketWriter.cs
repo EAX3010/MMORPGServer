@@ -1,12 +1,12 @@
 ﻿// Network/ConquerPacketWriter.cs
 namespace MMORPGServer.Network
 {
-    public ref struct ConquerPacketWriter
+    public ref struct PacketWriter
     {
         private readonly Span<byte> _buffer;
         private int _position;
 
-        internal ConquerPacketWriter(ConquerPacket packet)
+        internal PacketWriter(Packet packet)
         {
             _buffer = packet._memoryOwner.Memory.Span;
             _position = 4; // Skip length and type

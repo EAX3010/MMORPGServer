@@ -61,13 +61,13 @@ namespace MMORPGServer.Network
                     var dhKeyExchange = _serviceProvider.GetRequiredService<IDHKeyExchange>();
                     var cryptographer = _serviceProvider.GetRequiredService<ICryptographer>();
 
-                    var gameClient = new ConquerSecurityClient(
+                    var gameClient = new SecurityClient(
                         clientId,
                         tcpClient,
                         dhKeyExchange,
                         cryptographer,
                         _messageWriter,
-                        _serviceProvider.GetRequiredService<ILogger<ConquerSecurityClient>>()
+                        _serviceProvider.GetRequiredService<ILogger<SecurityClient>>()
                     );
 
                     _networkManager.AddClient(gameClient);

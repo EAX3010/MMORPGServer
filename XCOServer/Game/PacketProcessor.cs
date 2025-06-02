@@ -22,7 +22,7 @@
             _chatService = chatService;
         }
 
-        public async ValueTask ProcessPacketAsync(IGameClient client, ConquerPacket packet)
+        public async ValueTask ProcessPacketAsync(IGameClient client, Packet packet)
         {
             try
             {
@@ -65,12 +65,12 @@
             }
         }
 
-        public void RegisterPacketHandler(ushort packetType, Func<IGameClient, ConquerPacket, ValueTask> handler)
+        public void RegisterPacketHandler(ushort packetType, Func<IGameClient, Packet, ValueTask> handler)
         {
             _logger.LogDebug("Registered handler for packet type {PacketType}", packetType);
         }
 
-        private async ValueTask HandleLoginRequestAsync(IGameClient client, ConquerPacket packet)
+        private async ValueTask HandleLoginRequestAsync(IGameClient client, Packet packet)
         {
             var reader = packet.CreateReader();
             var username = reader.ReadString(16);
@@ -81,7 +81,7 @@
 
             var loginResult = await _authService.AuthenticateAsync(username, password);
 
-            using var response = new ConquerPacket(PacketTypes.LOGIN_RESPONSE);
+            using var response = new Packet(PacketTypes.LOGIN_RESPONSE);
             var writer = response.CreateWriter();
             writer.WriteUInt32(loginResult.Success ? 1u : 0u);
             writer.WriteUInt32(loginResult.UserId);
@@ -89,12 +89,12 @@
             await client.SendPacketAsync(writer.ToPacket());
         }
 
-        private async ValueTask HandleCharacterListRequestAsync(IGameClient client, ConquerPacket packet)
+        private async ValueTask HandleCharacterListRequestAsync(IGameClient client, Packet packet)
         {
             // TODO: Get user ID from session
             var characters = await _characterService.GetCharactersByUserIdAsync(12345);
 
-            using var response = new ConquerPacket(PacketTypes.CHARACTER_LIST_RESPONSE);
+            using var response = new Packet(PacketTypes.CHARACTER_LIST_RESPONSE);
             var writer = response.CreateWriter();
 
             writer.WriteUInt32((uint)characters.Count);
@@ -113,7 +113,7 @@
             await client.SendPacketAsync(writer.ToPacket());
         }
 
-        private async ValueTask HandleCharacterSelectAsync(IGameClient client, ConquerPacket packet)
+        private async ValueTask HandleCharacterSelectAsync(IGameClient client, Packet packet)
         {
             var reader = packet.CreateReader();
             var characterId = reader.ReadUInt32();
@@ -127,7 +127,7 @@
                 // TODO: Create Player instance and assign to client
                 // client.Player = new Player { ... };
 
-                using var response = new ConquerPacket(0x9C4); // Character login success
+                using var response = new Packet(0x9C4); // Character login success
                 var writer = response.CreateWriter();
                 writer.WriteUInt32(characterId);
                 writer.WriteUInt32(character.MapId);
@@ -138,7 +138,7 @@
             }
         }
 
-        private async ValueTask HandleMovementRequestAsync(IGameClient client, ConquerPacket packet)
+        private async ValueTask HandleMovementRequestAsync(IGameClient client, Packet packet)
         {
             if (client.Player is null) return;
 
@@ -150,7 +150,7 @@
             await client.Player.MoveToAsync(x, y, direction);
         }
 
-        private async ValueTask HandleChatMessageAsync(IGameClient client, ConquerPacket packet)
+        private async ValueTask HandleChatMessageAsync(IGameClient client, Packet packet)
         {
             if (client.Player is null) return;
 
@@ -161,7 +161,7 @@
             await _chatService.BroadcastMessageAsync(client.Player.CharacterId, message);
         }
 
-        private async ValueTask HandleAttackRequestAsync(IGameClient client, ConquerPacket packet)
+        private async ValueTask HandleAttackRequestAsync(IGameClient client, Packet packet)
         {
             if (client.Player is null) return;
 

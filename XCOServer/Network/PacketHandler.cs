@@ -1,18 +1,18 @@
 ﻿namespace MMORPGServer.Network
 {
-    public sealed class ConquerPacketHandler : IPacketHandler
+    public sealed class PacketHandler : IPacketHandler
     {
-        private readonly ILogger<ConquerPacketHandler> _logger;
+        private readonly ILogger<PacketHandler> _logger;
         private readonly IPacketProcessor _packetProcessor;
-        private readonly Dictionary<ushort, Func<IGameClient, ConquerPacket, ValueTask>> _handlers = new();
+        private readonly Dictionary<ushort, Func<IGameClient, Packet, ValueTask>> _handlers = new();
 
-        public ConquerPacketHandler(ILogger<ConquerPacketHandler> logger, IPacketProcessor packetProcessor)
+        public PacketHandler(ILogger<PacketHandler> logger, IPacketProcessor packetProcessor)
         {
             _logger = logger;
             _packetProcessor = packetProcessor;
         }
 
-        public async ValueTask HandlePacketAsync(IGameClient client, ConquerPacket packet)
+        public async ValueTask HandlePacketAsync(IGameClient client, Packet packet)
         {
             try
             {
@@ -27,7 +27,7 @@
 
         public ValueTask HandlePacketAsync(IGameClient client, object packet)
         {
-            if (packet is ConquerPacket conquerPacket)
+            if (packet is Packet conquerPacket)
             {
                 return HandlePacketAsync(client, conquerPacket);
             }
@@ -38,7 +38,7 @@
         public void RegisterHandler<T>(ushort packetType, Func<IGameClient, T, ValueTask> handler)
             where T : class
         {
-            if (typeof(T) == typeof(ConquerPacket))
+            if (typeof(T) == typeof(Packet))
             {
                 _handlers[packetType] = (client, packet) => handler(client, (T)(object)packet);
                 _logger.LogDebug("Registered Conquer handler for packet type {PacketType}", packetType);

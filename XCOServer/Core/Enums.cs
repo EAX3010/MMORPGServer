@@ -42,4 +42,12 @@
         Quest = 5,
         Material = 6
     }
+    public enum ClientState
+    {
+        Connecting,
+        WaitingForDummyPacket,
+        DhKeyExchange,
+        Connected,
+        Disconnected
+    }
 }
