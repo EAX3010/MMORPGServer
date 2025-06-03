@@ -1,118 +1,134 @@
-﻿using System.Numerics;
-
-public sealed class DiffieHellmanKeyExchange : IDHKeyExchange
+﻿namespace MMORPGServer.Security
 {
-    private readonly BigInteger _p;
-    private readonly BigInteger _g;
-    private BigInteger _privateKey;
-    private BigInteger _publicKey;
-    private BigInteger _sharedSecret;
-
-    public string SharedSecretHex => _sharedSecret.ToString("X");
-
-    public DiffieHellmanKeyExchange()
+    public sealed class DiffieHellmanKeyExchange : IDHKeyExchange
     {
-        // Initialize with Conquer Online standard parameters
-        KeyExchange.CreateKeys();
 
-        // Parse hex strings to BigInteger like the old implementation
-        _p = BigInteger.Parse(KeyExchange.Str_P, System.Globalization.NumberStyles.HexNumber);
-        _g = BigInteger.Parse(KeyExchange.Str_G, System.Globalization.NumberStyles.HexNumber);
-    }
+        private BigInteger p = 0;
+        private BigInteger g = 0;
+        private BigInteger a = 0;
+        private BigInteger b = 0;
+        private BigInteger s = 0;
+        private BigInteger A = 0;
+        private BigInteger B = 0;
 
-    public string GenerateRequest()
-    {
-        // Generate private key like old implementation - using similar method to genPseudoPrime
-        _privateKey = GenerateRandomBigInteger(256);
+        public BigInteger GetKey() => s;
+        public BigInteger GetRequest() => A;
+        public BigInteger GetResponse() => A;
 
-        // Calculate A = g^a mod p
-        _publicKey = BigInteger.ModPow(_g, _privateKey, _p);
+        public String Key { get { return s.ToHexString(); } }
 
-        // Return as hex string like old implementation
-        return _publicKey.ToString("X");
-    }
-
-    public void HandleResponse(string publicKey)
-    {
-        // Parse client's public key from hex string
-        var clientPublicKey = BigInteger.Parse(publicKey, System.Globalization.NumberStyles.HexNumber);
-
-        // Calculate shared secret: s = B^a mod p
-        _sharedSecret = BigInteger.ModPow(clientPublicKey, _privateKey, _p);
-    }
-
-    public byte[] GetSharedSecret()
-    {
-        // Convert to byte array like old implementation's ToBytes() method
-        var bytes = _sharedSecret.ToByteArray();
-
-        // Handle BigInteger's little-endian format and potential extra zero byte
-        if (bytes[bytes.Length - 1] == 0 && bytes.Length > 1)
-        {
-            Array.Resize(ref bytes, bytes.Length - 1);
-        }
-
-        // Reverse to match old implementation's byte order
-        Array.Reverse(bytes);
-
-        return bytes;
-    }
-
-    private static BigInteger GenerateRandomBigInteger(int bits)
-    {
-        using var rng = RandomNumberGenerator.Create();
-        var bytes = new byte[bits / 8];
-        rng.GetBytes(bytes);
-
-        // Ensure positive number like old genPseudoPrime
-        bytes[bytes.Length - 1] &= 0x7F;
-
-        // Make sure it's not zero
-        if (bytes.All(b => b == 0))
-        {
-            bytes[0] = 1;
-        }
-
-        return new BigInteger(bytes, isUnsigned: true);
-    }
-
-    /// <summary>
-    /// Conquer Online DH Key Exchange Parameters
-    /// </summary>
-    public static class KeyExchange
-    {
-        public static string Str_P = "A320A85EDD79171C341459E94807D71D39BB3B3F3B5161CA84894F3AC3FC7FEC317A2DDEC83B66D30C29261C6492643061AECFCF4A051816D7C359A6A7B7D8FB";
-        public static string Str_G = "05";
-
-        public static byte[] P = Array.Empty<byte>();
-        public static byte[] G = Array.Empty<byte>();
+        public override String ToString() => s.ToHexString();
+        public Byte[] ToBytes() => s.getBytes();
 
         /// <summary>
-        /// Creates the DH key byte arrays from hex strings - matching old implementation
+        /// Create a new Diffie-Hellman exchange where the prime number is p and the base is g.
         /// </summary>
-        public static void CreateKeys()
+        public DiffieHellmanKeyExchange()
         {
-            // Convert hex strings to ASCII bytes like old implementation
-            P = Encoding.ASCII.GetBytes(Str_P);
-            G = Encoding.ASCII.GetBytes(Str_G);
+            this.p = new BigInteger(KeyExchange.Str_P, 16);
+            this.g = new BigInteger(KeyExchange.Str_G, 16);
         }
 
         /// <summary>
-        /// Gets P parameter as byte array
+        /// Generates the server request and return the A key.
         /// </summary>
-        public static byte[] GetP()
+        public String GenerateRequest()
         {
-            if (P.Length == 0) CreateKeys();
-            return P;
+            a = BigInteger.genPseudoPrime(256, 30, new Random());
+            A = g.modPow(a, p);
+
+            return A.ToHexString();
         }
 
         /// <summary>
-        /// Gets G parameter as byte array
+        /// Generates the client response and the S key with the A key.
+        /// The B key will be returned.
         /// </summary>
-        public static byte[] GetG()
+        public String GenerateResponse(String PubKey)
         {
-            if (G.Length == 0) CreateKeys();
-            return G;
+            b = BigInteger.genPseudoPrime(256, 30, new Random());
+            B = g.modPow(b, p);
+
+            A = new BigInteger(PubKey, 16);
+            s = A.modPow(b, p);
+
+            return B.ToHexString();
         }
+
+        /// <summary>
+        /// Handles the client response to generate the S key with the B key.
+        /// </summary>
+        public void HandleResponse(String PubKey)
+        {
+            B = new BigInteger(PubKey, 16);
+            s = B.modPow(a, p);
+        }
+
+        private string Hex(byte[] bytes)
+        {
+            char[] c = new char[bytes.Length * 2];
+            byte b;
+            for (int bx = 0, cx = 0; bx < bytes.Length; ++bx, ++cx)
+            {
+                b = ((byte)(bytes[bx] >> 4));
+                c[cx] = (char)(b > 9 ? b + 0x37 + 0x20 : b + 0x30);
+                b = ((byte)(bytes[bx] & 0x0F));
+                c[++cx] = (char)(b > 9 ? b + 0x37 + 0x20 : b + 0x30);
+            }
+            return new string(c);
+        }
+        public byte[] GetSecret()
+        {
+            var hashService = new System.Security.Cryptography.MD5CryptoServiceProvider();
+            var s1 = Hex(hashService.ComputeHash(this.s.getBytes(), 0, FixKey(this.s.getBytes())));//key.TakeWhile<byte>(((Func<byte, bool>)(x => (x != 0)))).Count<byte>()));
+            var s2 = Hex(hashService.ComputeHash(Encoding.ASCII.GetBytes(String.Concat(s1, s1))));
+            var sresult = String.Concat(s1, s2);
+
+            return GetArrayPostProcessDHKey(sresult);
+        }
+        public byte[] GetArrayPostProcessDHKey(string sresult)
+        {
+            byte[] skey = new byte[sresult.Length];
+            for (int x = 0; x < sresult.Length; x++)
+                skey[x] = (byte)sresult[x];
+            return skey;
+        }
+        public int FixKey(byte[] key)
+        {
+            for (int x = 0; x < key.Length; x++)
+            {
+                if (key[x] == 0)
+                    return x;
+            }
+            return key.Length;
+        }
+        public Packet CreateDHKeyPacket()
+        {
+            var publicKey = GenerateRequest();
+            var publicKeyBytes = Encoding.ASCII.GetBytes(publicKey);
+            using var packet = new Packet(0, true, 1024);
+            var pBytes = KeyExchange.GetP();
+            var gBytes = KeyExchange.GetG();
+            uint size = (uint)(75 + pBytes.Length + gBytes.Length + publicKey.Length);
+            packet.Seek(11);
+            packet.WriteUInt32(size - 11);
+            packet.WriteUInt32(10);
+            packet.Skip(10);
+            packet.WriteUInt32(8);
+            packet.Skip(8);
+            packet.WriteUInt32(8);
+            packet.Skip(8);
+            packet.WriteUInt32((uint)pBytes.Length);
+            packet.WriteBytes(pBytes);
+            packet.WriteUInt32((uint)gBytes.Length);
+            packet.WriteBytes(gBytes);
+            packet.WriteUInt32((uint)publicKeyBytes.Length);
+            packet.WriteBytes(publicKeyBytes);
+            packet.Skip(2);
+            packet.WriteSeal(true);
+            packet.GetFinalizedMemory();
+            return packet;
+        }
+
     }
 }

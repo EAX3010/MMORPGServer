@@ -1,239 +1,459 @@
-﻿public sealed class Packet : IDisposable
+﻿namespace MMORPGServer.Network
 {
-    private const string CLIENT_SIGNATURE = "TQClient";
-    private const string SERVER_SIGNATURE = "TQServer";
-    private const int SIGNATURE_SIZE = 8;
-    private const int HEADER_SIZE = 4;
-
-    public readonly IMemoryOwner<byte>? _memoryOwner;
-    private readonly Memory<byte> _buffer;
-    private int _position;
-
-    public ReadOnlySpan<byte> Data => _buffer.Span[.._position];
-    public ushort Length => _position > 2 ? BitConverter.ToUInt16(_buffer.Span[..2]) : (ushort)0;
-    public ushort Type => _position > 4 ? BitConverter.ToUInt16(_buffer.Span[2..4]) : (ushort)0;
-    public bool IsComplete => _position >= HEADER_SIZE + SIGNATURE_SIZE && HasValidSignature();
-
-    // Constructor for incoming packets from span
-    public Packet(ReadOnlySpan<byte> data)
+    /// <summary>
+    /// Represents a network packet with unified reading and writing operations.
+    /// Uses a single position tracker since packets are either read from OR written to.
+    /// </summary>
+    public sealed class Packet : IDisposable
     {
-        _memoryOwner = null;
-        _buffer = data.ToArray();
-        _position = data.Length;
-    }
+        private const string CLIENT_SIGNATURE = "TQClient";
+        private const string SERVER_SIGNATURE = "TQServer";
+        private const int SIGNATURE_SIZE = 8; // "TQClient" or "TQServer"
+        private const int HEADER_SIZE = 4;    // Packet Length (ushort) + Packet Type (ushort)
 
-    // Constructor for incoming packets from array with offset and length
-    public Packet(byte[] data, int offset, int length)
-    {
-        _memoryOwner = null;
-        var packetData = new byte[length];
-        Array.Copy(data, offset, packetData, 0, length);
-        _buffer = packetData;
-        _position = length;
-    }
+        internal readonly IMemoryOwner<byte>? _memoryOwner;
+        internal Memory<byte> _buffer;
+        private int _dataLength;
 
-    // Constructor for incoming packets from array
-    public Packet(byte[] data)
-    {
-        _memoryOwner = null;
-        _buffer = (byte[])data.Clone();
-        _position = data.Length;
-    }
+        /// <summary>
+        /// Gets a ReadOnlySpan of the packet's valid data.
+        /// </summary>
+        public ReadOnlySpan<byte> Data => _buffer.Span[.._dataLength];
 
-    // Constructor for outgoing packets
-    public Packet(ushort type, bool isServer = true, int capacity = 1024)
-    {
-        _memoryOwner = MemoryPool<byte>.Shared.Rent(capacity);
-        _buffer = _memoryOwner.Memory;
-        _position = 0;
+        /// <summary>
+        /// Gets the total length of the packet as declared in its header (first 2 bytes).
+        /// This is the length WITHOUT the signature.
+        /// </summary>
+        public ushort Length => _dataLength >= 2 ? BitConverter.ToUInt16(_buffer.Span[..2]) : (ushort)0;
 
-        // Clear the rented buffer to ensure no leftover data
-        _buffer.Span.Clear();
+        /// <summary>
+        /// Gets the type of the packet as declared in its header (bytes 2-3).
+        /// </summary>
+        public ushort Type => _dataLength >= 4 ? BitConverter.ToUInt16(_buffer.Span[2..4]) : (ushort)0;
 
-        // Write placeholder length (will be updated in FinalizePacket)
-        WriteUInt16(0);
+        /// <summary>
+        /// Current position in the buffer (for reading or writing operations).
+        /// </summary>
+        public int Position { get; private set; } = 0;
 
-        // Write packet type
-        WriteUInt16(type);
-    }
-
-    public PacketWriter CreateWriter() => new(this);
-    public PacketReader CreateReader() => new(this);
-
-    public void SeekForward(int amount) => Seek(_position + amount);
-
-    public void WriteUInt16(ushort value)
-    {
-        if (_position + 2 > _buffer.Length)
-            throw new InvalidOperationException("Buffer overflow");
-
-        BitConverter.TryWriteBytes(_buffer.Span[_position..], value);
-        _position += 2;
-    }
-
-    public void WriteUInt32(uint value)
-    {
-        if (_position + 4 > _buffer.Length)
-            throw new InvalidOperationException("Buffer overflow");
-
-        BitConverter.TryWriteBytes(_buffer.Span[_position..], value);
-        _position += 4;
-    }
-
-    public void WriteBytes(ReadOnlySpan<byte> data)
-    {
-        if (_position + data.Length > _buffer.Length)
-            throw new InvalidOperationException("Buffer overflow");
-
-        data.CopyTo(_buffer.Span[_position..]);
-        _position += data.Length;
-    }
-
-    public ushort ReadUInt16()
-    {
-        if (_position + 2 > _buffer.Length)
-            throw new InvalidOperationException("Buffer underflow");
-
-        var value = BitConverter.ToUInt16(_buffer.Span[_position..]);
-        _position += 2;
-        return value;
-    }
-
-    public uint ReadUInt32()
-    {
-        if (_position + 4 > _buffer.Length)
-            throw new InvalidOperationException("Buffer underflow");
-
-        var value = BitConverter.ToUInt32(_buffer.Span[_position..]);
-        _position += 4;
-        return value;
-    }
-
-    public void Seek(int position)
-    {
-        if (position < 0 || position > _buffer.Length)
-            throw new ArgumentOutOfRangeException(nameof(position));
-
-        _position = position;
-    }
-
-    public void FinalizePacket(bool isServer = true)
-    {
-        var signature = Encoding.ASCII.GetBytes(isServer ? SERVER_SIGNATURE : CLIENT_SIGNATURE);
-
-        if (_position + SIGNATURE_SIZE > _buffer.Length)
-            throw new InvalidOperationException("Buffer overflow during finalization");
-
-        signature.CopyTo(_buffer.Span[_position..]);
-        _position += SIGNATURE_SIZE;
-
-    }
-
-    internal void WriteSeal(bool isServer)
-    {
-        var signature = Encoding.ASCII.GetBytes(isServer ? SERVER_SIGNATURE : CLIENT_SIGNATURE);
-
-        if (_position + SIGNATURE_SIZE > _buffer.Length)
-            throw new InvalidOperationException("Buffer overflow during seal");
-
-        signature.CopyTo(_buffer.Span[_position..]);
-        _position += SIGNATURE_SIZE;
-
-    }
-
-    public ReadOnlyMemory<byte> GetFinalizedMemory()
-    {
-        return _buffer[.._position];
-    }
-
-
-
-    private bool HasValidSignature()
-    {
-        if (_position < SIGNATURE_SIZE)
-            return false;
-
-        var signatureSpan = _buffer.Span.Slice(_position - SIGNATURE_SIZE, SIGNATURE_SIZE);
-        var signature = Encoding.ASCII.GetString(signatureSpan);
-
-        return signature == CLIENT_SIGNATURE || signature == SERVER_SIGNATURE;
-    }
-
-    public bool TryExtractDHKey(out string dhKey)
-    {
-        dhKey = string.Empty;
-        var originalPosition = _position; // Save position to restore it later
-
-        try
+        /// <summary>
+        /// Checks if the packet appears to be complete with a valid signature.
+        /// </summary>
+        public bool IsComplete
         {
-            // 1. Seek to position 11 to read the offset.
-            Seek(11);
-
-            // 2. Read the base offset and calculate the final offset.
-            // This matches the logic from your working code.
-            var offset = ReadUInt32() + 4 + 11;
-
-            if (offset > 0 && offset < _buffer.Length)
+            get
             {
-                // 3. Seek to the calculated offset where the key information is stored.
-                Seek((int)offset);
+                ushort declaredLength = Length;
+                if (declaredLength == 0) return false;
 
-                // 4. Read the size of the key string.
-                var keySize = ReadUInt32();
+                // Total packet size = declared length + signature size
+                int totalPacketSize = declaredLength + SIGNATURE_SIZE;
+                if (totalPacketSize > _dataLength) return false;
+                if (declaredLength < HEADER_SIZE) return false;
 
-                if (keySize > 0 && _position + keySize <= _buffer.Length)
-                {
-                    // 5. Read the key itself.
-                    var keyBytes = _buffer.Span.Slice(_position, (int)keySize);
-                    dhKey = Encoding.ASCII.GetString(keyBytes);
-                    return !string.IsNullOrEmpty(dhKey);
-                }
+                // Check signature at the end of total packet
+                var signatureSpan = _buffer.Span.Slice(totalPacketSize - SIGNATURE_SIZE, SIGNATURE_SIZE);
+                var signature = Encoding.ASCII.GetString(signatureSpan);
+                return signature == CLIENT_SIGNATURE || signature == SERVER_SIGNATURE;
             }
         }
-        catch (Exception ex)
+
+        /// <summary>
+        /// Constructor for incoming packets (data already exists).
+        /// Position starts after the header for reading payload data.
+        /// </summary>
+        public Packet(ReadOnlySpan<byte> data)
         {
-            // It's generally better to log the exception for debugging purposes.
-            // logger.LogWarning(ex, "Failed to parse DH key from packet.");
+            _memoryOwner = null;
+            _buffer = data.ToArray();
+            _dataLength = data.Length;
+            Position = HEADER_SIZE; // Start reading after header
         }
-        finally
+
+        /// <summary>
+        /// Constructor for incoming packets from an array segment.
+        /// </summary>
+        public Packet(byte[] data, int offset, int length)
         {
-            // Restore the original position of the packet reader.
-            _position = originalPosition;
+            _memoryOwner = null;
+            var packetData = new byte[length];
+            Array.Copy(data, offset, packetData, 0, length);
+            _buffer = packetData;
+            _dataLength = length;
+            Position = HEADER_SIZE;
         }
 
-        return false;
-    }
+        /// <summary>
+        /// Constructor for incoming packets from a full array.
+        /// </summary>
+        public Packet(byte[] data)
+        {
+            _memoryOwner = null;
+            _buffer = (byte[])data.Clone();
+            _dataLength = data.Length;
+            Position = HEADER_SIZE;
+        }
 
-    // Helper method to get the actual data length (excluding signature)
-    public int GetDataLength()
-    {
-        if (!IsComplete) return 0;
-        return _position - SIGNATURE_SIZE;
-    }
+        /// <summary>
+        /// Constructor for outgoing packets. Creates buffer and writes header.
+        /// Position starts after the header for writing payload data.
+        /// </summary>
+        public Packet(ushort type, bool isServerPacket = true, int capacity = 1024)
+        {
+            _memoryOwner = MemoryPool<byte>.Shared.Rent(Math.Max(capacity, HEADER_SIZE + SIGNATURE_SIZE));
+            _buffer = _memoryOwner.Memory;
+            _buffer.Span.Clear();
 
-    // Helper method to check if this is a client or server packet
-    public bool IsClientPacket()
-    {
-        if (!HasValidSignature()) return false;
+            // Write header: placeholder length (0) and packet type
+            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)0);
+            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], type);
+            _dataLength = HEADER_SIZE;
+            Position = HEADER_SIZE; // Start writing after header
+        }
 
-        var signatureSpan = _buffer.Span.Slice(_position - SIGNATURE_SIZE, SIGNATURE_SIZE);
-        var signature = Encoding.ASCII.GetString(signatureSpan);
+        // --- Read Methods ---
 
-        return signature == CLIENT_SIGNATURE;
-    }
+        public ushort ReadUInt16()
+        {
+            EnsureCanRead(2);
+            var value = BitConverter.ToUInt16(_buffer.Span[Position..]);
+            Position += 2;
+            return value;
+        }
 
-    public bool IsServerPacket()
-    {
-        if (!HasValidSignature()) return false;
+        public uint ReadUInt32()
+        {
+            EnsureCanRead(4);
+            var value = BitConverter.ToUInt32(_buffer.Span[Position..]);
+            Position += 4;
+            return value;
+        }
 
-        var signatureSpan = _buffer.Span.Slice(_position - SIGNATURE_SIZE, SIGNATURE_SIZE);
-        var signature = Encoding.ASCII.GetString(signatureSpan);
+        public int ReadInt32()
+        {
+            EnsureCanRead(4);
+            var value = BitConverter.ToInt32(_buffer.Span[Position..]);
+            Position += 4;
+            return value;
+        }
 
-        return signature == SERVER_SIGNATURE;
-    }
+        public ulong ReadUInt64()
+        {
+            EnsureCanRead(8);
+            var value = BitConverter.ToUInt64(_buffer.Span[Position..]);
+            Position += 8;
+            return value;
+        }
 
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
+        public byte ReadByte()
+        {
+            EnsureCanRead(1);
+            var value = _buffer.Span[Position];
+            Position++;
+            return value;
+        }
+
+        public void ReadBytes(Span<byte> destination)
+        {
+            EnsureCanRead(destination.Length);
+            _buffer.Span.Slice(Position, destination.Length).CopyTo(destination);
+            Position += destination.Length;
+        }
+
+        public byte[] ReadBytes(int count)
+        {
+            EnsureCanRead(count);
+            var result = _buffer.Span.Slice(Position, count).ToArray();
+            Position += count;
+            return result;
+        }
+
+        public string ReadString(int length)
+        {
+            EnsureCanRead(length);
+            var stringSpan = _buffer.Span.Slice(Position, length);
+            Position += length;
+
+            var nullIndex = stringSpan.IndexOf((byte)0);
+            if (nullIndex >= 0)
+                stringSpan = stringSpan[..nullIndex];
+
+            return Encoding.UTF8.GetString(stringSpan);
+        }
+
+        public float ReadFloat()
+        {
+            EnsureCanRead(4);
+            var value = BitConverter.ToSingle(_buffer.Span[Position..]);
+            Position += 4;
+            return value;
+        }
+
+        public double ReadDouble()
+        {
+            EnsureCanRead(8);
+            var value = BitConverter.ToDouble(_buffer.Span[Position..]);
+            Position += 8;
+            return value;
+        }
+
+        // --- Write Methods ---
+
+        public void WriteUInt16(ushort value)
+        {
+            EnsureCanWrite(2);
+            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            Position += 2;
+            UpdateDataLength();
+        }
+
+        public void WriteUInt32(uint value)
+        {
+            EnsureCanWrite(4);
+            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            Position += 4;
+            UpdateDataLength();
+        }
+
+        public void WriteInt32(int value)
+        {
+            EnsureCanWrite(4);
+            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            Position += 4;
+            UpdateDataLength();
+        }
+
+        public void WriteUInt64(ulong value)
+        {
+            EnsureCanWrite(8);
+            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            Position += 8;
+            UpdateDataLength();
+        }
+
+        public void WriteByte(byte value)
+        {
+            EnsureCanWrite(1);
+            _buffer.Span[Position] = value;
+            Position++;
+            UpdateDataLength();
+        }
+
+        public void WriteBytes(ReadOnlySpan<byte> data)
+        {
+            EnsureCanWrite(data.Length);
+            data.CopyTo(_buffer.Span[Position..]);
+            Position += data.Length;
+            UpdateDataLength();
+        }
+
+        public void WriteString(string value, int maxLength)
+        {
+            EnsureCanWrite(maxLength);
+            var valueSpan = value.AsSpan();
+            var valueToEncode = valueSpan.Length > maxLength ? valueSpan[..maxLength] : valueSpan;
+
+            var bytesWritten = Encoding.UTF8.GetBytes(valueToEncode, _buffer.Span.Slice(Position, maxLength));
+
+            if (bytesWritten < maxLength)
+            {
+                _buffer.Span.Slice(Position + bytesWritten, maxLength - bytesWritten).Clear();
+            }
+            Position += maxLength;
+            UpdateDataLength();
+        }
+
+        public void WriteFloat(float value)
+        {
+            EnsureCanWrite(4);
+            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            Position += 4;
+            UpdateDataLength();
+        }
+
+        public void WriteDouble(double value)
+        {
+            EnsureCanWrite(8);
+            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            Position += 8;
+            UpdateDataLength();
+        }
+
+        // --- Position Management ---
+
+        /// <summary>
+        /// Sets the position to a specific location in the packet.
+        /// </summary>
+        public void Seek(int position)
+        {
+            if (position < 0)
+                throw new ArgumentOutOfRangeException(nameof(position), "Position cannot be negative.");
+
+            Position = position;
+        }
+
+        /// <summary>
+        /// Sets the position relative to the start of the payload (after header).
+        /// </summary>
+        public void SeekToPayload(int payloadOffset)
+        {
+            if (payloadOffset < 0)
+                throw new ArgumentOutOfRangeException(nameof(payloadOffset), "Payload offset cannot be negative.");
+
+            Position = HEADER_SIZE + payloadOffset;
+        }
+
+        /// <summary>
+        /// Moves the position forward by the specified amount.
+        /// </summary>
+        public void Skip(int amount)
+        {
+            if (amount < 0)
+                throw new ArgumentOutOfRangeException(nameof(amount), "Amount cannot be negative.");
+
+            Position += amount;
+        }
+
+        // --- Finalization ---
+
+        /// <summary>
+        /// Finalizes an outgoing packet by appending the signature and updating the length header.
+        /// </summary>
+        public void FinalizePacket(bool isServerPacket = true)
+        {
+            var signatureBytes = Encoding.ASCII.GetBytes(isServerPacket ? SERVER_SIGNATURE : CLIENT_SIGNATURE);
+            EnsureCanWrite(signatureBytes.Length);
+
+            signatureBytes.CopyTo(_buffer.Span[Position..]);
+            Position += signatureBytes.Length;
+            _dataLength = Position;
+
+            // Update the length field in the header (exclude signature from length)
+            BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)(_dataLength - SIGNATURE_SIZE));
+        }
+
+        /// <summary>
+        /// Writes only the signature without updating the length header.
+        /// Used for special packet construction like DH key exchange.
+        /// </summary>
+        public void WriteSeal(bool isServerPacket = true)
+        {
+            var signatureBytes = Encoding.ASCII.GetBytes(isServerPacket ? SERVER_SIGNATURE : CLIENT_SIGNATURE);
+            EnsureCanWrite(signatureBytes.Length);
+
+            signatureBytes.CopyTo(_buffer.Span[Position..]);
+            Position += signatureBytes.Length;
+            UpdateDataLength();
+        }
+
+        /// <summary>
+        /// Gets the finalized memory ready for transmission.
+        /// </summary>
+        public ReadOnlyMemory<byte> GetFinalizedMemory()
+        {
+            return _buffer[.._dataLength];
+        }
+
+        // --- Special Methods ---
+
+        /// <summary>
+        /// Attempts to extract the Diffie-Hellman public key from this packet.
+        /// </summary>
+        public bool TryExtractDHKey(out string dhKey)
+        {
+            dhKey = string.Empty;
+            int originalPosition = Position;
+
+            try
+            {
+                // Seek to position 11 to read the offset
+                Seek(11);
+                int offset = ReadInt32() + 4 + 11;
+
+                if (offset > 0 && offset < _dataLength)
+                {
+                    // Seek to the calculated offset where the key information is stored
+                    Seek(offset);
+
+                    // Read the size of the key string
+                    int keySize = ReadInt32();
+
+                    if (keySize > 0 && keySize < _dataLength - offset)
+                    {
+                        // Read the key itself
+                        dhKey = ReadString(keySize);
+                        return !string.IsNullOrEmpty(dhKey);
+                    }
+                }
+            }
+            catch (Exception) { /* Parsing error */ }
+            finally { Position = originalPosition; }
+
+            return false;
+
+        }
+
+        /// <summary>
+        /// Gets the number of remaining bytes available for reading.
+        /// </summary>
+        public int RemainingBytes
+        {
+            get
+            {
+                int endOfData = _dataLength;
+                if (IsComplete)
+                    endOfData -= SIGNATURE_SIZE;
+
+                return Math.Max(0, endOfData - Position);
+            }
+        }
+
+        /// <summary>
+        /// Checks if this is a client packet based on its signature.
+        /// </summary>
+        public bool IsClientPacket()
+        {
+            if (!IsComplete) return false;
+            // Signature is at the end of the actual data, not at Length position
+            var signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
+            var signature = Encoding.ASCII.GetString(signatureSpan);
+            return signature == CLIENT_SIGNATURE;
+        }
+
+        /// <summary>
+        /// Checks if this is a server packet based on its signature.
+        /// </summary>
+        public bool IsServerPacket()
+        {
+            if (!IsComplete) return false;
+            // Signature is at the end of the actual data, not at Length position
+            var signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
+            var signature = Encoding.ASCII.GetString(signatureSpan);
+            return signature == SERVER_SIGNATURE;
+        }
+
+        // --- Helper Methods ---
+
+        private void EnsureCanRead(int bytes)
+        {
+            if (Position + bytes > _dataLength)
+                throw new InvalidOperationException($"Cannot read {bytes} bytes. Position: {Position}, Available: {_dataLength - Position}");
+        }
+
+        private void EnsureCanWrite(int bytes)
+        {
+            if (Position + bytes > _buffer.Length)
+                throw new InvalidOperationException($"Cannot write {bytes} bytes. Buffer overflow. Position: {Position}, Capacity: {_buffer.Length}");
+        }
+
+        private void UpdateDataLength()
+        {
+            _dataLength = Math.Max(_dataLength, Position);
+        }
+
+        public void Dispose()
+        {
+            _memoryOwner?.Dispose();
+        }
     }
 }

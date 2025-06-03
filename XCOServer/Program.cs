@@ -1,6 +1,7 @@
 ﻿
 
 using MMORPGServer.Game;
+using MMORPGServer.Security;
 using MMORPGServer.Services;
 
 namespace MMORPGServer
@@ -41,7 +42,6 @@ namespace MMORPGServer
 
             try
             {
-                DiffieHellmanKeyExchange.KeyExchange.CreateKeys();
                 await host.RunAsync(); // ← This triggers StartAsync on all hosted services
             }
             catch (Exception ex)

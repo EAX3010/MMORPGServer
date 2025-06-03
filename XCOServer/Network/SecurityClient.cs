@@ -129,10 +129,11 @@ public sealed class SecurityClient : IGameClient
     {
         while (TryProcessPacket(out var consumedLength))
         {
-            if (consumedLength == 0) break; // No full packet was processed
+            if (consumedLength == 0)
+                break; // No full packet was processed
 
             var remainingLength = _receiveBufferOffset - consumedLength;
-            if (remainingLength > 0)
+            if (remainingLength >= 0)
             {
                 _receiveBuffer.Slice(consumedLength, remainingLength).CopyTo(_receiveBuffer);
             }
@@ -155,6 +156,7 @@ public sealed class SecurityClient : IGameClient
 
             case ClientState.DhKeyExchange:
                 HandleDhKeyPacket(bufferSpan);
+                consumedLength = bufferSpan.Length;
                 return true;
 
             case ClientState.Connected:
@@ -203,7 +205,7 @@ public sealed class SecurityClient : IGameClient
             DisconnectAsync("Oversized packet").GetAwaiter().GetResult();
             return false; // Stop processing
         }
-
+        packetLength += 8;
         if (buffer.Length < packetLength) return false;
 
         consumedLength = packetLength;
@@ -227,13 +229,10 @@ public sealed class SecurityClient : IGameClient
         if (packet.TryExtractDHKey(out var clientPublicKey))
         {
             _dhKeyExchange.HandleResponse(clientPublicKey);
-            var sharedSecret = _dhKeyExchange.GetSharedSecret();
-            var finalKey = PostProcessDHKey(sharedSecret);
-
+            var finalKey = _dhKeyExchange.GetSecret();
             _cryptographer.GenerateKey(finalKey);
             _cryptographer.Reset();
             State = ClientState.Connected;
-
             _logger.LogInformation("DH key exchange completed successfully for client {ClientId}", ClientId);
         }
         else
@@ -247,42 +246,15 @@ public sealed class SecurityClient : IGameClient
         var defaultKey = Encoding.ASCII.GetBytes("R3Xx97ra5j8D6uZz");
         _cryptographer.GenerateKey(defaultKey);
 
-        using var packet = CreateDHKeyPacket();
-        var packetMemory = packet.GetFinalizedMemory();
+        using var packet = _dhKeyExchange.CreateDHKeyPacket();
 
-        var encryptedPacket = new byte[packetMemory.Length];
-        _cryptographer.Encrypt(packetMemory.Span, encryptedPacket);
+        var encryptedPacket = new byte[packet.Length];
+        _cryptographer.Encrypt(packet._buffer.Span, encryptedPacket);
 
         await _socket.SendAsync(encryptedPacket, SocketFlags.None);
     }
 
-    private Packet CreateDHKeyPacket()
-    {
-        var publicKey = _dhKeyExchange.GenerateRequest();
-        var publicKeyBytes = Encoding.ASCII.GetBytes(publicKey);
-        // We specify a larger capacity here just for this special packet.
-        var packet = new Packet(0, true, 1024);
-        var pBytes = DiffieHellmanKeyExchange.KeyExchange.GetP();
-        var gBytes = DiffieHellmanKeyExchange.KeyExchange.GetG();
-        uint size = (uint)(75 + pBytes.Length + gBytes.Length + publicKey.Length);
-        packet.Seek(11);
-        packet.WriteUInt32(size - 11);
-        packet.WriteUInt32(10);
-        packet.SeekForward(10);
-        packet.WriteUInt32(8);
-        packet.SeekForward(8);
-        packet.WriteUInt32(8);
-        packet.SeekForward(8);
-        packet.WriteUInt32((uint)pBytes.Length);
-        packet.WriteBytes(pBytes);
-        packet.WriteUInt32((uint)gBytes.Length);
-        packet.WriteBytes(gBytes);
-        packet.WriteUInt32((uint)publicKeyBytes.Length);
-        packet.WriteBytes(publicKeyBytes);
-        packet.SeekForward(2);
-        packet.WriteSeal(true);
-        return packet;
-    }
+
 
     public async ValueTask DisconnectAsync(string reason = "")
     {
@@ -305,17 +277,5 @@ public sealed class SecurityClient : IGameClient
         _cancellationTokenSource.Dispose();
     }
 
-    private static byte[] PostProcessDHKey(byte[] sharedSecret)
-    {
-        using var md5 = MD5.Create();
-        var effectiveLength = Array.IndexOf(sharedSecret, (byte)0);
-        if (effectiveLength == -1) effectiveLength = sharedSecret.Length;
-        var hash1 = md5.ComputeHash(sharedSecret, 0, effectiveLength);
-        var hex1 = Convert.ToHexString(hash1).ToLowerInvariant();
-        var combined = hex1 + hex1;
-        var hash2 = md5.ComputeHash(Encoding.ASCII.GetBytes(combined));
-        var hex2 = Convert.ToHexString(hash2).ToLowerInvariant();
-        var finalHex = hex1 + hex2;
-        return Encoding.ASCII.GetBytes(finalHex);
-    }
+
 }

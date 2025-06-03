@@ -14,7 +14,9 @@
             throw new ArgumentException("Key data must be at least 16 bytes", nameof(keyData));
 
         var key = new byte[16];
-        keyData[..16].CopyTo(key);
+        for (int i = 0; i < 16; i++)
+            key[i] = keyData[i];
+
         _implementation = new TQCast5FullImplementation(key);
         Reset();
     }

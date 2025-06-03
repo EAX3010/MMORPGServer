@@ -2,9 +2,10 @@
 {
     public interface IDHKeyExchange
     {
-        string GenerateRequest();
-        void HandleResponse(string publicKey);
-        byte[] GetSharedSecret();
-        string SharedSecretHex { get; }
+        String GenerateRequest();
+        String GenerateResponse(String publicKey);
+        byte[] GetSecret();
+        void HandleResponse(String PubKey);
+        Packet CreateDHKeyPacket();
     }
 }
