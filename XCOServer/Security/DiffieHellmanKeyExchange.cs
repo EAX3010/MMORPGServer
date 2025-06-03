@@ -1,6 +1,6 @@
 ﻿namespace MMORPGServer.Security
 {
-    public sealed class DiffieHellmanKeyExchange : IDHKeyExchange
+    public sealed class DiffieHellmanKeyExchange
     {
 
         private BigInteger p = 0;
@@ -102,7 +102,7 @@
             }
             return key.Length;
         }
-        public Packet CreateDHKeyPacket()
+        public ReadOnlyMemory<byte> CreateDHKeyPacket()
         {
             var publicKey = GenerateRequest();
             var publicKeyBytes = Encoding.ASCII.GetBytes(publicKey);
@@ -126,8 +126,7 @@
             packet.WriteBytes(publicKeyBytes);
             packet.Skip(2);
             packet.WriteSeal(true);
-            packet.GetFinalizedMemory();
-            return packet;
+            return packet.GetFinalizedMemory();
         }
 
     }

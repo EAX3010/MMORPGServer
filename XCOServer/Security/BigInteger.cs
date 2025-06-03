@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Network
+﻿namespace MMORPGServer.Security
 {
     public class BigInteger
     {

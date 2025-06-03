@@ -1,6 +1,7 @@
 ﻿using MMORPGServer.Core;
+using MMORPGServer.Security;
 
-public sealed class SecurityClient : IGameClient
+public sealed class ClientSocket : IGameClient
 {
     // A constant for the maximum allowed packet size.
     private const int MAX_PACKET_SIZE = 1024;
@@ -14,9 +15,9 @@ public sealed class SecurityClient : IGameClient
 
     private readonly TcpClient _tcpClient;
     private readonly Socket _socket;
-    private readonly ILogger<SecurityClient> _logger;
-    private readonly IDHKeyExchange _dhKeyExchange;
-    private readonly ICryptographer _cryptographer;
+    private readonly ILogger<ClientSocket> _logger;
+    private readonly DiffieHellmanKeyExchange _dhKeyExchange;
+    private readonly TQCast5Cryptographer _cryptographer;
     private readonly ChannelWriter<ClientMessage> _messageWriter;
 
     private readonly Channel<ReadOnlyMemory<byte>> _sendChannel = Channel.CreateUnbounded<ReadOnlyMemory<byte>>();
@@ -25,13 +26,13 @@ public sealed class SecurityClient : IGameClient
     private readonly Memory<byte> _receiveBuffer = new byte[8192];
     private int _receiveBufferOffset = 0;
 
-    public SecurityClient(
+    public ClientSocket(
         uint clientId,
         TcpClient tcpClient,
-        IDHKeyExchange dhKeyExchange,
-        ICryptographer cryptographer,
+        DiffieHellmanKeyExchange dhKeyExchange,
+        TQCast5Cryptographer cryptographer,
         ChannelWriter<ClientMessage> messageWriter,
-        ILogger<SecurityClient> logger)
+        ILogger<ClientSocket> logger)
     {
         ClientId = clientId;
         _tcpClient = tcpClient;
@@ -219,6 +220,16 @@ public sealed class SecurityClient : IGameClient
 
         return true;
     }
+    private async Task SendDHKeyExchangeAsync()
+    {
+        var defaultKey = Encoding.ASCII.GetBytes("R3Xx97ra5j8D6uZz");
+        _cryptographer.GenerateKey(defaultKey);
+        var memory = _dhKeyExchange.CreateDHKeyPacket();
+        var encryptedPacket = new byte[memory.Length];
+        _cryptographer.Encrypt(memory.Span, encryptedPacket);
+        await _socket.SendAsync(encryptedPacket, SocketFlags.None);
+    }
+
 
     private void HandleDhKeyPacket(ReadOnlySpan<byte> dhKeyBuffer)
     {
@@ -239,19 +250,6 @@ public sealed class SecurityClient : IGameClient
         {
             DisconnectAsync("Invalid DH key").GetAwaiter().GetResult();
         }
-    }
-
-    private async Task SendDHKeyExchangeAsync()
-    {
-        var defaultKey = Encoding.ASCII.GetBytes("R3Xx97ra5j8D6uZz");
-        _cryptographer.GenerateKey(defaultKey);
-
-        using var packet = _dhKeyExchange.CreateDHKeyPacket();
-
-        var encryptedPacket = new byte[packet.Length];
-        _cryptographer.Encrypt(packet._buffer.Span, encryptedPacket);
-
-        await _socket.SendAsync(encryptedPacket, SocketFlags.None);
     }
 
 

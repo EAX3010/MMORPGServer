@@ -1,4 +1,4 @@
-﻿public sealed class TQCast5Cryptographer : ICryptographer
+﻿public sealed class TQCast5Cryptographer
 {
     private byte[] _encryptIV = new byte[16];
     private byte[] _decryptIV = new byte[16];

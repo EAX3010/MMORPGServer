@@ -1,6 +1,7 @@
 ﻿
 
 using MMORPGServer.Game;
+using MMORPGServer.Network.Servers;
 using MMORPGServer.Security;
 using MMORPGServer.Services;
 
@@ -18,8 +19,8 @@ namespace MMORPGServer
             builder.Services.AddSingleton<IPacketHandler, PacketHandler>();
 
             // Configure Security services
-            builder.Services.AddTransient<IDHKeyExchange, DiffieHellmanKeyExchange>();
-            builder.Services.AddTransient<ICryptographer, TQCast5Cryptographer>();
+            builder.Services.AddTransient<DiffieHellmanKeyExchange>();
+            builder.Services.AddTransient<TQCast5Cryptographer>();
 
             // Configure Game services
             builder.Services.AddSingleton<IPacketProcessor, PacketProcessor>();

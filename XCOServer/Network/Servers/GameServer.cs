@@ -1,5 +1,6 @@
-﻿// Network/ConquerGameServer.cs - Updated server using ConquerSecurityClient
-namespace MMORPGServer.Network
+﻿using MMORPGServer.Security;
+
+namespace MMORPGServer.Network.Servers
 {
     public sealed class ConquerGameServer : IGameServer, IDisposable
     {
@@ -58,16 +59,16 @@ namespace MMORPGServer.Network
                     var tcpClient = await _tcpListener!.AcceptTcpClientAsync();
                     var clientId = Interlocked.Increment(ref _nextClientId);
 
-                    var dhKeyExchange = _serviceProvider.GetRequiredService<IDHKeyExchange>();
-                    var cryptographer = _serviceProvider.GetRequiredService<ICryptographer>();
+                    var dhKeyExchange = _serviceProvider.GetRequiredService<DiffieHellmanKeyExchange>();
+                    var cryptographer = _serviceProvider.GetRequiredService<TQCast5Cryptographer>();
 
-                    var gameClient = new SecurityClient(
+                    var gameClient = new ClientSocket(
                         clientId,
                         tcpClient,
                         dhKeyExchange,
                         cryptographer,
                         _messageWriter,
-                        _serviceProvider.GetRequiredService<ILogger<SecurityClient>>()
+                        _serviceProvider.GetRequiredService<ILogger<ClientSocket>>()
                     );
 
                     _networkManager.AddClient(gameClient);
