@@ -3,7 +3,6 @@ global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Logging;
 global using MMORPGServer.Core;
-global using MMORPGServer.Game.Interfaces;
 global using MMORPGServer.Network;
 global using MMORPGServer.Network.Interfaces;
 global using MMORPGServer.Security;

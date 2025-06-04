@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Services.Interfaces
+﻿using MMORPGServer.Interfaces;
+
+namespace MMORPGServer.Services.Interfaces
 {
     public interface IPlayerManager
     {

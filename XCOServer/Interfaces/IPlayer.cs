@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Game.Interfaces
+﻿namespace MMORPGServer.Interfaces
 {
     public interface IPlayer
     {

@@ -1,4 +1,6 @@
 ﻿
+using MMORPGServer.Interfaces;
+
 namespace MMORPGServer.Network
 {
     public sealed class ClientSocket : IGameClient

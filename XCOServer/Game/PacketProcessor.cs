@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Game
+﻿using MMORPGServer.Interfaces;
+
+namespace MMORPGServer.Game
 {
     public sealed class PacketProcessor : IPacketProcessor
     {

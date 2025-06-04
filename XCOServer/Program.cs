@@ -1,6 +1,7 @@
 ﻿
 
 using MMORPGServer.Game;
+using MMORPGServer.Interfaces;
 using MMORPGServer.Network.Servers;
 using MMORPGServer.Security;
 using MMORPGServer.Services;

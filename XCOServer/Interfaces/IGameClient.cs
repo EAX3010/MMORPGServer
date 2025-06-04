@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Network.Interfaces
+﻿using MMORPGServer.Interfaces;
+
+namespace MMORPGServer.Network.Interfaces
 {
     public interface IGameClient : IDisposable
     {
