@@ -7,6 +7,7 @@
 		<LangVersion>latest</LangVersion>
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 		<AnalysisLevel>preview-all</AnalysisLevel>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -16,5 +17,6 @@
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
 		<PackageReference Include="System.Threading.Channels" Version="9.0.0" />
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+		<PackageReference Include="System.Threading.RateLimiting" Version="9.0.0" />
 	</ItemGroup>
 </Project>
