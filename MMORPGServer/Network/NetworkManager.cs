@@ -4,6 +4,8 @@
     {
         private readonly ILogger<NetworkManager> _logger;
         private readonly ConcurrentDictionary<uint, IGameClient> _clients = new();
+        private long _totalPacketsSent = 0;
+        private long _totalBytesSent = 0;
 
         public NetworkManager(ILogger<NetworkManager> logger)
         {
@@ -17,7 +19,19 @@
         {
             if (_clients.TryAdd(client.ClientId, client))
             {
-                _logger.LogDebug("Added client {ClientId} to network manager", client.ClientId);
+                _logger.LogDebug("Client {ClientId} added to network manager from {IPAddress}",
+                    client.ClientId, client.IPAddress ?? "Unknown");
+
+                // Log connection milestones
+                var currentCount = _clients.Count;
+                if (currentCount % 10 == 0 && currentCount > 0)
+                {
+                    _logger.LogInformation("Network milestone: {ClientCount} concurrent connections", currentCount);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Failed to add client {ClientId} - ID already exists", client.ClientId);
             }
         }
 
@@ -25,9 +39,23 @@
         {
             if (_clients.TryRemove(clientId, out var client))
             {
-                _logger.LogInformation("Client {ClientId} removed from network (Total: {Count})",
-                    clientId, _clients.Count);
-                client.Dispose();
+                var connectionDuration = DateTime.UtcNow - client.ConnectedAt;
+
+                _logger.LogInformation("Client {ClientId} removed from network manager (Duration: {Duration}, Remaining: {Count})",
+                    clientId, connectionDuration.ToString(@"hh\:mm\:ss"), _clients.Count);
+
+                try
+                {
+                    client.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Error disposing client {ClientId}", clientId);
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Attempted to remove non-existent client {ClientId}", clientId);
             }
         }
 
@@ -40,24 +68,55 @@
         public async ValueTask BroadcastAsync(ReadOnlyMemory<byte> packetData, uint excludeClientId = 0)
         {
             var tasks = new List<ValueTask>();
+            var clientCount = 0;
 
             foreach (var client in _clients.Values)
             {
                 if (client.ClientId != excludeClientId && client.IsConnected)
                 {
                     tasks.Add(client.SendPacketAsync(packetData));
+                    clientCount++;
                 }
             }
 
-            foreach (var task in tasks)
+            if (tasks.Count > 0)
             {
-                await task;
+                _logger.LogDebug("Broadcasting packet to {ClientCount} clients (Size: {PacketSize} bytes)",
+                    clientCount, packetData.Length);
+
+                foreach (var task in tasks)
+                {
+                    try
+                    {
+                        await task;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send broadcast packet to a client");
+                    }
+                }
+
+                // Update statistics
+                Interlocked.Add(ref _totalPacketsSent, clientCount);
+                Interlocked.Add(ref _totalBytesSent, packetData.Length * clientCount);
+
+                // Log broadcast milestones
+                if (_totalPacketsSent % 1000 == 0)
+                {
+                    _logger.LogDebug("Network statistics: {TotalPackets} packets sent, {TotalMB:F1} MB total",
+                        _totalPacketsSent, _totalBytesSent / 1024.0 / 1024.0);
+                }
+            }
+            else
+            {
+                _logger.LogDebug("No clients available for broadcast");
             }
         }
 
         public async ValueTask BroadcastToMapAsync(uint mapId, ReadOnlyMemory<byte> packetData, uint excludeClientId = 0)
         {
             var tasks = new List<ValueTask>();
+            var clientCount = 0;
 
             foreach (var client in _clients.Values)
             {
@@ -66,13 +125,41 @@
                     client.Player?.MapId == mapId)
                 {
                     tasks.Add(client.SendPacketAsync(packetData));
+                    clientCount++;
                 }
             }
 
-            foreach (var task in tasks)
+            if (tasks.Count > 0)
             {
-                await task;
+                _logger.LogDebug("Broadcasting packet to {ClientCount} clients on map {MapId} (Size: {PacketSize} bytes)",
+                    clientCount, mapId, packetData.Length);
+
+                foreach (var task in tasks)
+                {
+                    try
+                    {
+                        await task;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send map broadcast packet to a client on map {MapId}", mapId);
+                    }
+                }
+
+                // Update statistics
+                Interlocked.Add(ref _totalPacketsSent, clientCount);
+                Interlocked.Add(ref _totalBytesSent, packetData.Length * clientCount);
             }
+            else
+            {
+                _logger.LogDebug("No clients available for map {MapId} broadcast", mapId);
+            }
+        }
+
+        // Method to get network statistics for monitoring
+        public (long TotalPacketsSent, long TotalBytesSent, int ActiveConnections) GetNetworkStatistics()
+        {
+            return (_totalPacketsSent, _totalBytesSent, _clients.Count);
         }
     }
 }
