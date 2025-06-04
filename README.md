@@ -18,17 +18,6 @@ This project is created for **educational purposes** to:
 - **Diffie-Hellman** - Key exchange for secure communication
 - **CAST5 encryption** - Custom cryptographic implementation
 
-## 🏗️ Architecture
-
-```
-├── Core/                 # Game constants, enums, extensions
-├── Network/             # TCP networking, packet handling
-├── Security/            # Encryption and key exchange
-├── Services/            # Game logic services
-├── Interfaces/          # Service contracts
-└── Game/               # Packet processing
-```
-
 ## ✨ Features
 
 - **High-performance networking** with async/await patterns
@@ -65,9 +54,6 @@ The server will start on port `10033` by default.
 
 This is a **learning project** and not intended for production use. The code is designed for educational purposes to explore and understand MMORPG server development concepts.
 
-## 🤝 Contributing
-
-Feel free to fork this project for your own learning! Suggestions and improvements are welcome as we all learn together.
 
 ## 📄 License
 
