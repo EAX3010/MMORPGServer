@@ -13,7 +13,7 @@
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Starting Conquer Online MMORPG Server...");
+            _logger.LogInformation("Starting MMORPG Server...");
 
             try
             {
@@ -37,7 +37,7 @@
 
         public override async Task StopAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Stopping Conquer Online MMORPG Server...");
+            _logger.LogInformation("Stopping MMORPG Server...");
 
             try
             {

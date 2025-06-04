@@ -3,7 +3,6 @@
 using MMORPGServer.Game;
 using MMORPGServer.Interfaces;
 using MMORPGServer.Network.Servers;
-using MMORPGServer.Security;
 using MMORPGServer.Services;
 
 namespace MMORPGServer
@@ -15,7 +14,7 @@ namespace MMORPGServer
             var builder = Host.CreateApplicationBuilder(args);
 
             // Configure Network services
-            builder.Services.AddSingleton<IGameServer, ConquerGameServer>();
+            builder.Services.AddSingleton<IGameServer, GameServer>();
             builder.Services.AddSingleton<INetworkManager, NetworkManager>();
             builder.Services.AddSingleton<IPacketHandler, PacketHandler>();
 

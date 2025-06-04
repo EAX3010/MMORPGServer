@@ -1,10 +1,8 @@
-﻿using MMORPGServer.Security;
-
-namespace MMORPGServer.Network.Servers
+﻿namespace MMORPGServer.Network.Servers
 {
-    public sealed class ConquerGameServer : IGameServer, IDisposable
+    public sealed class GameServer : IGameServer, IDisposable
     {
-        private readonly ILogger<ConquerGameServer> _logger;
+        private readonly ILogger<GameServer> _logger;
         private readonly IServiceProvider _serviceProvider;
         private readonly INetworkManager _networkManager;
         private readonly IPacketHandler _packetHandler;
@@ -18,8 +16,8 @@ namespace MMORPGServer.Network.Servers
         private Task? _messageProcessingTask;
         private uint _nextClientId = 1;
 
-        public ConquerGameServer(
-            ILogger<ConquerGameServer> logger,
+        public GameServer(
+            ILogger<GameServer> logger,
             IServiceProvider serviceProvider,
             INetworkManager networkManager,
             IPacketHandler packetHandler)
@@ -42,7 +40,7 @@ namespace MMORPGServer.Network.Servers
             _tcpListener = new TcpListener(IPAddress.Any, DEFAULT_PORT);
             _tcpListener.Start();
 
-            _logger.LogInformation($"Conquer MMORPG Server started on port {DEFAULT_PORT}");
+            _logger.LogInformation($"MMORPG Server started on port {DEFAULT_PORT}");
 
             _acceptTask = AcceptClientsAsync(_cancellationTokenSource.Token);
             _messageProcessingTask = ProcessMessagesAsync(_cancellationTokenSource.Token);
@@ -74,7 +72,7 @@ namespace MMORPGServer.Network.Servers
                     _networkManager.AddClient(gameClient);
                     _ = Task.Run(() => gameClient.StartAsync(cancellationToken), cancellationToken);
 
-                    _logger.LogInformation("Conquer client {ClientId} connected from {EndPoint} (Total: {Count})",
+                    _logger.LogInformation("client {ClientId} connected from {EndPoint} (Total: {Count})",
                         clientId, tcpClient.Client.RemoteEndPoint, _networkManager.ConnectionCount);
                 }
                 catch (ObjectDisposedException)
@@ -124,7 +122,7 @@ namespace MMORPGServer.Network.Servers
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Shutting down Conquer MMORPG Server...");
+            _logger.LogInformation("Shutting down MMORPG Server...");
 
             _cancellationTokenSource?.Cancel();
             _messageWriter.Complete();

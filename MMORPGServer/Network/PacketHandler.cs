@@ -27,14 +27,14 @@ namespace MMORPGServer.Network
             }
         }
 
-        public ValueTask HandlePacketAsync(IGameClient client, object packet)
+        public ValueTask HandlePacketAsync(IGameClient client, object data)
         {
-            if (packet is Packet conquerPacket)
+            if (data is Packet packet)
             {
-                return HandlePacketAsync(client, conquerPacket);
+                return HandlePacketAsync(client, packet);
             }
 
-            _logger.LogWarning("Received non-ConquerPacket from client {ClientId}", client.ClientId);
+            _logger.LogWarning("Received unknowen Packet from client {ClientId}", client.ClientId);
             return ValueTask.CompletedTask;
         }
         public void RegisterHandler<T>(ushort packetType, Func<IGameClient, T, ValueTask> handler)
@@ -43,7 +43,7 @@ namespace MMORPGServer.Network
             if (typeof(T) == typeof(Packet))
             {
                 _handlers[packetType] = (client, packet) => handler(client, (T)(object)packet);
-                _logger.LogDebug("Registered Conquer handler for packet type {PacketType}", packetType);
+                _logger.LogDebug("Registered handler for packet type {PacketType}", packetType);
             }
         }
     }
