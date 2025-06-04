@@ -1,133 +1,254 @@
-﻿namespace MMORPGServer.Security
+﻿using System.Security.Cryptography;
+
+namespace MMORPGServer.Security
 {
-    public sealed class DiffieHellmanKeyExchange
+    /// <summary>
+    /// Handles Diffie-Hellman key exchange for secure communication.
+    /// </summary>
+    public sealed class DiffieHellmanKeyExchange : IDisposable
     {
+        #region Private Fields
+        private readonly BigInteger _prime;
+        private readonly BigInteger _generator;
+        private BigInteger _privateKey;
+        private BigInteger _publicKey;
+        private BigInteger _sharedSecret;
+        private bool _disposed;
+        #endregion
 
-        private BigInteger p = 0;
-        private BigInteger g = 0;
-        private BigInteger a = 0;
-        private BigInteger b = 0;
-        private BigInteger s = 0;
-        private BigInteger A = 0;
-        private BigInteger B = 0;
-
-        public BigInteger GetKey() => s;
-        public BigInteger GetRequest() => A;
-        public BigInteger GetResponse() => A;
-
-        public String Key { get { return s.ToHexString(); } }
-
-        public override String ToString() => s.ToHexString();
-        public Byte[] ToBytes() => s.getBytes();
+        #region Properties
+        /// <summary>
+        /// Gets the shared secret as a BigInteger.
+        /// </summary>
+        public BigInteger SharedSecret => _sharedSecret;
 
         /// <summary>
-        /// Create a new Diffie-Hellman exchange where the prime number is p and the base is g.
+        /// Gets the public key for transmission.
+        /// </summary>
+        public BigInteger PublicKey => _publicKey;
+
+        /// <summary>
+        /// Gets the shared secret as a hex string.
+        /// </summary>
+        public string SharedSecretHex => _sharedSecret.ToHexString();
+
+        /// <summary>
+        /// Gets whether the key exchange has been completed.
+        /// </summary>
+        public bool IsComplete => _sharedSecret != 0;
+        #endregion
+
+        #region Constructor
+        /// <summary>
+        /// Initializes a new Diffie-Hellman key exchange with predefined parameters.
         /// </summary>
         public DiffieHellmanKeyExchange()
         {
-            this.p = new BigInteger(KeyExchange.Str_P, 16);
-            this.g = new BigInteger(KeyExchange.Str_G, 16);
+            _prime = new BigInteger(KeyExchange.Str_P, 16);
+            _generator = new BigInteger(KeyExchange.Str_G, 16);
+        }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Generates the server's public key for the initial request.
+        /// </summary>
+        /// <returns>The server's public key as a hex string.</returns>
+        public string GenerateServerRequest()
+        {
+            _privateKey = BigInteger.genPseudoPrime(256, 30, new Random());
+            _publicKey = _generator.modPow(_privateKey, _prime);
+            return _publicKey.ToHexString();
         }
 
         /// <summary>
-        /// Generates the server request and return the A key.
+        /// Generates the client's response and computes the shared secret.
         /// </summary>
-        public String GenerateRequest()
+        /// <param name="serverPublicKey">The server's public key as a hex string.</param>
+        /// <returns>The client's public key as a hex string.</returns>
+        public string GenerateClientResponse(string serverPublicKey)
         {
-            a = BigInteger.genPseudoPrime(256, 30, new Random());
-            A = g.modPow(a, p);
+            if (string.IsNullOrEmpty(serverPublicKey))
+                throw new ArgumentException("Server public key cannot be null or empty.", nameof(serverPublicKey));
 
-            return A.ToHexString();
+            _privateKey = BigInteger.genPseudoPrime(256, 30, new Random());
+            _publicKey = _generator.modPow(_privateKey, _prime);
+
+            var serverKey = new BigInteger(serverPublicKey, 16);
+            _sharedSecret = serverKey.modPow(_privateKey, _prime);
+
+            return _publicKey.ToHexString();
         }
 
         /// <summary>
-        /// Generates the client response and the S key with the A key.
-        /// The B key will be returned.
+        /// Handles the client's response to complete the key exchange on the server side.
         /// </summary>
-        public String GenerateResponse(String PubKey)
+        /// <param name="clientPublicKey">The client's public key as a hex string.</param>
+        public void HandleClientResponse(string clientPublicKey)
         {
-            b = BigInteger.genPseudoPrime(256, 30, new Random());
-            B = g.modPow(b, p);
+            if (string.IsNullOrEmpty(clientPublicKey))
+                throw new ArgumentException("Client public key cannot be null or empty.", nameof(clientPublicKey));
 
-            A = new BigInteger(PubKey, 16);
-            s = A.modPow(b, p);
+            if (_privateKey == 0)
+                throw new InvalidOperationException("Server request must be generated first.");
 
-            return B.ToHexString();
+            var clientKey = new BigInteger(clientPublicKey, 16);
+            _sharedSecret = clientKey.modPow(_privateKey, _prime);
         }
 
         /// <summary>
-        /// Handles the client response to generate the S key with the B key.
+        /// Derives the final encryption key from the shared secret.
         /// </summary>
-        public void HandleResponse(String PubKey)
+        /// <returns>The derived key as a byte array.</returns>
+        public byte[] DeriveEncryptionKey()
         {
-            B = new BigInteger(PubKey, 16);
-            s = B.modPow(a, p);
+            if (!IsComplete)
+                throw new InvalidOperationException("Key exchange must be completed first.");
+
+            using var md5 = MD5.Create();
+
+            var secretBytes = _sharedSecret.getBytes();
+            var validLength = GetValidKeyLength(secretBytes);
+
+            // First hash: MD5(shared_secret)
+            var firstHash = md5.ComputeHash(secretBytes, 0, validLength);
+            var firstHex = ConvertToHex(firstHash);
+
+            // Second hash: MD5(firstHex + firstHex)
+            var concatenated = firstHex + firstHex;
+            var concatenatedBytes = Encoding.ASCII.GetBytes(concatenated);
+            var secondHash = md5.ComputeHash(concatenatedBytes);
+            var secondHex = ConvertToHex(secondHash);
+
+            // Final result: firstHex + secondHex
+            var finalKey = firstHex + secondHex;
+            return ConvertStringToByteArray(finalKey);
         }
 
-        private string Hex(byte[] bytes)
+        /// <summary>
+        /// Creates a Diffie-Hellman key exchange packet for network transmission.
+        /// </summary>
+        /// <returns>The packet data ready for transmission.</returns>
+        public ReadOnlyMemory<byte> CreateKeyExchangePacket()
         {
-            char[] c = new char[bytes.Length * 2];
-            byte b;
-            for (int bx = 0, cx = 0; bx < bytes.Length; ++bx, ++cx)
-            {
-                b = ((byte)(bytes[bx] >> 4));
-                c[cx] = (char)(b > 9 ? b + 0x37 + 0x20 : b + 0x30);
-                b = ((byte)(bytes[bx] & 0x0F));
-                c[++cx] = (char)(b > 9 ? b + 0x37 + 0x20 : b + 0x30);
-            }
-            return new string(c);
-        }
-        public byte[] GetSecret()
-        {
-            var hashService = new System.Security.Cryptography.MD5CryptoServiceProvider();
-            var s1 = Hex(hashService.ComputeHash(this.s.getBytes(), 0, FixKey(this.s.getBytes())));//key.TakeWhile<byte>(((Func<byte, bool>)(x => (x != 0)))).Count<byte>()));
-            var s2 = Hex(hashService.ComputeHash(Encoding.ASCII.GetBytes(String.Concat(s1, s1))));
-            var sresult = String.Concat(s1, s2);
+            var publicKeyHex = GenerateServerRequest();
+            var publicKeyBytes = Encoding.ASCII.GetBytes(publicKeyHex);
 
-            return GetArrayPostProcessDHKey(sresult);
-        }
-        public byte[] GetArrayPostProcessDHKey(string sresult)
-        {
-            byte[] skey = new byte[sresult.Length];
-            for (int x = 0; x < sresult.Length; x++)
-                skey[x] = (byte)sresult[x];
-            return skey;
-        }
-        public int FixKey(byte[] key)
-        {
-            for (int x = 0; x < key.Length; x++)
-            {
-                if (key[x] == 0)
-                    return x;
-            }
-            return key.Length;
-        }
-        public ReadOnlyMemory<byte> CreateDHKeyPacket()
-        {
-            var publicKey = GenerateRequest();
-            var publicKeyBytes = Encoding.ASCII.GetBytes(publicKey);
-            using var packet = new Packet(0, true, 1024);
+            using var packet = new Packet(0, isServerPacket: true, capacity: 1024);
+
             var pBytes = KeyExchange.GetP();
             var gBytes = KeyExchange.GetG();
-            uint size = (uint)(75 + pBytes.Length + gBytes.Length + publicKey.Length);
+            var totalSize = CalculatePacketSize(pBytes.Length, gBytes.Length, publicKeyBytes.Length);
+
+            WritePacketHeader(packet, totalSize);
+            WritePacketData(packet, pBytes, gBytes, publicKeyBytes);
+            packet.WriteSeal(isServerPacket: true);
+
+            return packet.GetFinalizedMemory();
+        }
+
+        /// <summary>
+        /// Gets the shared secret as raw bytes.
+        /// </summary>
+        /// <returns>The shared secret as a byte array.</returns>
+        public byte[] GetSharedSecretBytes()
+        {
+            if (!IsComplete)
+                throw new InvalidOperationException("Key exchange must be completed first.");
+
+            return _sharedSecret.getBytes();
+        }
+        #endregion
+
+        #region Private Helper Methods
+        private static string ConvertToHex(byte[] bytes)
+        {
+            var result = new char[bytes.Length * 2];
+
+            for (int i = 0, j = 0; i < bytes.Length; i++, j += 2)
+            {
+                var highNibble = (byte)(bytes[i] >> 4);
+                var lowNibble = (byte)(bytes[i] & 0x0F);
+
+                result[j] = (char)(highNibble > 9 ? highNibble + 0x57 : highNibble + 0x30);
+                result[j + 1] = (char)(lowNibble > 9 ? lowNibble + 0x57 : lowNibble + 0x30);
+            }
+
+            return new string(result);
+        }
+
+        private static byte[] ConvertStringToByteArray(string input)
+        {
+            var result = new byte[input.Length];
+            for (int i = 0; i < input.Length; i++)
+            {
+                result[i] = (byte)input[i];
+            }
+            return result;
+        }
+
+        private static int GetValidKeyLength(byte[] keyBytes)
+        {
+            for (int i = 0; i < keyBytes.Length; i++)
+            {
+                if (keyBytes[i] == 0)
+                    return i;
+            }
+            return keyBytes.Length;
+        }
+
+        private static uint CalculatePacketSize(int pLength, int gLength, int publicKeyLength)
+        {
+            return (uint)(75 + pLength + gLength + publicKeyLength);
+        }
+
+        private static void WritePacketHeader(Packet packet, uint totalSize)
+        {
             packet.Seek(11);
-            packet.WriteUInt32(size - 11);
+            packet.WriteUInt32(totalSize - 11);
+
+            // Write placeholder sections
             packet.WriteUInt32(10);
             packet.Skip(10);
             packet.WriteUInt32(8);
             packet.Skip(8);
             packet.WriteUInt32(8);
             packet.Skip(8);
-            packet.WriteUInt32((uint)pBytes.Length);
-            packet.WriteBytes(pBytes);
-            packet.WriteUInt32((uint)gBytes.Length);
-            packet.WriteBytes(gBytes);
-            packet.WriteUInt32((uint)publicKeyBytes.Length);
-            packet.WriteBytes(publicKeyBytes);
-            packet.Skip(2);
-            packet.WriteSeal(true);
-            return packet.GetFinalizedMemory();
         }
 
+        private static void WritePacketData(Packet packet, byte[] pBytes, byte[] gBytes, byte[] publicKeyBytes)
+        {
+            // Write P parameter
+            packet.WriteUInt32((uint)pBytes.Length);
+            packet.WriteBytes(pBytes);
+
+            // Write G parameter
+            packet.WriteUInt32((uint)gBytes.Length);
+            packet.WriteBytes(gBytes);
+
+            // Write public key
+            packet.WriteUInt32((uint)publicKeyBytes.Length);
+            packet.WriteBytes(publicKeyBytes);
+
+            packet.Skip(2); // Padding
+        }
+        #endregion
+        #region ToString Override
+        public override string ToString() => SharedSecretHex;
+        #endregion
+
+        #region IDisposable Implementation
+        public void Dispose()
+        {
+            if (_disposed) return;
+
+            // Clear sensitive data
+            _privateKey = 0;
+            _sharedSecret = 0;
+            _publicKey = 0;
+
+            _disposed = true;
+        }
+        #endregion
     }
 }
