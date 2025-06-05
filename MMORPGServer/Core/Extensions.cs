@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Core
+﻿using MMORPGServer.Core.Enums;
+
+namespace MMORPGServer.Core
 {
     public static class Extensions
     {

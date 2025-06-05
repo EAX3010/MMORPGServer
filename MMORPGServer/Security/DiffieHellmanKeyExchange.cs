@@ -142,7 +142,7 @@ namespace MMORPGServer.Security
 
             WritePacketHeader(packet, totalSize);
             WritePacketData(packet, pBytes, gBytes, publicKeyBytes);
-            packet.WriteSeal(isServerPacket: true);
+            packet.WriteSeal();
 
             return packet.GetFinalizedMemory();
         }

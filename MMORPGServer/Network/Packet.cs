@@ -29,7 +29,7 @@
         /// <summary>
         /// Gets the type of the packet as declared in its header (bytes 2-3).
         /// </summary>
-        public ushort Type => _dataLength >= 4 ? BitConverter.ToUInt16(_buffer.Span[2..4]) : (ushort)0;
+        public GamePackets Type => (GamePackets)(_dataLength >= 4 ? BitConverter.ToUInt16(_buffer.Span[2..4]) : (ushort)0);
 
         /// <summary>
         /// Current position in the buffer (for reading or writing operations).
@@ -319,33 +319,43 @@
         /// <summary>
         /// Finalizes an outgoing packet by appending the signature and updating the length header.
         /// </summary>
-        public void FinalizePacket(bool isServerPacket = true)
+        public void FinalizePacket(GamePackets Type)
         {
-            var signatureBytes = Encoding.ASCII.GetBytes(isServerPacket ? SERVER_SIGNATURE : CLIENT_SIGNATURE);
-            EnsureCanWrite(signatureBytes.Length);
+            WriteSeal();
+            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)(_dataLength - SIGNATURE_SIZE));
+            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], (ushort)Type);
 
-            signatureBytes.CopyTo(_buffer.Span[Position..]);
-            Position += signatureBytes.Length;
-            _dataLength = Position;
-
-            // Update the length field in the header (exclude signature from length)
-            BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)(_dataLength - SIGNATURE_SIZE));
         }
+        public void FinalizePacket(ushort Type)
+        {
+            WriteSeal();
+            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)(_dataLength - SIGNATURE_SIZE));
+            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], (ushort)Type);
 
+        }
         /// <summary>
         /// Writes only the signature without updating the length header.
         /// Used for special packet construction like DH key exchange.
         /// </summary>
-        public void WriteSeal(bool isServerPacket = true)
+        public void WriteSeal()
         {
-            var signatureBytes = Encoding.ASCII.GetBytes(isServerPacket ? SERVER_SIGNATURE : CLIENT_SIGNATURE);
+            var signatureBytes = Encoding.ASCII.GetBytes(SERVER_SIGNATURE);
             EnsureCanWrite(signatureBytes.Length);
 
             signatureBytes.CopyTo(_buffer.Span[Position..]);
             Position += signatureBytes.Length;
             UpdateDataLength();
         }
-
+        /// <summary>
+        /// Clears the packet contents and resets the position for reuse.
+        /// If it's an outgoing packet, you can optionally provide a new type.
+        /// </summary>
+        public void Reset()
+        {
+            _buffer.Span.Clear();
+            Position = HEADER_SIZE;
+            _dataLength = HEADER_SIZE;
+        }
         /// <summary>
         /// Gets the finalized memory ready for transmission.
         /// </summary>

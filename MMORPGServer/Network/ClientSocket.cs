@@ -1,7 +1,4 @@
-﻿
-using MMORPGServer.Interfaces;
-
-namespace MMORPGServer.Network
+﻿namespace MMORPGServer.Network
 {
     public sealed class ClientSocket : IGameClient
     {
@@ -70,7 +67,7 @@ namespace MMORPGServer.Network
         // Security
         private int _consecutiveErrors;
         private DateTime _handshakeStartTime;
-        private readonly HashSet<ushort> _recentPacketTypes = new();
+        private readonly HashSet<GamePackets> _recentPacketTypes = new();
         private DateTime _lastPacketTypeReset = DateTime.UtcNow;
 
         // Anti-flood
@@ -786,7 +783,7 @@ namespace MMORPGServer.Network
             }
         }
 
-        private void TrackPacketType(ushort packetType)
+        private void TrackPacketType(GamePackets packetType)
         {
             lock (_recentPacketTypes)
             {
