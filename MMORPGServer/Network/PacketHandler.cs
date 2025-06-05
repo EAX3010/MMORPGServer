@@ -5,7 +5,7 @@ namespace MMORPGServer.Network
     public sealed class PacketHandler : IPacketHandler
     {
         private readonly ILogger<PacketHandler> _logger;
-        private readonly Dictionary<ushort, Func<IGameClient, Packet, ValueTask>> _handlers = new();
+        private readonly Dictionary<ushort, Func<IGameClient, Packet, ValueTask>> _handlers = [];
 
         public PacketHandler(ILogger<PacketHandler> logger)
         {
@@ -14,7 +14,7 @@ namespace MMORPGServer.Network
         public ValueTask HandlePacketAsync(IGameClient client, Packet packet)
         {
 
-            if (_handlers.TryGetValue(packet.Type, out var handler))
+            if (_handlers.TryGetValue(packet.Type, out Func<IGameClient, Packet, ValueTask>? handler))
             {
                 return handler(client, packet);
             }
@@ -22,13 +22,14 @@ namespace MMORPGServer.Network
             return ValueTask.CompletedTask;
 
         }
-        public void RegisterHandler<T>(ushort packetType, Func<IGameClient, T, ValueTask> handler)
-            where T : class
+        public void RegisterHandler<T>(ushort packetType, Func<IGameClient, Packet, ValueTask> handler)
         {
             if (typeof(T) == typeof(Packet))
             {
                 _handlers[packetType] = (client, packet) =>
-                handler(client, (T)(object)packet);
+                {
+                    return handler(client, packet);
+                };
                 _logger.LogDebug("Registered handler for packet type {PacketType}", packetType);
             }
         }
