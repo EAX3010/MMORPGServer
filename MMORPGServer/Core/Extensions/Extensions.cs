@@ -1,6 +1,6 @@
 ﻿using MMORPGServer.Core.Enums;
 
-namespace MMORPGServer.Core
+namespace MMORPGServer.Core.Extensions
 {
     public static class Extensions
     {

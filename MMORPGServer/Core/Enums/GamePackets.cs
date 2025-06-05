@@ -482,7 +482,7 @@ namespace MMORPGServer.Core.Enums
         CMsgCopStatisticActive = 9036, // 0x234c
         CNetMsgLua = 9036, // 0x234c
 
-        CNetLoginGame = 2429,
+        CMsgLoginGame = 2429,
         LoginGamaArabic = 9589,
         LoginGamaEnglish = 9588,
         JiangHuPkMode = 2030,

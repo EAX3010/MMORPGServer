@@ -2,28 +2,8 @@
 
 namespace MMORPGServer.Network.Packets
 {
-    public partial class PlayerPackets(ILogger<PlayerPackets> logger)
+    public partial class PlayerPackets(ILogger<PlayerPackets> logger) : IPacketProcessor
     {
-        [PacketHandler(GamePackets.CNetLoginGame)]
-        public async ValueTask LoginGameHandler(IGameClient client, Packet packet)
-        {
-            ArgumentNullException.ThrowIfNull(client);
-            ArgumentNullException.ThrowIfNull(packet);
-
-            packet.Reset();
-            packet.WriteUInt32(10002);
-            packet.WriteUInt32(0);
-            packet.FinalizePacket(GamePackets.LoginGamaEnglish);
-
-            var finalized = packet.GetFinalizedMemory();
-            if (finalized.IsEmpty)
-            {
-                logger.LogWarning("Finalized packet is empty.");
-            }
-
-            await client.SendPacketAsync(finalized);
-            logger.LogInformation("LoginGame packet sent to client.");
-        }
         [PacketHandler(GamePackets.LoginGamaEnglish)]
         public ValueTask LoginGamaEnglishHandler(IGameClient client, Packet packet)
         {

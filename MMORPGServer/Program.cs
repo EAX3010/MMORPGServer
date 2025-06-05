@@ -1,4 +1,5 @@
-﻿using MMORPGServer.Network.Servers;
+﻿using MMORPGServer.Core.Extensions;
+using MMORPGServer.Network.Servers;
 using MMORPGServer.Services;
 using Serilog;
 using Serilog.Events;
@@ -41,8 +42,7 @@ namespace MMORPGServer
                 // Configure Network services
                 builder.Services.AddSingleton<IGameServer, GameServer>();
                 builder.Services.AddSingleton<INetworkManager, NetworkManager>();
-                builder.Services.AddSingleton<IPacketHandler, PacketHandler>();
-                builder.Services.AddSingleton<Network.Packets.PlayerPackets>();
+
                 // Configure Security services
                 builder.Services.AddTransient<DiffieHellmanKeyExchange>();
                 builder.Services.AddTransient<TQCast5Cryptographer>();
@@ -57,6 +57,7 @@ namespace MMORPGServer
                 // Configure Background services
                 builder.Services.AddHostedService<GameServerHostedService>();
                 builder.Services.AddHostedService<GameLoopService>();
+                builder.Services.AddPacketHandlers();
 
                 var host = builder.Build();
 
