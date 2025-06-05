@@ -1,5 +1,4 @@
-﻿using MMORPGServer.Game;
-using MMORPGServer.Interfaces;
+﻿using MMORPGServer.Interfaces;
 using MMORPGServer.Network.Servers;
 using MMORPGServer.Services;
 using Serilog;
@@ -49,8 +48,6 @@ namespace MMORPGServer
                 builder.Services.AddTransient<DiffieHellmanKeyExchange>();
                 builder.Services.AddTransient<TQCast5Cryptographer>();
 
-                // Configure Game services
-                builder.Services.AddSingleton<IPacketProcessor, PacketProcessor>();
 
                 // Configure Business services
                 builder.Services.AddSingleton<IPlayerManager, PlayerManager>();

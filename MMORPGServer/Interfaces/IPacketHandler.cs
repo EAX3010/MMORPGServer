@@ -2,7 +2,7 @@
 {
     public interface IPacketHandler
     {
-        ValueTask HandlePacketAsync(IGameClient client, object packet);
+        ValueTask HandlePacketAsync(IGameClient client, Packet packet);
         void RegisterHandler<T>(ushort packetType, Func<IGameClient, T, ValueTask> handler) where T : class;
     }
 }
