@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Services.Interfaces
+﻿namespace MMORPGServer.Interfaces
 {
     public interface ICharacterService
     {

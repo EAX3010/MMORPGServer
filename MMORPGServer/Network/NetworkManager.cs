@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Network
+﻿using MMORPGServer.Interfaces;
+
+namespace MMORPGServer.Network
 {
     public sealed class NetworkManager : INetworkManager
     {

@@ -1,4 +1,4 @@
-﻿using MMORPGServer.Network.Interfaces;
+﻿using MMORPGServer.Interfaces;
 
 public interface INetworkManager
 {

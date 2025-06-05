@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Network.Servers
+﻿using MMORPGServer.Interfaces;
+
+namespace MMORPGServer.Network.Servers
 {
     public sealed class GameServer : IGameServer, IDisposable
     {

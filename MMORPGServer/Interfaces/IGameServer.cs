@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Network.Interfaces
+﻿namespace MMORPGServer.Interfaces
 {
     public interface IGameServer
     {

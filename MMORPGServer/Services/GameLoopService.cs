@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Services
+﻿using MMORPGServer.Interfaces;
+
+namespace MMORPGServer.Services
 {
     public sealed class GameLoopService : BackgroundService
     {
