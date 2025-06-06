@@ -1,6 +1,4 @@
-﻿using MMORPGServer.Game.Entities.Roles;
-
-namespace MMORPGServer.Interfaces
+﻿namespace MMORPGServer.Interfaces
 {
     public interface IGameClient : IDisposable
     {

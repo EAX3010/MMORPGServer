@@ -1,8 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
-
-public sealed class TQCast5Cryptographer : IDisposable
+﻿public sealed class TQCast5Cryptographer : IDisposable
 {
     private byte[] _encryptIV;
     private byte[] _decryptIV;

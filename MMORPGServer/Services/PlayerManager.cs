@@ -1,6 +1,4 @@
-﻿using MMORPGServer.Game.Entities.Roles;
-
-namespace MMORPGServer.Services
+﻿namespace MMORPGServer.Services
 {
     public sealed class PlayerManager : IPlayerManager
     {

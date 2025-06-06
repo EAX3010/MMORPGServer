@@ -1,8 +1,4 @@
-﻿using MMORPGServer.Core.Extensions;
-using MMORPGServer.Network.Servers;
-using MMORPGServer.Services;
-using Serilog;
-using Serilog.Events;
+﻿
 
 namespace MMORPGServer
 {
@@ -50,11 +46,13 @@ namespace MMORPGServer
 
                 // Configure Business services
                 builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
+                builder.Services.AddSingleton<GameWorld>();
 
                 // Configure Background services
                 builder.Services.AddHostedService<GameServerHostedService>();
                 builder.Services.AddHostedService<GameLoopService>();
-                builder.Services.AddPacketHandlers(ServiceLifetime.Scoped);
+
+                builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
 
                 var host = builder.Build();
                 Log.Information("MMORPG Server starting up...");

@@ -1,11 +1,4 @@
-﻿// * Created by ElmistRo
-// * Copyright © 2010-2014
-// * ElmistRo - Project
-
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-
-namespace MMORPGServer.Security
+﻿namespace MMORPGServer.Security
 {
     public sealed unsafe class TigerHashAlgorithm
     {

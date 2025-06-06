@@ -1,7 +1,4 @@
-﻿using MMORPGServer.Game.World;
-using System.Numerics;
-
-namespace MMORPGServer.Services
+﻿namespace MMORPGServer.Services
 {
     public class GameLoopService : BackgroundService
     {

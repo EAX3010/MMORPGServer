@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography;
-
-namespace MMORPGServer.Security
+﻿namespace MMORPGServer.Security
 {
     /// <summary>
     /// Handles Diffie-Hellman key exchange for secure communication.

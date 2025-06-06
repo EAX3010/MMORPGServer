@@ -1,10 +1,4 @@
-﻿// * Created by ElmistRo
-// * Copyright © 2010-2014
-// * ElmistRo - Project
-
-using System.Runtime.InteropServices;
-
-namespace MMORPGServer.Security
+﻿namespace MMORPGServer.Security
 {
     public static unsafe class NativeFunctionCalls
     {

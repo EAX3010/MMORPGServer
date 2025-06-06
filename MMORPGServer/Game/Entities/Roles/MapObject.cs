@@ -1,6 +1,4 @@
-﻿using System.Numerics;
-
-namespace MMORPGServer.Game.Entities.Roles
+﻿namespace MMORPGServer.Game.Entities.Roles
 {
     public abstract class MapObject
     {

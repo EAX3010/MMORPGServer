@@ -1,7 +1,4 @@
-﻿using FluentValidation;
-using MMORPGServer.Network.Fluent;
-
-namespace MMORPGServer.Network.Packets
+﻿namespace MMORPGServer.Network.Packets
 {
     public record LoginGamaEnglishData(uint Uid, uint State);
     public sealed class LoginGamaEnglish : AbstractValidator<LoginGamaEnglishData>, IPacketProcessor
