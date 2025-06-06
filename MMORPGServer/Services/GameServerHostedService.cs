@@ -1,6 +1,4 @@
-﻿using MMORPGServer.Interfaces;
-
-namespace MMORPGServer.Services
+﻿namespace MMORPGServer.Services
 {
     public sealed class GameServerHostedService : BackgroundService
     {

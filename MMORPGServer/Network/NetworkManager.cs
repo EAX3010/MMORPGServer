@@ -1,6 +1,4 @@
-﻿using MMORPGServer.Interfaces;
-
-namespace MMORPGServer.Network
+﻿namespace MMORPGServer.Network
 {
     public sealed class NetworkManager : INetworkManager
     {
@@ -115,48 +113,6 @@ namespace MMORPGServer.Network
             }
         }
 
-        public async ValueTask BroadcastToMapAsync(uint mapId, ReadOnlyMemory<byte> packetData, uint excludeClientId = 0)
-        {
-            var tasks = new List<ValueTask>();
-            var clientCount = 0;
-
-            foreach (var client in _clients.Values)
-            {
-                if (client.ClientId != excludeClientId &&
-                    client.IsConnected &&
-                    client.Player?.MapId == mapId)
-                {
-                    tasks.Add(client.SendPacketAsync(packetData));
-                    clientCount++;
-                }
-            }
-
-            if (tasks.Count > 0)
-            {
-                _logger.LogDebug("Broadcasting packet to {ClientCount} clients on map {MapId} (Size: {PacketSize} bytes)",
-                    clientCount, mapId, packetData.Length);
-
-                foreach (var task in tasks)
-                {
-                    try
-                    {
-                        await task;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to send map broadcast packet to a client on map {MapId}", mapId);
-                    }
-                }
-
-                // Update statistics
-                Interlocked.Add(ref _totalPacketsSent, clientCount);
-                Interlocked.Add(ref _totalBytesSent, packetData.Length * clientCount);
-            }
-            else
-            {
-                _logger.LogDebug("No clients available for map {MapId} broadcast", mapId);
-            }
-        }
 
         // Method to get network statistics for monitoring
         public (long TotalPacketsSent, long TotalBytesSent, int ActiveConnections) GetNetworkStatistics()

@@ -1,116 +1,143 @@
-﻿using MMORPGServer.Interfaces;
+﻿using MMORPGServer.Game.World;
+using System.Numerics;
 
 namespace MMORPGServer.Services
 {
-    public sealed class GameLoopService : BackgroundService
+    public class GameLoopService : BackgroundService
     {
         private readonly ILogger<GameLoopService> _logger;
-        private readonly IPlayerManager _playerManager;
-        private long _tickCount = 0;
-        private DateTime _lastStatsLog = DateTime.UtcNow;
-        private readonly TimeSpan _statsInterval = TimeSpan.FromMinutes(5);
+        private readonly GameWorld _gameWorld;
+        private readonly Channel<GameAction> _actionChannel;
+        private const float TARGET_FPS = 60.0f;
+        private const float TARGET_FRAME_TIME = 1.0f / TARGET_FPS;
 
-        public GameLoopService(ILogger<GameLoopService> logger, IPlayerManager playerManager)
+        public GameLoopService(ILogger<GameLoopService> logger, GameWorld gameWorld)
         {
             _logger = logger;
-            _playerManager = playerManager;
+            _gameWorld = gameWorld;
+            _actionChannel = Channel.CreateUnbounded<GameAction>(new UnboundedChannelOptions
+            {
+                SingleReader = true,
+                SingleWriter = false
+            });
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Game loop service started - Tick rate: {TickRate} FPS", GameConstants.GAME_TICK_RATE);
-            _logger.LogInformation("High-performance game simulation active");
+            _logger.LogInformation("Game loop service is starting");
 
-            using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1000 / GameConstants.GAME_TICK_RATE));
-            var gameStartTime = DateTime.UtcNow;
+            var lastUpdateTime = DateTime.UtcNow;
+            var accumulator = 0.0f;
 
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                var currentTime = DateTime.UtcNow;
+                var deltaTime = (float)(currentTime - lastUpdateTime).TotalSeconds;
+                lastUpdateTime = currentTime;
+
+                // Process any pending actions
+                while (_actionChannel.Reader.TryRead(out var action))
+                {
+                    ProcessAction(action);
+                }
+
+                // Fixed time step update
+                accumulator += deltaTime;
+                while (accumulator >= TARGET_FRAME_TIME)
+                {
+                    Update(TARGET_FRAME_TIME);
+                    accumulator -= TARGET_FRAME_TIME;
+                }
+
+                // Cap the frame rate
+                var elapsed = (float)(DateTime.UtcNow - currentTime).TotalSeconds;
+                if (elapsed < TARGET_FRAME_TIME)
+                {
+                    await Task.Delay((int)((TARGET_FRAME_TIME - elapsed) * 1000), stoppingToken);
+                }
+            }
+
+            _logger.LogInformation("Game loop service is stopping");
+        }
+
+        private void Update(float deltaTime)
+        {
             try
             {
-                while (await timer.WaitForNextTickAsync(stoppingToken))
-                {
-                    try
-                    {
-                        await ProcessGameTickAsync();
-                        _tickCount++;
-
-                        // Log periodic statistics
-                        if (DateTime.UtcNow - _lastStatsLog >= _statsInterval)
-                        {
-                            await LogGameStatisticsAsync(gameStartTime);
-                            _lastStatsLog = DateTime.UtcNow;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error processing game tick #{TickCount}", _tickCount);
-                    }
-                }
+                _gameWorld.Update(deltaTime);
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
-                _logger.LogInformation("Game loop service stopped gracefully");
-            }
-            finally
-            {
-                var runtime = DateTime.UtcNow - gameStartTime;
-                _logger.LogInformation("Game loop statistics - Total ticks: {TotalTicks}, Runtime: {Runtime}",
-                    _tickCount, runtime.ToString(@"hh\:mm\:ss"));
+                _logger.LogError(ex, "Error during game world update");
             }
         }
 
-        private async ValueTask ProcessGameTickAsync()
+        public async ValueTask QueueAction(GameAction action)
         {
-            var playerCount = await _playerManager.GetOnlinePlayerCountAsync();
-
-            // Simulate game world updates
-            if (_tickCount % (GameConstants.GAME_TICK_RATE * 30) == 0) // Every 30 seconds
-            {
-                if (playerCount > 0)
-                {
-                    _logger.LogInformation("World update #{WorldTick} - Active players: {PlayerCount}",
-                        _tickCount / (GameConstants.GAME_TICK_RATE * 30), playerCount);
-                }
-            }
-
-            // Log connection events
-            if (_tickCount % GameConstants.GAME_TICK_RATE == 0) // Every second
-            {
-                if (playerCount > 0 && _tickCount % (GameConstants.GAME_TICK_RATE * 60) == 0) // Every minute with players
-                {
-                    _logger.LogDebug("Game tick #{TickCount} - Players online: {PlayerCount}", _tickCount, playerCount);
-                }
-            }
-
-            await ValueTask.CompletedTask;
+            await _actionChannel.Writer.WriteAsync(action);
         }
 
-        private async ValueTask LogGameStatisticsAsync(DateTime gameStartTime)
+        private void ProcessAction(GameAction action)
         {
-            var playerCount = await _playerManager.GetOnlinePlayerCountAsync();
-            var uptime = DateTime.UtcNow - gameStartTime;
-            var averageTicksPerSecond = _tickCount / uptime.TotalSeconds;
-            var memoryUsage = GC.GetTotalMemory(false) / 1024 / 1024;
-
-            _logger.LogInformation("=== GAME SERVER STATISTICS ===");
-            _logger.LogInformation("Server Uptime: {Uptime}", uptime.ToString(@"dd\.hh\:mm\:ss"));
-            _logger.LogInformation("Total Game Ticks: {TotalTicks:N0}", _tickCount);
-            _logger.LogInformation("Average TPS: {AverageTPS:F1}", averageTicksPerSecond);
-            _logger.LogInformation("Online Players: {PlayerCount}", playerCount);
-            _logger.LogInformation("Memory Usage: {MemoryMB} MB", memoryUsage);
-            _logger.LogInformation("GC Collections: Gen0={Gen0}, Gen1={Gen1}, Gen2={Gen2}",
-                GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
-            _logger.LogInformation("=====================================");
-
-            // Trigger garbage collection if memory usage is high
-            if (memoryUsage > 500) // 500 MB threshold
+            try
             {
-                _logger.LogWarning("High memory usage detected, requesting garbage collection");
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                var newMemoryUsage = GC.GetTotalMemory(false) / 1024 / 1024;
-                _logger.LogInformation("Garbage collection completed - Memory: {OldMB} MB -> {NewMB} MB",
-                    memoryUsage, newMemoryUsage);
+                switch (action)
+                {
+                    case PlayerMoveAction moveAction:
+                        ProcessPlayerMove(moveAction);
+                        break;
+                    case PlayerAttackAction attackAction:
+                        ProcessPlayerAttack(attackAction);
+                        break;
+                    case PlayerCastAction castAction:
+                        ProcessPlayerCast(castAction);
+                        break;
+                    default:
+                        _logger.LogWarning("Unknown action type: {ActionType}", action.GetType().Name);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing game action");
             }
         }
+
+        private void ProcessPlayerMove(PlayerMoveAction action)
+        {
+            // Implement player movement logic
+        }
+
+        private void ProcessPlayerAttack(PlayerAttackAction action)
+        {
+            // Implement player attack logic
+        }
+
+        private void ProcessPlayerCast(PlayerCastAction action)
+        {
+            // Implement player spell casting logic
+        }
+    }
+
+    public abstract class GameAction
+    {
+        public uint PlayerId { get; set; }
+    }
+
+    public class PlayerMoveAction : GameAction
+    {
+        public Vector2 TargetPosition { get; set; }
+    }
+
+    public class PlayerAttackAction : GameAction
+    {
+        public uint TargetId { get; set; }
+    }
+
+    public class PlayerCastAction : GameAction
+    {
+        public ushort SkillId { get; set; }
+        public uint? TargetId { get; set; }
+        public Vector2? TargetPosition { get; set; }
     }
 }

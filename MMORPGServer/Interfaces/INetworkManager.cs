@@ -1,6 +1,4 @@
-﻿using MMORPGServer.Interfaces;
-
-public interface INetworkManager
+﻿public interface INetworkManager
 {
     IReadOnlyDictionary<uint, IGameClient> ConnectedClients { get; }
     int ConnectionCount { get; }
@@ -9,5 +7,4 @@ public interface INetworkManager
     void RemoveClient(uint clientId);
     IGameClient? GetClient(uint clientId);
     ValueTask BroadcastAsync(ReadOnlyMemory<byte> packetData, uint excludeClientId = 0);
-    ValueTask BroadcastToMapAsync(uint mapId, ReadOnlyMemory<byte> packetData, uint excludeClientId = 0);
 }

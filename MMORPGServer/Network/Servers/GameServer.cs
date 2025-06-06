@@ -82,13 +82,14 @@
                     var dhKeyExchange = _serviceProvider.GetRequiredService<DiffieHellmanKeyExchange>();
                     var cryptographer = _serviceProvider.GetRequiredService<TQCast5Cryptographer>();
 
-                    var gameClient = new ClientSocket(
+                    var gameClient = new GameClient(
                         clientId,
                         tcpClient,
                         dhKeyExchange,
                         cryptographer,
                         _messageWriter,
-                        _serviceProvider.GetRequiredService<ILogger<ClientSocket>>()
+                        _serviceProvider.GetRequiredService<ILogger<GameClient>>(),
+                        _serviceProvider.GetRequiredService<IPlayerManager>()
                     );
 
                     _networkManager.AddClient(gameClient);
@@ -172,11 +173,7 @@
             }
         }
 
-        public async ValueTask BroadcastToMapAsync(uint mapId, ReadOnlyMemory<byte> packetData, uint excludeClientId = 0)
-        {
-            _logger.LogDebug("Broadcasting packet to map {MapId}", mapId);
-            await _networkManager.BroadcastToMapAsync(mapId, packetData, excludeClientId);
-        }
+
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {

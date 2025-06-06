@@ -50,9 +50,6 @@ namespace MMORPGServer
 
                 // Configure Business services
                 builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
-                builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
-                builder.Services.AddSingleton<ICharacterService, CharacterService>();
-                builder.Services.AddSingleton<IChatService, ChatService>();
 
                 // Configure Background services
                 builder.Services.AddHostedService<GameServerHostedService>();

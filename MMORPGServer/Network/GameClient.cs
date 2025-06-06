@@ -1,6 +1,8 @@
-﻿namespace MMORPGServer.Network
+﻿using MMORPGServer.Game.Entities.Roles;
+
+namespace MMORPGServer.Network
 {
-    public sealed class ClientSocket : IGameClient
+    public sealed class GameClient : IGameClient
     {
         #region Constants
         private const int MAX_PACKET_SIZE = 1024;
@@ -23,7 +25,7 @@
 
         #region Properties
         public uint ClientId { get; }
-        public IPlayer? Player { get; set; }
+        public Player? Player { get; set; }
         public bool IsConnected => State != ClientState.Disconnected && _tcpClient?.Connected == true;
         public string? IPAddress { get; }
         public DateTime ConnectedAt { get; }
@@ -34,7 +36,7 @@
         #region Private Fields
         private readonly TcpClient _tcpClient;
         private readonly Socket _socket;
-        private readonly ILogger<ClientSocket> _logger;
+        private readonly ILogger<GameClient> _logger;
         private readonly DiffieHellmanKeyExchange _dhKeyExchange;
         private readonly TQCast5Cryptographer _cryptographer;
         private readonly ChannelWriter<ClientMessage> _messageWriter;
@@ -77,13 +79,14 @@
         #endregion
 
         #region Constructor
-        public ClientSocket(
+        public GameClient(
             uint clientId,
             TcpClient tcpClient,
             DiffieHellmanKeyExchange dhKeyExchange,
             TQCast5Cryptographer cryptographer,
             ChannelWriter<ClientMessage> messageWriter,
-            ILogger<ClientSocket> logger)
+            ILogger<GameClient> logger,
+            IPlayerManager playerManager)
         {
             ClientId = clientId;
             _tcpClient = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
@@ -125,6 +128,8 @@
 
             ConfigureSocket();
             _connectionTimer.Start();
+            Player = new Player(this, ClientId);
+            playerManager.AddPlayerAsync(Player).GetAwaiter().GetResult();
         }
 
         private void ConfigureSocket()
