@@ -63,12 +63,7 @@
             return this;
         }
 
-        public IPacketReader ReadData<T>(out T data) where T : IPacketDeserializable, new()
-        {
-            data = new T();
-            data.Deserialize(_packet);
-            return this;
-        }
+
 
         public IPacketReader ReadEncrypted(TransferCipher cipher, out uint[] decrypted)
         {

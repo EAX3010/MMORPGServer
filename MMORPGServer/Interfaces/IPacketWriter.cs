@@ -12,7 +12,6 @@
     IPacketWriter WriteDouble(double value);
 
     // Advanced methods
-    IPacketWriter WriteData<T>(T data) where T : IPacketSerializable;
     IPacketWriter WriteEncrypted(uint[] data, TransferCipher cipher);
     IPacketWriter WriteArray<T>(IEnumerable<T> items, Action<IPacketWriter, T> writeAction);
     IPacketWriter WriteConditional(bool condition, Action<IPacketWriter> writeAction);

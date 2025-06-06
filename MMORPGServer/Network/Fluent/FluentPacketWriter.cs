@@ -71,12 +71,6 @@
             return this;
         }
 
-        public IPacketWriter WriteData<T>(T data) where T : IPacketSerializable
-        {
-            data.Serialize(_packet);
-            return this;
-        }
-
         public IPacketWriter WriteEncrypted(uint[] data, TransferCipher cipher)
         {
             var encrypted = cipher.Encrypt(data);

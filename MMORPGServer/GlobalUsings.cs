@@ -2,6 +2,7 @@
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Logging;
+global using MMORPGServer.Attributes;
 global using MMORPGServer.Core;
 global using MMORPGServer.Core.Enums;
 global using MMORPGServer.Interfaces;
