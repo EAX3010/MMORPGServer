@@ -618,15 +618,22 @@
 
             // Track packet type diversity (security check)
             TrackPacketType(packet.Type);
-
-            if (!_messageWriter.TryWrite(new ClientMessage(ClientId, packet)))
+            if (packet.IsComplete && packet.IsClientPacket())
             {
-                _logger.LogWarning("Failed to queue packet from client {ClientId} - message queue full", ClientId);
+
+                if (!_messageWriter.TryWrite(new ClientMessage(ClientId, packet)))
+                {
+                    _logger.LogWarning("Failed to queue packet from client {ClientId} - message queue full", ClientId);
+                }
+                else
+                {
+                    Interlocked.Increment(ref _packetsReceived);
+                    RecordPacketTime();
+                }
             }
             else
             {
-                Interlocked.Increment(ref _packetsReceived);
-                RecordPacketTime();
+                _logger.LogWarning("Failed to queue packet from client {ClientId} - message not complete", ClientId);
             }
         }
 

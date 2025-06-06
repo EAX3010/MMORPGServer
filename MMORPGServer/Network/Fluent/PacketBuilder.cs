@@ -2,10 +2,10 @@
 {
     public static class PacketBuilder
     {
-        public static IPacketBuilder Create(GamePackets type) => new FluentPacketBuilder(type);
-        public static IPacketBuilder Create(ushort type) => new FluentPacketBuilder(type);
+        public static IPacketWriter Create(GamePackets type) => new FluentPacketWriter(type);
+        public static IPacketWriter Create(ushort type) => new FluentPacketWriter(type);
 
         // Quick factory methods for common packets
-        public static IPacketBuilder LoginResponse() => Create(GamePackets.LoginGamaEnglish);
+        public static IPacketWriter LoginResponse() => Create(GamePackets.LoginGamaEnglish);
     }
 }

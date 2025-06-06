@@ -114,22 +114,6 @@
             return this;
         }
 
-        public IPacketReader ValidateRemaining(int expectedBytes)
-        {
-            if (_packet.RemainingBytes < expectedBytes)
-            {
-                throw new InvalidOperationException($"Expected {expectedBytes} remaining bytes, but only {_packet.RemainingBytes} available");
-            }
-            return this;
-        }
 
-        public IPacketReader ValidateSignature()
-        {
-            if (!_packet.IsComplete)
-            {
-                throw new InvalidOperationException("Packet signature is invalid or incomplete");
-            }
-            return this;
-        }
     }
 }

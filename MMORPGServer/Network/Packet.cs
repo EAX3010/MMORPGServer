@@ -40,9 +40,9 @@
             return new Fluent.FluentPacketReader(this);
         }
 
-        public IPacketBuilder GetWriter()
+        public IPacketWriter GetWriter()
         {
-            return new Fluent.FluentPacketBuilder(Type);
+            return new Fluent.FluentPacketWriter(Type);
         }
 
         /// <summary>

@@ -1,83 +1,83 @@
 ﻿namespace MMORPGServer.Network.Fluent
 {
-    internal class FluentPacketBuilder : IPacketBuilder
+    internal class FluentPacketWriter : IPacketWriter
     {
         private readonly Packet _packet;
         private readonly GamePackets _packetType;
 
-        public FluentPacketBuilder(GamePackets type)
+        public FluentPacketWriter(GamePackets type)
         {
             _packetType = type;
             _packet = new Packet((ushort)type);
         }
 
-        public FluentPacketBuilder(ushort type)
+        public FluentPacketWriter(ushort type)
         {
             _packetType = (GamePackets)type;
             _packet = new Packet(type);
         }
 
-        public IPacketBuilder WriteUInt16(ushort value)
+        public IPacketWriter WriteUInt16(ushort value)
         {
             _packet.WriteUInt16(value);
             return this;
         }
 
-        public IPacketBuilder WriteUInt32(uint value)
+        public IPacketWriter WriteUInt32(uint value)
         {
             _packet.WriteUInt32(value);
             return this;
         }
 
-        public IPacketBuilder WriteInt32(int value)
+        public IPacketWriter WriteInt32(int value)
         {
             _packet.WriteInt32(value);
             return this;
         }
 
-        public IPacketBuilder WriteUInt64(ulong value)
+        public IPacketWriter WriteUInt64(ulong value)
         {
             _packet.WriteUInt64(value);
             return this;
         }
 
-        public IPacketBuilder WriteByte(byte value)
+        public IPacketWriter WriteByte(byte value)
         {
             _packet.WriteByte(value);
             return this;
         }
 
-        public IPacketBuilder WriteBytes(ReadOnlySpan<byte> data)
+        public IPacketWriter WriteBytes(ReadOnlySpan<byte> data)
         {
             _packet.WriteBytes(data);
             return this;
         }
 
-        public IPacketBuilder WriteString(string value, int maxLength)
+        public IPacketWriter WriteString(string value, int maxLength)
         {
             _packet.WriteString(value, maxLength);
             return this;
         }
 
-        public IPacketBuilder WriteFloat(float value)
+        public IPacketWriter WriteFloat(float value)
         {
             _packet.WriteFloat(value);
             return this;
         }
 
-        public IPacketBuilder WriteDouble(double value)
+        public IPacketWriter WriteDouble(double value)
         {
             _packet.WriteDouble(value);
             return this;
         }
 
-        public IPacketBuilder WriteData<T>(T data) where T : IPacketSerializable
+        public IPacketWriter WriteData<T>(T data) where T : IPacketSerializable
         {
             data.Serialize(_packet);
             return this;
         }
 
-        public IPacketBuilder WriteEncrypted(uint[] data, TransferCipher cipher)
+        public IPacketWriter WriteEncrypted(uint[] data, TransferCipher cipher)
         {
             var encrypted = cipher.Encrypt(data);
             foreach (var value in encrypted)
@@ -87,7 +87,7 @@
             return this;
         }
 
-        public IPacketBuilder WriteArray<T>(IEnumerable<T> items, Action<IPacketBuilder, T> writeAction)
+        public IPacketWriter WriteArray<T>(IEnumerable<T> items, Action<IPacketWriter, T> writeAction)
         {
             foreach (var item in items)
             {
@@ -96,7 +96,7 @@
             return this;
         }
 
-        public IPacketBuilder WriteConditional(bool condition, Action<IPacketBuilder> writeAction)
+        public IPacketWriter WriteConditional(bool condition, Action<IPacketWriter> writeAction)
         {
             if (condition)
             {
@@ -105,19 +105,19 @@
             return this;
         }
 
-        public IPacketBuilder Seek(int position)
+        public IPacketWriter Seek(int position)
         {
             _packet.Seek(position);
             return this;
         }
 
-        public IPacketBuilder Skip(int bytes)
+        public IPacketWriter Skip(int bytes)
         {
             _packet.Skip(bytes);
             return this;
         }
 
-        public IPacketBuilder Align(int boundary)
+        public IPacketWriter Align(int boundary)
         {
             var currentPos = _packet.Position;
             var remainder = currentPos % boundary;
@@ -132,7 +132,7 @@
             return this;
         }
 
-        public IPacketBuilder Debug(string message)
+        public IPacketWriter Debug(string message)
         {
             // Could log to console or debug output
             System.Diagnostics.Debug.WriteLine($"PacketBuilder Debug: {message} (Position: {_packet.Position})");

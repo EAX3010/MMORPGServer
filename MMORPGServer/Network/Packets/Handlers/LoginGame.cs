@@ -3,8 +3,8 @@ using MMORPGServer.Network.Fluent;
 
 namespace MMORPGServer.Network.Packets.Handlers
 {
-    public sealed class LoginGameHandler(
-        ILogger<LoginGameHandler> logger) : IPacketProcessor
+    public sealed class LoginGame(
+        ILogger<LoginGame> logger) : IPacketProcessor
     {
         [PacketHandler(GamePackets.CMsgLoginGame)]
         public async ValueTask HandleAsync(IGameClient client, Packet packet)

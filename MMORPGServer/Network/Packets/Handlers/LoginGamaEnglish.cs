@@ -15,15 +15,12 @@ namespace MMORPGServer.Network.Packets.Handlers
 
             var transferCipher = new TransferCipher("127.0.0.99");
 
-            packet.Seek(4);
-            uint[] decrypted = transferCipher.Decrypt(new uint[]
-            {
-              packet.ReadUInt32(),
-              packet.ReadUInt32()
-            });
+            uint[] decrypted = new uint[2];
 
-            var uid = decrypted[0];
-            var state = decrypted[1];
+            _ = packet.GetReader().ReadEncrypted(transferCipher, out decrypted);
+
+            uint uid = decrypted[0];
+            uint state = decrypted[1];
 
             logger.LogInformation("LoginGamaEnglish decrypted UID: {uid}, State: {state}", uid, state);
             return ValueTask.CompletedTask;

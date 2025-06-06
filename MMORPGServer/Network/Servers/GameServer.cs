@@ -1,6 +1,4 @@
-﻿using MMORPGServer.Interfaces;
-
-namespace MMORPGServer.Network.Servers
+﻿namespace MMORPGServer.Network.Servers
 {
     public sealed class GameServer : IGameServer, IDisposable
     {
@@ -132,6 +130,7 @@ namespace MMORPGServer.Network.Servers
                     var client = _networkManager.GetClient(message.ClientId);
                     if (client is not null)
                     {
+                        message.Packet.Seek(4);
                         await _packetHandler.HandlePacketAsync(client, message.Packet);
                         Interlocked.Increment(ref _totalMessagesProcessed);
 

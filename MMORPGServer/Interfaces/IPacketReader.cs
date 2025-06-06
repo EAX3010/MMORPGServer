@@ -19,7 +19,4 @@
     IPacketReader Skip(int bytes);
     IPacketReader Debug(string message);
 
-    // Validation
-    IPacketReader ValidateRemaining(int expectedBytes);
-    IPacketReader ValidateSignature();
 }
