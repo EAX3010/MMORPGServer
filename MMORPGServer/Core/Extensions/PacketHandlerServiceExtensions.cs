@@ -7,7 +7,7 @@ namespace MMORPGServer.Core.Extensions
         /// <summary>
         /// Enhanced packet handler registration with auto-discovery
         /// </summary>
-        public static IServiceCollection AddPacketHandlers(this IServiceCollection services)
+        public static IServiceCollection AddPacketHandlers(this IServiceCollection services, IServiceProvider Gservces)
         {
             // Register the main packet handler
             services.AddSingleton<IPacketHandler, PacketHandler>();
@@ -24,7 +24,6 @@ namespace MMORPGServer.Core.Extensions
                 // Register as scoped so each packet handling gets fresh instance
                 services.AddScoped(handlerType);
             }
-
             return services;
         }
 

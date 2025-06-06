@@ -35,6 +35,15 @@
         /// Current position in the buffer (for reading or writing operations).
         /// </summary>
         public int Position { get; private set; } = 0;
+        public IPacketReader GetReader()
+        {
+            return new Fluent.FluentPacketReader(this);
+        }
+
+        public IPacketBuilder GetWriter()
+        {
+            return new Fluent.FluentPacketBuilder(Type);
+        }
 
         /// <summary>
         /// Checks if the packet appears to be complete with a valid signature.
@@ -111,7 +120,7 @@
             Position = HEADER_SIZE; // Start writing after header
         }
 
-        // --- Read Methods ---
+
 
         public ushort ReadUInt16()
         {

@@ -57,13 +57,13 @@ namespace MMORPGServer
                 // Configure Background services
                 builder.Services.AddHostedService<GameServerHostedService>();
                 builder.Services.AddHostedService<GameLoopService>();
-                builder.Services.AddPacketHandlers();
+                builder.Services.AddPacketHandlers(ServiceLifetime.Scoped);
 
                 var host = builder.Build();
-
                 Log.Information("MMORPG Server starting up...");
 
                 await host.RunAsync();
+
             }
             catch (Exception ex)
             {

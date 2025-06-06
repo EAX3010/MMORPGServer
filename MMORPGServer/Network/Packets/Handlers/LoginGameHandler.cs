@@ -27,15 +27,11 @@ namespace MMORPGServer.Network.Packets.Handlers
         /// </summary>
         private async ValueTask Handle(IGameClient client, Packet packet)
         {
-            ArgumentNullException.ThrowIfNull(client);
-            ArgumentNullException.ThrowIfNull(packet);
-
             var response = PacketBuilder.Create(GamePackets.LoginGamaEnglish)
                 .WriteUInt32(10002)
                 .WriteUInt32(0)
                 .Debug("CMsgLoginGame simple response")
                 .BuildAndFinalize();
-
             if (response.IsEmpty)
             {
                 logger.LogWarning("Finalized packet is empty.");

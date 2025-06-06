@@ -1,6 +1,6 @@
 ﻿using MMORPGServer.Attributes;
 
-namespace MMORPGServer.Network.Packets
+namespace MMORPGServer.Network.Packets.Handlers
 {
     public partial class PlayerPackets(ILogger<PlayerPackets> logger) : IPacketProcessor
     {
