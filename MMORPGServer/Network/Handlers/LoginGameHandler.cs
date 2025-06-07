@@ -1,7 +1,7 @@
-﻿namespace MMORPGServer.Network.Packets
+﻿namespace MMORPGServer.Network.Handlers
 {
-    public sealed class LoginGame(
-        ILogger<LoginGame> logger) : IPacketProcessor
+    public sealed class LoginGameHandler(
+        ILogger<LoginGameHandler> logger) : IPacketProcessor
     {
         [PacketHandler(GamePackets.CMsgLoginGame)]
         public async ValueTask HandleAsync(IGameClient client, Packet packet)

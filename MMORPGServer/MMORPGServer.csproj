@@ -16,6 +16,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+		<PackageReference Include="protobuf-net" Version="3.2.52" />
 		<PackageReference Include="System.Threading.Channels" Version="9.0.0" />
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 		<PackageReference Include="System.Threading.RateLimiting" Version="9.0.0" />

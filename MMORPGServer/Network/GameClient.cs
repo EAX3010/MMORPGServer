@@ -1,15 +1,13 @@
-﻿using MMORPGServer.Game.Entities.Roles;
-
-namespace MMORPGServer.Network
+﻿namespace MMORPGServer.Network
 {
     public sealed class GameClient : IGameClient
     {
         #region Constants
         private const int MAX_PACKET_SIZE = 1024;
         private const int BUFFER_SIZE = 8192;
-        private const int PACKET_HEADER_SIZE = 2;
+        private const int PACKET_LENGTH_SIZE = 2;
         private const int PACKET_SIGNATURE_SIZE = 8;
-        private const int MIN_PACKET_SIZE = PACKET_HEADER_SIZE + PACKET_SIGNATURE_SIZE;
+        private const int MIN_PACKET_SIZE = PACKET_LENGTH_SIZE + PACKET_SIGNATURE_SIZE;
 
         // Rate limiting
         private const int MAX_PACKETS_PER_SECOND = 100;
@@ -532,7 +530,7 @@ namespace MMORPGServer.Network
         private bool TryProcessSimplePacket(ReadOnlySpan<byte> buffer, out int consumedLength, Action onPacketProcessed)
         {
             consumedLength = 0;
-            if (buffer.Length < PACKET_HEADER_SIZE)
+            if (buffer.Length < PACKET_LENGTH_SIZE)
                 return false;
 
             var packetLength = BitConverter.ToUInt16(buffer);
@@ -556,9 +554,9 @@ namespace MMORPGServer.Network
             consumedLength = 0;
 
             // Handle partial length decryption
-            if (_decryptedBufferOffset < PACKET_HEADER_SIZE)
+            if (_decryptedBufferOffset < PACKET_LENGTH_SIZE)
             {
-                var lengthBytesNeeded = PACKET_HEADER_SIZE - _decryptedBufferOffset;
+                var lengthBytesNeeded = PACKET_LENGTH_SIZE - _decryptedBufferOffset;
                 if (buffer.Length < lengthBytesNeeded)
                     return false;
 

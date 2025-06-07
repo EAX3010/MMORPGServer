@@ -1,11 +1,11 @@
-﻿namespace MMORPGServer.Network.Packets
+﻿namespace MMORPGServer.Network.Handlers
 {
     public record LoginGamaEnglishData(uint Uid, uint State);
-    public sealed class LoginGamaEnglish : AbstractValidator<LoginGamaEnglishData>, IPacketProcessor
+    public sealed class LoginGamaEnglishHandler : AbstractValidator<LoginGamaEnglishData>, IPacketProcessor
     {
-        private readonly ILogger<LoginGamaEnglish> _logger;
+        private readonly ILogger<LoginGamaEnglishHandler> _logger;
 
-        public LoginGamaEnglish(ILogger<LoginGamaEnglish> logger)
+        public LoginGamaEnglishHandler(ILogger<LoginGamaEnglishHandler> logger)
         {
             _logger = logger;
 
@@ -23,7 +23,7 @@
 
         }
         [PacketHandler(GamePackets.LoginGamaEnglish)]
-        public async ValueTask LoginGamaEnglishHandler(IGameClient client, Packet packet)
+        public async ValueTask HandleAsync(IGameClient client, Packet packet)
         {
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(packet);
@@ -31,7 +31,7 @@
             TransferCipher.Key = Encoding.ASCII.GetBytes("xBV1fH70fulyJyMapXdxWSnggELPwrPrRymW6jK93Wv9i79xUaSGR5Luzm9UCMhj");
             TransferCipher.Salt = Encoding.ASCII.GetBytes("z63b8u4NsNrHNFNPNeVB57tmt6gZQFfhz7hxr99HMqcpVQ3xSOYLJhX2b4PRzTXX");
 
-            var transferCipher = new TransferCipher("127.0.0.99");
+            TransferCipher transferCipher = new("127.0.0.99");
 
             uint[] decrypted = new uint[2];
 
@@ -39,16 +39,15 @@
 
             LoginGamaEnglishData data = new(decrypted[0], decrypted[1]);
 
-            var validationResult = await this.ValidateAsync(data);
+            var validationResult = await ValidateAsync(data);
             if (!validationResult.IsValid)
             {
-                var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                string errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
                 _logger.LogWarning("Packet validation failed: {Errors}", errors);
                 return;
             }
-
-
             _logger.LogInformation("LoginGamaEnglish decrypted UID: {uid}, State: {state}", data.Uid, data.State);
+            await client.SendPacketAsync(TalkPacketHandler.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
         }
     }
     public partial class PacketFactory
