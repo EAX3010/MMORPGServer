@@ -1,4 +1,4 @@
-﻿using MMORPGServer.Attributes;
+﻿using MMORPGServer.Core.Attributes;
 using System.Reflection;
 
 public sealed class PacketHandler : IPacketHandler
@@ -131,7 +131,7 @@ public sealed class PacketHandler : IPacketHandler
             if (preferScoped)
             {
                 // Use scoped approach for IPacketHandlerGroup types and DI-registered types
-                return CreateScopedHandlerInfo(type, method, parameters);
+                return CreateSingletonHandlerInfo(type, method, parameters);
             }
             else
             {

@@ -1,4 +1,4 @@
-namespace MMORPGServer.Attributes
+namespace MMORPGServer.Core.Attributes
 {
     /// <summary>
     /// Marks a method as a handler for a specific packet type.

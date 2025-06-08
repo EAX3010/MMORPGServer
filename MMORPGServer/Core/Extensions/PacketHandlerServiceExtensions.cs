@@ -32,8 +32,6 @@ namespace MMORPGServer.Core.Extensions
         /// </summary>
         public static IServiceCollection AddPacketHandlers(this IServiceCollection services, ServiceLifetime lifetime)
         {
-            services.AddSingleton<IPacketHandler, PacketHandler>();
-
             var handlerTypes = Assembly.GetExecutingAssembly()
                 .GetTypes()
                 .Where(t => t.IsClass &&
@@ -44,6 +42,10 @@ namespace MMORPGServer.Core.Extensions
             {
                 services.Add(new ServiceDescriptor(handlerType, handlerType, lifetime));
             }
+
+            services.AddSingleton<IPacketHandler, PacketHandler>();
+
+
 
             return services;
         }

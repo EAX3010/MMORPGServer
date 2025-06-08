@@ -33,28 +33,28 @@ namespace MMORPGServer
                 var builder = Host.CreateApplicationBuilder(args);
 
                 // Use Serilog as the logging provider
-                builder.Services.AddSerilog();
+                _ = builder.Services.AddSerilog();
 
                 // Configure Network services
-                builder.Services.AddSingleton<IGameServer, GameServer>();
-                builder.Services.AddSingleton<INetworkManager, NetworkManager>();
+                _ = builder.Services.AddSingleton<IGameServer, GameServer>();
+                _ = builder.Services.AddSingleton<INetworkManager, NetworkManager>();
 
                 // Configure Security services
-                builder.Services.AddTransient<DiffieHellmanKeyExchange>();
-                builder.Services.AddTransient<TQCast5Cryptographer>();
+                _ = builder.Services.AddTransient<DiffieHellmanKeyExchange>();
+                _ = builder.Services.AddTransient<TQCast5Cryptographer>();
 
 
                 // Configure Business services
-                builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
-                builder.Services.AddSingleton<GameWorld>();
+                _ = builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
+                _ = builder.Services.AddSingleton<GameWorld>();
 
                 // Configure Background services
-                builder.Services.AddHostedService<GameServerHostedService>();
-                builder.Services.AddHostedService<GameLoopService>();
+                _ = builder.Services.AddHostedService<GameServerHostedService>();
+                _ = builder.Services.AddHostedService<GameLoopService>();
 
-                builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
+                _ = builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
 
-                var host = builder.Build();
+                IHost host = builder.Build();
                 Log.Information("MMORPG Server starting up...");
 
                 await host.RunAsync();

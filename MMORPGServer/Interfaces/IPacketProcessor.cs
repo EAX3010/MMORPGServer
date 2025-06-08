@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MMORPGServer.Interfaces
+﻿namespace MMORPGServer.Interfaces
 {
-    internal interface IPacketProcessor
+    public interface IPacketProcessor
     {
+        ValueTask HandleAsync(IGameClient client, Packet packet);
     }
 }

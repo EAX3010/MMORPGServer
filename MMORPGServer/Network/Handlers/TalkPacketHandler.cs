@@ -7,11 +7,6 @@ namespace MMORPGServer.Network.Handlers
     {
         private readonly ILogger<TalkPacketHandler> _logger;
         private readonly INetworkManager _networkManager;
-
-        // --- Inject any services you need for chat logic ---
-        // For example:
-        // private readonly IChatService _chatService;
-
         public TalkPacketHandler(ILogger<TalkPacketHandler> logger, INetworkManager networkManager)
         {
             _logger = logger;
