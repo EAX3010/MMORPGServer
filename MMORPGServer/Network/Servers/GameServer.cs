@@ -89,11 +89,16 @@
                         cryptographer,
                         _messageWriter,
                         _serviceProvider.GetRequiredService<ILogger<GameClient>>(),
-                        _serviceProvider.GetRequiredService<IPlayerManager>()
+                        _serviceProvider.GetRequiredService<IPlayerManager>(),
+                        _serviceProvider.GetRequiredService<GameWorld>()
                     );
 
                     _networkManager.AddClient(gameClient);
-                    _ = Task.Run(() => gameClient.StartAsync(cancellationToken), cancellationToken);
+                    _ = Task.Run(async () =>
+                    {
+                        await gameClient.SpawnAndAssignPlayerAsync();
+                        await gameClient.StartAsync(cancellationToken);
+                    }, cancellationToken);
 
                     _logger.LogInformation("Player #{ClientId} connected from {ClientEndpoint} (Total: {CurrentConnections}/{MaxConnections})",
                         clientId, clientEndpoint, _networkManager.ConnectionCount, GameConstants.MAX_CLIENTS);
@@ -172,8 +177,6 @@
                 await _networkManager.BroadcastAsync(packetData, excludeClientId);
             }
         }
-
-
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {

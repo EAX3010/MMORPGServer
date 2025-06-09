@@ -4,7 +4,7 @@ namespace MMORPGServer.Game.Entities.Roles
     public class Player : MapObject
     {
         private IGameClient _gameClient { get; set; }
-        public Player(GameClient gameClient, uint objectId)
+        public Player(IGameClient gameClient, uint objectId)
         {
             _gameClient = gameClient;
             ObjectId = objectId;

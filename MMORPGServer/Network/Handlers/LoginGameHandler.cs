@@ -22,6 +22,7 @@
         {
 
             await client.SendPacketAsync(PacketFactory.CreateLoginGamaEnglish());
+
             logger.LogInformation("CMsgLoginGame response sent to client.");
         }
 

@@ -1,8 +1,8 @@
-﻿using MMORPGServer.Game.World.Spatial;
+﻿using MMORPGServer.Game.Maps;
 
 namespace MMORPGServer.Game.Entities.Roles
 {
-    public abstract partial class MapObject : ISpatialObject
+    public abstract partial class MapObject
     {
         public uint IndexID { get; set; }
         public uint ObjectId { get; set; }
@@ -10,7 +10,7 @@ namespace MMORPGServer.Game.Entities.Roles
         public uint MapDynamicId { get; set; }
         public bool IsActive { get; set; }
         public MapObjectType ObjectType { get; set; }
-        public Vector2 Position { get; set; }
+        public Position Position { get; set; }
 
         protected abstract MapObjectType GetObjectType();
     }

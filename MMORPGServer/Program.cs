@@ -1,5 +1,4 @@
-﻿
-
+﻿using MMORPGServer.Game.Maps;
 
 namespace MMORPGServer
 {
@@ -10,7 +9,7 @@ namespace MMORPGServer
         {
             // Configure Serilog first
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
+                .MinimumLevel.Debug()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
@@ -45,16 +44,10 @@ namespace MMORPGServer
                 _ = builder.Services.AddTransient<DiffieHellmanKeyExchange>();
                 _ = builder.Services.AddTransient<TQCast5Cryptographer>();
 
-
                 // Configure Business services
                 _ = builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
-                _ = builder.Services.AddSingleton<GameWorld>(provider =>
-                {
-                    var gameWorld = new GameWorld(playerManager: provider.GetService<IPlayerManager>());
-                    InitializeSpatialMaps(gameWorld);
-
-                    return gameWorld;
-                });
+                _ = builder.Services.AddSingleton<IMapRepository, MapRepository>();
+                _ = builder.Services.AddSingleton<GameWorld>();
 
                 // Configure Background services
                 _ = builder.Services.AddHostedService<GameServerHostedService>();
@@ -64,6 +57,10 @@ namespace MMORPGServer
 
                 IHost host = builder.Build();
                 Log.Information("MMORPG Server starting up...");
+
+                // Initialize maps
+                var gameWorld = host.Services.GetRequiredService<GameWorld>();
+                await InitializeMapsAsync(gameWorld);
 
                 await host.RunAsync();
 
@@ -110,15 +107,34 @@ namespace MMORPGServer
             Console.ResetColor();
             Console.WriteLine();
         }
-        private static void InitializeSpatialMaps(GameWorld gameWorld)
+
+        private static async Task InitializeMapsAsync(GameWorld gameWorld)
         {
+            string applicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            var gameMapPath = Path.Combine(applicationDataPath, @"Database\ini\GameMap.dat");
             Log.Information("Initializing spatial system for maps...");
 
+            if (!File.Exists(gameMapPath))
+            {
+                Log.Error("{0} Not found", gameMapPath);
+                return;
+            }
 
-            // var map = gameWorld.CreateMap((ushort)mapData.Id, mapData.Name, mapData.Width, mapData.Height);
-            //Log.Information("Loaded map {MapId} ({MapName}) with spatial grid", mapData.Id, mapData.Name);
+            using (var reader = new BinaryReader(File.OpenRead(gameMapPath)))
+            {
+                var mapCount = reader.ReadInt32();
+                for (var i = 0; i < mapCount; i++)
+                {
+                    int mapId = reader.ReadInt32();
+                    int fileLength = reader.ReadInt32();
+                    string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength)).Replace(".7z", ".dmap");
+                    int puzzleSize = reader.ReadInt32();
 
-            // Log.Information("Spatial system initialization complete");
+                    await gameWorld.LoadMapAsync((ushort)mapId, fileName);
+                }
+            }
+
+            Log.Information("Map initialization completed");
         }
     }
 }

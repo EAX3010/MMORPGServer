@@ -48,6 +48,13 @@
             }
             _logger.LogInformation("LoginGamaEnglish decrypted UID: {uid}, State: {state}", data.Uid, data.State);
             await client.SendPacketAsync(TalkPacketHandler.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
+            // Optionally: send spawn packet, update state, etc.
+            // Send login packet
+            await SendPacketAsync(PacketFactory.CreateProtoPacket(GamePackets.LoginGamaEnglish, new byte[0]));
+            // Send HeroInfoProto packet
+            var heroInfoBytes = HeroInfoPacketBuilder.BuildHeroInfoPacket(player);
+            var heroInfoPacket = PacketFactory.CreateProtoPacket(GamePackets.CMsgUserInfo, heroInfoBytes);
+            await SendPacketAsync(heroInfoPacket);
         }
     }
     public partial class PacketFactory

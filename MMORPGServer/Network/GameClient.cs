@@ -1,5 +1,7 @@
 ﻿namespace MMORPGServer.Network
 {
+    using MMORPGServer.Core.Enums;
+
     public sealed class GameClient : IGameClient
     {
         #region Constants
@@ -74,6 +76,8 @@
         private readonly Queue<DateTime> _recentPacketTimes = new();
         private const int FLOOD_DETECTION_WINDOW_MS = 100;
         private const int FLOOD_DETECTION_THRESHOLD = 10;
+
+        private readonly GameWorld _gameWorld;
         #endregion
 
         #region Constructor
@@ -84,7 +88,8 @@
             TQCast5Cryptographer cryptographer,
             ChannelWriter<ClientMessage> messageWriter,
             ILogger<GameClient> logger,
-            IPlayerManager playerManager)
+            IPlayerManager playerManager,
+            GameWorld gameWorld)
         {
             ClientId = clientId;
             _tcpClient = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
@@ -93,6 +98,7 @@
             _cryptographer = cryptographer ?? throw new ArgumentNullException(nameof(cryptographer));
             _messageWriter = messageWriter ?? throw new ArgumentNullException(nameof(messageWriter));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _gameWorld = gameWorld;
 
             IPAddress = tcpClient.Client.RemoteEndPoint?.ToString();
             ConnectedAt = DateTime.UtcNow;
@@ -126,8 +132,7 @@
 
             ConfigureSocket();
             _connectionTimer.Start();
-            Player = new Player(this, ClientId);
-            playerManager.AddPlayerAsync(Player).GetAwaiter().GetResult();
+            // Player will be spawned after connection
         }
 
         private void ConfigureSocket()
@@ -267,6 +272,20 @@
             _cancellationTokenSource?.Dispose();
             _stateLock?.Dispose();
             _tcpClient?.Dispose();
+        }
+
+        public async Task SpawnAndAssignPlayerAsync()
+        {
+            var player = await _gameWorld.SpawnPlayerAsync(this, 1002);
+            if (player != null)
+            {
+                this.Player = player;
+
+            }
+            else
+            {
+                await DisconnectAsync("Failed to spawn player");
+            }
         }
         #endregion
 

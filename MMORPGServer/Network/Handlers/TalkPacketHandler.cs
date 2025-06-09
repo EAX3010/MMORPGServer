@@ -51,24 +51,6 @@ namespace MMORPGServer.Network.Handlers
         /// <summary>
         /// A helper method to create the response packet using the modern PacketBuilder.
         /// </summary>
-        public static ReadOnlyMemory<byte> CreateTalkPacket(string from, string to, string suffix, string message, ChatType chatType, uint mesh)
-        {
-            var talkPacket = new TalkPacket
-            {
-                ChatType = chatType,
-                Mesh = mesh,
-                Strings = new List<string> { from, to, "", message, "", suffix, "" }
-            };
 
-            // Serialize our object to a byte array using Protobuf
-            using var memoryStream = new MemoryStream();
-            Serializer.Serialize(memoryStream, talkPacket);
-            var payload = memoryStream.ToArray();
-
-            // Use the new PacketBuilder to construct the final packet for sending
-            return PacketBuilder.Create(GamePackets.CMsgTalk)
-                .WriteBytes(payload)
-                .BuildAndFinalize();
-        }
     }
 }

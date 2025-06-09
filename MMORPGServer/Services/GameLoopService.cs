@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Services
+﻿using MMORPGServer.Game.Maps;
+
+namespace MMORPGServer.Services
 {
     public class GameLoopService : BackgroundService
     {
@@ -123,7 +125,7 @@
 
     public class PlayerMoveAction : GameAction
     {
-        public Vector2 TargetPosition { get; set; }
+        public Position TargetPosition { get; set; }
     }
 
     public class PlayerAttackAction : GameAction
@@ -135,6 +137,6 @@
     {
         public ushort SkillId { get; set; }
         public uint? TargetId { get; set; }
-        public Vector2? TargetPosition { get; set; }
+        public Position? TargetPosition { get; set; }
     }
 }

@@ -1,92 +1,117 @@
+using MMORPGServer.Game.Maps;
+
 namespace MMORPGServer.Game.World
 {
     public class GameWorld
     {
-        private ConcurrentDictionary<uint, Player> _entities => PlayerManager.GetPlayers();
-        private readonly ConcurrentDictionary<ushort, Map> _maps;
-        private uint _nextIndexId = 1;
+        private readonly ILogger<GameWorld> _logger;
+        private readonly IMapRepository _mapRepository;
+        private readonly IPlayerManager _playerManager;
+        private readonly ConcurrentDictionary<uint, Map> _activeMaps;
+        private uint _nextEntityId = 1;
 
-        public IPlayerManager PlayerManager { get; }
-
-        public GameWorld(IPlayerManager playerManager)
+        public GameWorld(
+            ILogger<GameWorld> logger,
+            IMapRepository mapRepository,
+            IPlayerManager playerManager)
         {
-            _maps = new ConcurrentDictionary<ushort, Map>();
-            PlayerManager = playerManager;
+            _logger = logger;
+            _mapRepository = mapRepository;
+            _playerManager = playerManager;
+            _activeMaps = new ConcurrentDictionary<uint, Map>();
         }
 
-        public Map CreateMap(ushort mapId, string name, int width, int height)
+        public async Task<bool> LoadMapAsync(ushort mapId, string fileName)
         {
-            var map = new Map(mapId, name, width, height);
-            _maps.TryAdd(mapId, map);
-            return map;
+            if (_activeMaps.ContainsKey(mapId))
+                return true;
+
+            var map = await _mapRepository.LoadMapDataAsync(mapId, fileName);
+            if (map == null)
+                return false;
+
+            return _activeMaps.TryAdd(mapId, map);
         }
 
-        public Map? GetMap(ushort mapId)
+        public async Task<bool> UnloadMapAsync(ushort mapId)
         {
-            _maps.TryGetValue(mapId, out var map);
-            return map;
-        }
+            if (!_activeMaps.TryRemove(mapId, out var map))
+                return false;
 
-        public T CreateEntity<T>(string name, ushort mapId, Vector2 position) where T : MapObject, new()
-        {
-            var entity = new T
+            // Remove all entities from the map
+            foreach (var entity in map.GetEntitiesInRange(Position.Zero, float.MaxValue))
             {
-                IndexID = _nextIndexId++,
+                if (entity is Player player)
+                {
+                    await _playerManager.RemovePlayerAsync(player.ObjectId);
+                }
+            }
+
+            map.Dispose();
+            return true;
+        }
+
+        public async Task<Player?> SpawnPlayerAsync(IGameClient client, ushort mapId)
+        {
+            if (!_activeMaps.TryGetValue(mapId, out var map))
+            {
+                _logger.LogError("Map {MapId} is not loaded", mapId);
+                return null;
+            }
+
+            var spawnPoint = await _mapRepository.GetValidSpawnPointAsync(map);
+            if (!spawnPoint.HasValue)
+            {
+                _logger.LogError("Could not find valid spawn point on map {MapId}", mapId);
+                return null;
+            }
+
+            var player = new Player(client, _nextEntityId++)
+            {
+                MapId = mapId,
+                Position = spawnPoint.Value
             };
 
-            if (_maps.TryGetValue(mapId, out var map))
+            if (!map.AddEntity(player))
             {
-                map.AddEntity(entity);
-                entity.Position = position;
-                _entities.TryAdd(entity.ObjectId, (Player)(entity as MapObject));
+                _logger.LogError("Failed to add player to map {MapId}", mapId);
+                return null;
             }
 
-            return entity;
+            await _playerManager.AddPlayerAsync(player);
+            return player;
         }
 
-        public bool RemoveEntity(uint id)
+        public async Task<bool> MovePlayerAsync(uint playerId, Position newPosition)
         {
-            if (_entities.TryRemove(id, out var entity))
-            {
-                // Remove from map if it exists
-                foreach (var map in _maps.Values)
-                {
-                    if (map.RemoveEntity(id))
-                    {
-                        break;
-                    }
-                }
-                return true;
-            }
-            return false;
+            var player = await _playerManager.GetPlayerAsync(playerId);
+            if (player == null)
+                return false;
+
+            if (!_activeMaps.TryGetValue(player.MapId, out var map))
+                return false;
+
+            return map.TryMoveEntity(player, newPosition);
         }
 
-        public T? GetEntity<T>(uint id) where T : MapObject
+        public async Task<IEnumerable<MapObject>> GetEntitiesInRangeAsync(uint playerId, float range)
         {
-            if (_entities.TryGetValue(id, out var entity) && entity is T typedEntity)
-            {
-                return typedEntity;
-            }
-            return null;
-        }
+            var player = await _playerManager.GetPlayerAsync(playerId);
+            if (player == null)
+                return Enumerable.Empty<MapObject>();
 
-        public IEnumerable<T> GetEntitiesOfType<T>() where T : MapObject
-        {
-            return _entities.Values.OfType<T>();
+            if (!_activeMaps.TryGetValue(player.MapId, out var map))
+                return Enumerable.Empty<MapObject>();
+
+            return map.GetEntitiesInRange(player.Position, range);
         }
 
         public void Update(float deltaTime)
         {
-
-        }
-
-        public IEnumerable<MapObject> GetEntitiesInRange(Vector2 position, float range, ushort mapId)
-        {
-            if (_maps.TryGetValue(mapId, out var map))
+            foreach (var map in _activeMaps.Values)
             {
-                return map.GetEntitiesInRange(position, range);
+                map.Update(deltaTime);
             }
-            return Enumerable.Empty<MapObject>();
         }
     }
 }
