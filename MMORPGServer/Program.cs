@@ -1,9 +1,11 @@
 ﻿
 
+
 namespace MMORPGServer
 {
     public class Program
     {
+
         public static async Task Main(string[] args)
         {
             // Configure Serilog first
@@ -46,7 +48,13 @@ namespace MMORPGServer
 
                 // Configure Business services
                 _ = builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
-                _ = builder.Services.AddSingleton<GameWorld>();
+                _ = builder.Services.AddSingleton<GameWorld>(provider =>
+                {
+                    var gameWorld = new GameWorld(playerManager: provider.GetService<IPlayerManager>());
+                    InitializeSpatialMaps(gameWorld);
+
+                    return gameWorld;
+                });
 
                 // Configure Background services
                 _ = builder.Services.AddHostedService<GameServerHostedService>();
@@ -101,6 +109,16 @@ namespace MMORPGServer
             Console.WriteLine("\n" + new string('═', 80));
             Console.ResetColor();
             Console.WriteLine();
+        }
+        private static void InitializeSpatialMaps(GameWorld gameWorld)
+        {
+            Log.Information("Initializing spatial system for maps...");
+
+
+            // var map = gameWorld.CreateMap((ushort)mapData.Id, mapData.Name, mapData.Width, mapData.Height);
+            //Log.Information("Loaded map {MapId} ({MapName}) with spatial grid", mapData.Id, mapData.Name);
+
+            // Log.Information("Spatial system initialization complete");
         }
     }
 }

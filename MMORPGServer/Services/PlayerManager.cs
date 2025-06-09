@@ -2,7 +2,7 @@
 {
     public sealed class PlayerManager : IPlayerManager
     {
-        private readonly ConcurrentDictionary<uint, Player> _players = new();
+        public ConcurrentDictionary<uint, Player> _players = [];
 
         public ValueTask<Player?> GetPlayerAsync(uint playerId)
         {
@@ -12,7 +12,7 @@
 
         public ValueTask AddPlayerAsync(Player player)
         {
-            _players.TryAdd(player.Id, player);
+            _players.TryAdd(player.ObjectId, player);
             return ValueTask.CompletedTask;
         }
 
@@ -25,6 +25,11 @@
         public ValueTask<int> GetOnlinePlayerCountAsync()
         {
             return ValueTask.FromResult(_players.Count);
+        }
+
+        public ConcurrentDictionary<uint, Player> GetPlayers()
+        {
+            return _players;
         }
     }
 }

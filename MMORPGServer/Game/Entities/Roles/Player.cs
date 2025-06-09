@@ -1,12 +1,13 @@
+
 namespace MMORPGServer.Game.Entities.Roles
 {
     public class Player : MapObject
     {
         private IGameClient _gameClient { get; set; }
-        public Player(GameClient gameClient, uint id)
-            : base(id)
+        public Player(GameClient gameClient, uint objectId)
         {
             _gameClient = gameClient;
+            ObjectId = objectId;
         }
         public int Name { get; set; } = default;
         // Basic stats
@@ -23,6 +24,10 @@ namespace MMORPGServer.Game.Entities.Roles
         public int Vitality { get; set; } = 10;
         public int Spirit { get; set; } = 10;
 
+        protected override MapObjectType GetObjectType()
+        {
+            return MapObjectType.Player;
+        }
     }
 
 }

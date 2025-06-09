@@ -2,14 +2,16 @@ namespace MMORPGServer.Game.World
 {
     public class GameWorld
     {
-        private readonly ConcurrentDictionary<uint, MapObject> _entities;
+        private ConcurrentDictionary<uint, Player> _entities => PlayerManager.GetPlayers();
         private readonly ConcurrentDictionary<ushort, Map> _maps;
-        private uint _nextEntityId = 1;
+        private uint _nextIndexId = 1;
 
-        public GameWorld()
+        public IPlayerManager PlayerManager { get; }
+
+        public GameWorld(IPlayerManager playerManager)
         {
-            _entities = new ConcurrentDictionary<uint, MapObject>();
             _maps = new ConcurrentDictionary<ushort, Map>();
+            PlayerManager = playerManager;
         }
 
         public Map CreateMap(ushort mapId, string name, int width, int height)
@@ -29,14 +31,14 @@ namespace MMORPGServer.Game.World
         {
             var entity = new T
             {
-                Id = _nextEntityId++,
+                IndexID = _nextIndexId++,
             };
 
             if (_maps.TryGetValue(mapId, out var map))
             {
                 map.AddEntity(entity);
                 entity.Position = position;
-                _entities.TryAdd(entity.Id, entity);
+                _entities.TryAdd(entity.ObjectId, (Player)(entity as MapObject));
             }
 
             return entity;
@@ -75,10 +77,7 @@ namespace MMORPGServer.Game.World
 
         public void Update(float deltaTime)
         {
-            foreach (var map in _maps.Values)
-            {
-                map.Update(deltaTime);
-            }
+
         }
 
         public IEnumerable<MapObject> GetEntitiesInRange(Vector2 position, float range, ushort mapId)
