@@ -1,12 +1,10 @@
 ﻿using MMORPGServer.Game.Maps;
-using MMORPGServer.Network.Handlers;
-using Serilog;
-using Serilog.Events;
 
 namespace MMORPGServer
 {
     public class Program
     {
+
         public static async Task Main(string[] args)
         {
             // Configure Serilog first
@@ -46,56 +44,68 @@ namespace MMORPGServer
                 _ = builder.Services.AddTransient<DiffieHellmanKeyExchange>();
                 _ = builder.Services.AddTransient<TQCast5Cryptographer>();
 
-                // Configure Game services
-                _ = builder.Services.AddSingleton<GameWorld>();
+                // Configure Business services
                 _ = builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
                 _ = builder.Services.AddSingleton<IMapRepository, MapRepository>();
+                _ = builder.Services.AddSingleton<GameWorld>();
 
-                // Configure Packet Handlers
-                _ = builder.Services.AddSingleton<IPacketHandler, PacketHandler>();
-                _ = builder.Services.AddScoped<ActionHandler>();
-                _ = builder.Services.AddScoped<TalkHandler>();
-
-                // Configure Hosted Services
+                // Configure Background services
                 _ = builder.Services.AddHostedService<GameServerHostedService>();
+                _ = builder.Services.AddHostedService<GameLoopService>();
 
-                var host = builder.Build();
+                _ = builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
+
+                IHost host = builder.Build();
+                Log.Information("MMORPG Server starting up...");
+
+                // Initialize maps
+                var gameWorld = host.Services.GetRequiredService<GameWorld>();
+                await InitializeMapsAsync(gameWorld);
+
                 await host.RunAsync();
+
             }
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Application terminated unexpectedly");
+                throw;
             }
             finally
             {
-                Log.CloseAndFlush();
+                Log.Information("MMORPG Server shutting down");
+                await Log.CloseAndFlushAsync();
             }
         }
 
         private static void DisplayStartupBanner()
         {
-            Log.Information(@"
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Cyan;
+
+            Console.WriteLine(@"
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                                                                              ║
-║                         MMORPG Game Server v1.0.0                           ║
-║                                                                              ║
+║                              MMORPG SERVER v1.0                              ║
+║                          High-Performance Game Server                        ║
 ╚══════════════════════════════════════════════════════════════════════════════╝");
 
-            Log.Information(".NET {Version} | Built with C# 13", Environment.Version);
-            Log.Information("Platform: {Platform}", Environment.OSVersion);
-            Log.Information("Memory: {MemoryMB} MB", GC.GetTotalMemory(false) / 1024 / 1024);
-            Log.Information("Processors: {ProcessorCount}", Environment.ProcessorCount);
-            Log.Information("Started: {StartTime}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($".NET {Environment.Version} | Built with C# 13");
+            Console.WriteLine($"Platform: {Environment.OSVersion}");
+            Console.WriteLine($"Memory: {GC.GetTotalMemory(false) / 1024 / 1024} MB");
+            Console.WriteLine($"Processors: {Environment.ProcessorCount}");
+            Console.WriteLine($"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
 
-            Log.Information("\nGame Features:");
-            Log.Information("   • Secure Diffie-Hellman Key Exchange");
-            Log.Information("   • CAST5 Encryption");
-            Log.Information("   • Rate Limiting & Flood Protection");
-            Log.Information("   • High-Performance Networking");
-            Log.Information("   • Real-time Game Loop");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("\nGame Features:");
+            Console.WriteLine("   • Secure Diffie-Hellman Key Exchange");
+            Console.WriteLine("   • CAST5 Encryption");
+            Console.WriteLine("   • Rate Limiting & Flood Protection");
+            Console.WriteLine("   • High-Performance Networking");
+            Console.WriteLine("   • Real-time Game Loop");
 
-            Log.Information("\n{Separator}", new string('═', 80));
-            Log.Information("");
+            Console.WriteLine("\n" + new string('═', 80));
+            Console.ResetColor();
+            Console.WriteLine();
         }
 
         private static async Task InitializeMapsAsync(GameWorld gameWorld)
