@@ -1,44 +1,67 @@
 ﻿using MMORPGServer.Network.Packets;
-using ProtoBuf;
 
 namespace MMORPGServer.Network.Handlers
 {
-    public class ActionHandler : IPacketProcessor
+    /// <summary>
+    /// Handles action-related packets in the game protocol.
+    /// </summary>
+    public sealed class ActionHandler : IPacketProcessor
     {
+        /// <summary>
+        /// Processes action packets from clients.
+        /// </summary>
         [PacketHandler(GamePackets.CMsgAction)]
-        public ValueTask HandleAsync(IGameClient client, Packet packet)
+        public async ValueTask HandleAsync(IGameClient client, Packet packet)
         {
-            using (var ms = new System.IO.MemoryStream(packet.Data.Slice(4, packet.Data.Length - 12).ToArray()))
+            if (client.Player == null)
             {
-                var Action = ProtoBuf.Serializer.Deserialize<ActionProto>(ms);
-                switch (Action.Type)
-                {
-                    case 74://SetLoctionOnTheMap for spawn
-                        {
-                            var ResponsePacket = new ActionProto
-                            {
-                                dwParam = 1002,
-                                wParam1 = (ushort)client.Player.Position.X,
-                                wParam2 = (ushort)client.Player.Position.Y,
-                                Type = Action.Type,
-                                UID = Action.UID
-
-                            };
-
-                            // Serialize our object to a byte array using Protobuf
-                            using var memoryStream = new MemoryStream();
-                            Serializer.Serialize(memoryStream, ResponsePacket);
-                            var payload = memoryStream.ToArray();
-
-                            // Use the new PacketBuilder to construct the final packet for sending
-                            client.SendPacketAsync(PacketFactory.CreateProtoPacket(GamePackets.CMsgAction, payload));
-                            break;
-
-                        }
-                }
+                return;
             }
-            return ValueTask.CompletedTask;
+
+            try
+            {
+                var actionProto = packet.DeserializeProto<ActionProto>();
+                await ProcessActionAsync(client, actionProto);
+            }
+            catch (Exception ex)
+            {
+                // Log the error and handle it appropriately
+                Console.WriteLine($"Error processing action packet: {ex.Message}");
+            }
         }
 
+        /// <summary>
+        /// Processes different types of actions.
+        /// </summary>
+        private async ValueTask ProcessActionAsync(IGameClient client, ActionProto action)
+        {
+            switch (action.Type)
+            {
+                case ActionType.SetLocation:
+                    await HandleSetLocationAsync(client, action);
+                    break;
+
+                default:
+                    // Log unknown action type
+                    Console.WriteLine($"Unknown action type: {action.Type}");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Handles the set location action.
+        /// </summary>
+        private async ValueTask HandleSetLocationAsync(IGameClient client, ActionProto action)
+        {
+            var responsePacket = new ActionProto
+            {
+                UID = client.Player.ObjectId,
+                Type = ActionType.SetLocation,
+                dwParam = client.Player.MapId,
+                wParam1 = (ushort)client.Player.Position.X,
+                wParam2 = (ushort)client.Player.Position.Y,
+            };
+            await client.SendPacketAsync(PacketFactory.CreateActionPacket(responsePacket));
+        }
     }
 }

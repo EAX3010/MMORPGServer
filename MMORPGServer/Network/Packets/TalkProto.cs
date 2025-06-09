@@ -14,23 +14,23 @@ namespace MMORPGServer.Network.Packets
         [ProtoMember(4, IsRequired = true)]
         public uint MessageUID2;
         [ProtoMember(5, IsRequired = true)]
-        public uint Unknowen1;
+        public uint Unknown1;
         [ProtoMember(6, IsRequired = true)]
         public uint Mesh;
         [ProtoMember(7, IsRequired = true)]
-        public uint Unknowen2;
+        public uint Unknown2;
         [ProtoMember(8, IsRequired = true)]
-        public uint Unknowen3;
+        public uint Unknown3;
         [ProtoMember(9, IsRequired = true)]
         public uint MsgTab;
         [ProtoMember(10, IsRequired = true)]
-        public uint Unknowen5;
+        public uint Unknown5;
         [ProtoMember(11, IsRequired = true)]
-        public uint Unknowen6;
+        public uint Unknown6;
         [ProtoMember(12, IsRequired = true)]
         public uint ToServer;
         [ProtoMember(13, IsRequired = true)]
-        public uint Unknowen13;
+        public uint Unknown13;
         [ProtoMember(14, IsRequired = true)]
         public List<string>? Strings;
     }

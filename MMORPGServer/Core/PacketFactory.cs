@@ -99,5 +99,12 @@ namespace MMORPGServer.Core
             var payload = ms.ToArray();
             return CreateProtoPacket(GamePackets.CMsgUserInfo, payload);
         }
+        public static ReadOnlyMemory<byte> CreateActionPacket(ActionProto proto)
+        {
+            using var memoryStream = new MemoryStream();
+            Serializer.Serialize(memoryStream, proto);
+            var payload = memoryStream.ToArray();
+            return CreateProtoPacket(GamePackets.CMsgAction, payload);
+        }
     }
 }

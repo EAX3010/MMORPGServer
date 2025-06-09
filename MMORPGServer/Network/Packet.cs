@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Network
+﻿using ProtoBuf;
+
+namespace MMORPGServer.Network
 {
     /// <summary>
     /// Represents a network packet with unified reading and writing operations.
@@ -473,6 +475,69 @@
         public void Dispose()
         {
             _memoryOwner?.Dispose();
+        }
+
+        /// <summary>
+        /// Deserializes a protobuf message from the packet's data.
+        /// </summary>
+        /// <typeparam name="T">The type of protobuf message to deserialize</typeparam>
+        /// <returns>The deserialized protobuf message</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the data cannot be read</exception>
+        public T DeserializeProto<T>()
+        {
+            int originalPosition = Position;
+            try
+            {
+                // Calculate the actual data to read
+                int dataLength = Length;
+                dataLength = dataLength - 4;
+                if (dataLength <= 0)
+                    throw new InvalidOperationException("No data available to deserialize");
+
+                // Move to the start position
+                Seek(4);
+
+                // Read the data
+                byte[] data = ReadBytes(dataLength);
+
+                // Deserialize the protobuf message
+                using var ms = new MemoryStream(data);
+                return Serializer.Deserialize<T>(ms);
+            }
+            finally
+            {
+                // Restore the original position
+                Position = originalPosition;
+            }
+        }
+
+        /// <summary>
+        /// Serializes a protobuf message into the packet.
+        /// </summary>
+        /// <typeparam name="T">The type of protobuf message to serialize</typeparam>
+        /// <param name="message">The protobuf message to serialize</param>
+        /// <exception cref="InvalidOperationException">Thrown if the data cannot be written</exception>
+        public void SerializeProto<T>(T message)
+        {
+            int originalPosition = Position;
+            try
+            {
+                // Move to the start position
+                Seek(4);
+
+                // Serialize the protobuf message
+                using var ms = new MemoryStream();
+                Serializer.Serialize(ms, message);
+                byte[] data = ms.ToArray();
+
+                // Write the data
+                WriteBytes(data);
+            }
+            finally
+            {
+                // Restore the original position
+                Position = originalPosition;
+            }
         }
     }
 }

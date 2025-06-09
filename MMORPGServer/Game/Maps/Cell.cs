@@ -1,16 +1,21 @@
 ﻿namespace MMORPGServer.Game.Maps
 {
+    /// <summary>
+    /// Represents a cell in the game map with its properties and flags.
+    /// This struct is immutable and thread-safe.
+    /// </summary>
     [Serializable, StructLayout(LayoutKind.Sequential, Pack = 1)]
-    public class Cell
+    public readonly struct Cell : IEquatable<Cell>
     {
-        public CellType Flags;
+        public readonly CellType Flags;
 
         /// <summary>
         ///     Holds altitude for valid tiles. Jump height difference limit is 200.
         ///     If the tile is flagged as a portal, this will be the portal's destination ID.
         /// </summary>
-        public ushort Argument;
-        public ushort CellFlag;
+        public readonly ushort Argument;
+        public readonly ushort CellFlag;
+
         public Cell(CellType baseType, ushort altitude, ushort cellFlag)
         {
             Flags = baseType;
@@ -18,39 +23,58 @@
             CellFlag = cellFlag;
         }
 
+        public bool this[CellType flag]
+        {
+            get { return (Flags & flag) == flag; }
+        }
+
+        public Cell AddFlag(CellType flag)
+        {
+            return new Cell(Flags | flag, Argument, CellFlag);
+        }
+
+        public Cell RemoveFlag(CellType flag)
+        {
+            return new Cell(Flags & ~flag, Argument, CellFlag);
+        }
+
+        public Cell SetArgument(ushort value)
+        {
+            return new Cell(Flags, value, CellFlag);
+        }
+
         public static implicit operator bool(Cell cell)
         {
             return cell[CellType.Open];
         }
 
-        public bool this[CellType flag]
+        public static bool operator ==(Cell left, Cell right)
         {
-            get { return (Flags & flag) == flag; }
-            set
-            {
-                if (value)
-                    Flags |= flag;
-                else
-                    Flags &= ~flag;
-            }
+            return left.Flags == right.Flags && 
+                   left.Argument == right.Argument && 
+                   left.CellFlag == right.CellFlag;
         }
 
-        public Cell AddFlag(CellType flag)
+        public static bool operator !=(Cell left, Cell right)
         {
-            this[flag] = true;
-            return this;
+            return !(left == right);
         }
 
-        public Cell RemoveFlag(CellType flag)
+        public override bool Equals(object? obj)
         {
-            this[flag] = false;
-            return this;
+            return obj is Cell cell && Equals(cell);
         }
 
-        public Cell SetArgument(ushort value)
+        public bool Equals(Cell other)
         {
-            Argument = value;
-            return this;
+            return Flags == other.Flags && 
+                   Argument == other.Argument && 
+                   CellFlag == other.CellFlag;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Flags, Argument, CellFlag);
         }
 
         public override string ToString()
