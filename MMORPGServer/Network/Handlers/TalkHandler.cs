@@ -3,14 +3,12 @@ using ProtoBuf;
 
 namespace MMORPGServer.Network.Handlers
 {
-    public class TalkPacketHandler : IPacketProcessor
+    public class TalkHandler : IPacketProcessor
     {
-        private readonly ILogger<TalkPacketHandler> _logger;
-        private readonly INetworkManager _networkManager;
-        public TalkPacketHandler(ILogger<TalkPacketHandler> logger, INetworkManager networkManager)
+        private readonly ILogger<TalkHandler> _logger;
+        public TalkHandler(ILogger<TalkHandler> logger)
         {
             _logger = logger;
-            _networkManager = networkManager;
         }
 
         [PacketHandler(GamePackets.CMsgTalk)]
@@ -18,7 +16,7 @@ namespace MMORPGServer.Network.Handlers
         {
             // 1. Deserialize the packet payload from Protobuf
             // The new Packet class gives us a ReadOnlySpan of the data
-            var talkData = Serializer.Deserialize<TalkPacket>(packet.Data);
+            var talkData = Serializer.Deserialize<TalkProto>(packet.Data);
             if (talkData?.Strings == null || talkData.Strings.Count < 4)
             {
                 _logger.LogWarning("Received invalid TalkPacket from client {ClientId}", client.ClientId);
@@ -47,10 +45,5 @@ namespace MMORPGServer.Network.Handlers
 
             await ValueTask.CompletedTask;
         }
-
-        /// <summary>
-        /// A helper method to create the response packet using the modern PacketBuilder.
-        /// </summary>
-
     }
 }

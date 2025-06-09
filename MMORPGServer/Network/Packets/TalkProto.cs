@@ -3,7 +3,7 @@
 namespace MMORPGServer.Network.Packets
 {
     [ProtoContract]
-    public class TalkPacket
+    public class TalkProto
     {
         [ProtoMember(1, IsRequired = true)]
         public uint TimeStamp;
@@ -33,24 +33,5 @@ namespace MMORPGServer.Network.Packets
         public uint Unknowen13;
         [ProtoMember(14, IsRequired = true)]
         public List<string>? Strings;
-
-    }
-    public static ReadOnlyMemory<byte> CreateTalkPacket(string from, string to, string suffix, string message, ChatType chatType, uint mesh)
-        {
-            var talkPacket = new TalkPacket
-            {
-                ChatType = chatType,
-                Mesh = mesh,
-                Strings = new List<string> { from, to, "", message, "", suffix, "" }
-            };
-            using var memoryStream = new MemoryStream();
-            Serializer.Serialize(memoryStream, talkPacket);
-            var payload = memoryStream.ToArray();
-
-            // Use the new PacketBuilder to construct the final packet for sending
-            return PacketBuilder.Create(GamePackets.CMsgTalk)
-                .WriteBytes(payload)
-                .BuildAndFinalize();
-        }
     }
 }
