@@ -53,15 +53,14 @@ namespace MMORPGServer.Network.Handlers
         /// </summary>
         private async ValueTask HandleSetLocationAsync(IGameClient client, ActionProto action)
         {
-            var responsePacket = new ActionProto
+            await client.SendPacketAsync(PacketFactory.CreateActionPacket(new ActionProto
             {
                 UID = client.Player.ObjectId,
                 Type = ActionType.SetLocation,
                 dwParam = client.Player.MapId,
                 wParam1 = (ushort)client.Player.Position.X,
                 wParam2 = (ushort)client.Player.Position.Y,
-            };
-            await client.SendPacketAsync(PacketFactory.CreateActionPacket(responsePacket));
+            }));
         }
     }
 }
