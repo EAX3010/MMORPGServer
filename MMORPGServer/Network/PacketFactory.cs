@@ -1,11 +1,11 @@
 using MMORPGServer.Network.Packets;
 using ProtoBuf;
 
-namespace MMORPGServer.Core
+namespace MMORPGServer.Network
 {
-    public partial class PacketFactory
+    public class PacketFactory
     {
-        public static ReadOnlyMemory<byte> CreateProtoPacket(GamePackets packetType, byte[] protoData)
+        private static ReadOnlyMemory<byte> CreateProtoPacket(GamePackets packetType, byte[] protoData)
         {
             return PacketBuilder.Create(packetType)
                .WriteBytes(protoData)
