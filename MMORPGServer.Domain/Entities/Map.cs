@@ -1,10 +1,12 @@
+
 namespace MMORPGServer.Domain.Entities
 {
     /// <summary>
     /// Represents a game map with entities, terrain, and spatial management
     /// </summary>
-    public partial class Map
+    public class Map : IDisposable
     {
+        private bool _disposed = false;
         private readonly Cell[,] _cells;
         private readonly Dictionary<int, Position> _portalPositions;
         private readonly ConcurrentDictionary<uint, MapObject> _entities;
@@ -219,5 +221,60 @@ namespace MMORPGServer.Domain.Entities
         {
             return _entities.ContainsKey(entityId);
         }
+
+        /// <summary>
+        /// Releases all resources used by the Map instance.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// The core logic for disposing map resources.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                // 1. Clear managed resources.
+
+                // Clear all event subscribers to prevent memory leaks.
+                EntityAdded = null;
+                EntityRemoved = null;
+                EntityMoved = null;
+
+                // Dispose of any disposable entities on the map.
+                foreach (var entity in _entities.Values)
+                {
+                    if (entity is IDisposable disposableEntity)
+                    {
+                        disposableEntity.Dispose();
+                    }
+                }
+
+                // Clear all collections to release references.
+                _entities.Clear();
+                _portalPositions.Clear();
+                _spatialGrid.Clear();
+            }
+
+            // 2. Free unmanaged resources (if any) - none in this class.
+
+            _disposed = true;
+        }
+
+        // Finalizer (called by the garbage collector)
+        ~Map()
+        {
+            Dispose(false);
+        }
+
     }
 }

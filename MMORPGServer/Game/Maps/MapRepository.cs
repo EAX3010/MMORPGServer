@@ -36,7 +36,7 @@ namespace MMORPGServer.Game.Maps
 
         public async Task<Map> CreateMapAsync(ushort mapId, string name, int width, int height)
         {
-            var map = new Map(mapId, name, width, height);
+            var map = new Map(mapId, width, height);
             if (!_maps.TryAdd(mapId, map))
             {
                 throw new InvalidOperationException($"Map with ID {mapId} already exists");
@@ -60,7 +60,7 @@ namespace MMORPGServer.Game.Maps
                 int width = reader.ReadInt32();
                 int height = reader.ReadInt32();
 
-                var map = new Map(mapId, fileName, width, height);
+                var map = new Map(mapId, width, height);
 
                 // Load cell data
                 for (int y = 0; y < height; y++)
@@ -100,7 +100,7 @@ namespace MMORPGServer.Game.Maps
                     }
                 }
 
-                _logger.LogInformation("Successfully loaded map {MapId} ({MapName})", map.Id, map.FilePath);
+                _logger.LogInformation("Successfully loaded map {MapId} ({MapName})", map.Id);
                 _maps.TryAdd(mapId, map);
                 return map;
             }

@@ -1,6 +1,5 @@
 ﻿namespace MMORPGServer.Network
 {
-    using MMORPGServer.Core.Enums;
 
     public sealed class GameClient : IGameClient
     {

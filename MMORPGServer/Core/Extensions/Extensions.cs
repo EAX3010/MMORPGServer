@@ -1,6 +1,4 @@
-﻿using MMORPGServer.Core.Enums;
-
-namespace MMORPGServer.Core.Extensions
+﻿namespace MMORPGServer.Core.Extensions
 {
     public static class Extensions
     {
@@ -15,12 +13,12 @@ namespace MMORPGServer.Core.Extensions
             return position.X > 0 && position.Y > 0 && position.X < 1000 && position.Y < 1000;
         }
 
-        public static Direction ToDirection(this byte value)
+        public static Orientation ToDirection(this byte value)
         {
-            return (Direction)(value % 8);
+            return (Orientation)(value % 8);
         }
 
-        public static byte ToByte(this Direction direction)
+        public static byte ToByte(this Orientation direction)
         {
             return (byte)direction;
         }
