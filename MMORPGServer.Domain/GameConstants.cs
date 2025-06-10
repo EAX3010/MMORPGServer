@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Core
+﻿namespace MMORPGServer.Domain
 {
     public static class GameConstants
     {

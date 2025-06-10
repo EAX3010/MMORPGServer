@@ -34,6 +34,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\MMORPGServer.Application\MMORPGServer.Application.csproj" />
+	  <ProjectReference Include="..\MMORPGServer.BackgroundServices\MMORPGServer.BackgroundServices.csproj" />
 	  <ProjectReference Include="..\MMORPGServer.Domain\MMORPGServer.Domain.csproj" />
 	  <ProjectReference Include="..\MMORPGServer.Infrastructure\MMORPGServer.Infrastructure.csproj" />
 	</ItemGroup>

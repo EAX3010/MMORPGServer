@@ -1,4 +1,12 @@
-﻿namespace MMORPGServer.Services
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using MMORPGServer.Domain;
+using MMORPGServer.Domain.Repositories;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace MMORPGServer.BackgroundServices
 {
     public sealed class GameServerHostedService : BackgroundService
     {

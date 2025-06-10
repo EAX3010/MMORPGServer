@@ -1,4 +1,5 @@
-﻿using MMORPGServer.Network.Packets;
+﻿using MMORPGServer.Infrastructure.Attributes;
+using MMORPGServer.Network.Packets;
 using ProtoBuf;
 
 namespace MMORPGServer.Network.Handlers

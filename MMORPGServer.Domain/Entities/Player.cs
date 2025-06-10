@@ -9,7 +9,10 @@ namespace MMORPGServer.Domain.Entities
         private IGameClient _gameClient { get; set; }
         public Player(IGameClient gameClient)
         {
+            ObjectId = 1000000;
             _gameClient = gameClient;
+            this.MapId = 1002; // Default map ID
+            this.Position = new Position(300, 300);
         }
         public int Name { get; set; } = default;
         // Basic stats

@@ -1,4 +1,7 @@
-﻿namespace MMORPGServer.Network.Handlers
+﻿using MMORPGServer.Infrastructure.Attributes;
+using MMORPGServer.Infrastructure.Security;
+
+namespace MMORPGServer.Network.Handlers
 {
     public record LoginGamaEnglishData(uint Uid, uint State);
     public sealed class LoginGamaEnglishHandler : AbstractValidator<LoginGamaEnglishData>, IPacketProcessor

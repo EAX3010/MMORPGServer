@@ -1,10 +1,15 @@
-﻿namespace MMORPGServer.Services
+﻿using MMORPGServer.Domain.Entities;
+using MMORPGServer.Domain.Repositories;
+using System.Collections.Concurrent;
+using System.Threading.Tasks;
+
+namespace MMORPGServer.Application.Services
 {
     public sealed class PlayerManager : IPlayerManager
     {
         public ConcurrentDictionary<uint, Player> _players = [];
 
-        public ValueTask<Player?> GetPlayerAsync(uint playerId)
+        public ValueTask<Player> GetPlayerAsync(uint playerId)
         {
             _players.TryGetValue(playerId, out var player);
             return ValueTask.FromResult(player);

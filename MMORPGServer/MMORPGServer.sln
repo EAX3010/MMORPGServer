@@ -11,8 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Application", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Infrastructure", "..\MMORPGServer.Infrastructure\MMORPGServer.Infrastructure.csproj", "{EEB255D8-71DB-4466-BE94-DD385DDF2DC4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.ServerHost", "..\MMORPGServer.ServerHost\MMORPGServer.ServerHost.csproj", "{7AAA0D7C-BBD7-457B-A918-E621AE68C906}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Presentation.Network", "..\MMORPGServer.Presentation.Network\MMORPGServer.Presentation.Network.csproj", "{1696958F-4135-4057-B22F-9C12AE14FA5C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.BackgroundServices", "..\MMORPGServer.BackgroundServices\MMORPGServer.BackgroundServices.csproj", "{2BD1548E-3A73-4FBB-8C69-1EF6B686ABA5}"
@@ -39,10 +37,6 @@ Global
 		{EEB255D8-71DB-4466-BE94-DD385DDF2DC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EEB255D8-71DB-4466-BE94-DD385DDF2DC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EEB255D8-71DB-4466-BE94-DD385DDF2DC4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7AAA0D7C-BBD7-457B-A918-E621AE68C906}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7AAA0D7C-BBD7-457B-A918-E621AE68C906}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7AAA0D7C-BBD7-457B-A918-E621AE68C906}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7AAA0D7C-BBD7-457B-A918-E621AE68C906}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1696958F-4135-4057-B22F-9C12AE14FA5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1696958F-4135-4057-B22F-9C12AE14FA5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1696958F-4135-4057-B22F-9C12AE14FA5C}.Release|Any CPU.ActiveCfg = Release|Any CPU

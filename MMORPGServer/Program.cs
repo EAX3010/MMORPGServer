@@ -1,5 +1,9 @@
-﻿using MMORPGServer.Infrastructure.Networking.Server;
+﻿using MMORPGServer.Application.Game.World;
+using MMORPGServer.Application.Services;
+using MMORPGServer.BackgroundServices;
+using MMORPGServer.Infrastructure.Networking.Server;
 using MMORPGServer.Infrastructure.Persistence.Repositories;
+using MMORPGServer.Infrastructure.Security;
 
 namespace MMORPGServer
 {
@@ -48,7 +52,7 @@ namespace MMORPGServer
                 // Configure Business services
                 _ = builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
                 _ = builder.Services.AddSingleton<IMapRepository, MapRepository>();
-                _ = builder.Services.AddSingleton<GameWorld>();
+                _ = builder.Services.AddSingleton<IGameWorld, GameWorld>();
 
                 // Configure Background services
                 _ = builder.Services.AddHostedService<GameServerHostedService>();
@@ -60,7 +64,7 @@ namespace MMORPGServer
                 Log.Information("MMORPG Server starting up...");
 
                 // Initialize maps
-                var gameWorld = host.Services.GetRequiredService<GameWorld>();
+                var gameWorld = host.Services.GetRequiredService<IGameWorld>();
                 await InitializeMapsAsync(gameWorld);
 
                 await host.RunAsync();
@@ -109,7 +113,7 @@ namespace MMORPGServer
             Console.WriteLine();
         }
 
-        private static async Task InitializeMapsAsync(GameWorld gameWorld)
+        private static async Task InitializeMapsAsync(IGameWorld gameWorld)
         {
             string applicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             var gameMapPath = Path.Combine(applicationDataPath, @"Database\ini\GameMap.dat");

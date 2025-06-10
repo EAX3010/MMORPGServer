@@ -1,6 +1,15 @@
-namespace MMORPGServer.Game.World
+using Microsoft.Extensions.Logging;
+using MMORPGServer.Domain.Entities;
+using MMORPGServer.Domain.Repositories;
+using MMORPGServer.Domain.ValueObjects;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MMORPGServer.Application.Game.World
 {
-    public class GameWorld
+    public class GameWorld : IGameWorld
     {
         private readonly ILogger<GameWorld> _logger;
         private readonly IMapRepository _mapRepository;
@@ -49,7 +58,7 @@ namespace MMORPGServer.Game.World
             return true;
         }
 
-        public async Task<Player?> SpawnPlayerAsync(IGameClient client, ushort mapId)
+        public async Task<Player> SpawnPlayerAsync(IGameClient client, ushort mapId)
         {
             if (!_activeMaps.TryGetValue(mapId, out var map))
             {

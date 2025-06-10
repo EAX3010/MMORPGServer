@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Network.Handlers
+﻿using MMORPGServer.Infrastructure.Attributes;
+
+namespace MMORPGServer.Network.Handlers
 {
     public sealed class LoginGameHandler(
         ILogger<LoginGameHandler> logger) : IPacketProcessor
