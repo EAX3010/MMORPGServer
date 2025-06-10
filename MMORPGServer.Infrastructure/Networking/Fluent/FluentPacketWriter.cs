@@ -1,4 +1,9 @@
-﻿namespace MMORPGServer.Infrastructure.Networking.Protocols.Fluent
+﻿using MMORPGServer.Domain.Enums;
+using MMORPGServer.Domain.Repositories;
+using System;
+using System.Collections.Generic;
+
+namespace MMORPGServer.Infrastructure.Networking.Fluent
 {
     internal class FluentPacketWriter : IPacketWriter
     {

@@ -8,6 +8,7 @@
 		<ProjectReference Include="..\MMORPGServer.Domain\MMORPGServer.Domain.csproj" />
 		<ProjectReference Include="..\MMORPGServer.Application\MMORPGServer.Application.csproj" />
 		<ProjectReference Include="..\MMORPGServer.Infrastructure\MMORPGServer.Infrastructure.csproj" />
+		<ProjectReference Include="..\MMORPGServer.Network\MMORPGServer.Network.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

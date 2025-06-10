@@ -4,6 +4,7 @@ using MMORPGServer.BackgroundServices;
 using MMORPGServer.Infrastructure.Networking.Server;
 using MMORPGServer.Infrastructure.Persistence.Repositories;
 using MMORPGServer.Infrastructure.Security;
+using MMORPGServer.Network;
 
 namespace MMORPGServer
 {
@@ -14,7 +15,7 @@ namespace MMORPGServer
         {
             // Configure Serilog first
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
+                .MinimumLevel.Information()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
                 .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
@@ -128,7 +129,8 @@ namespace MMORPGServer
             using (var reader = new BinaryReader(File.OpenRead(gameMapPath)))
             {
                 var mapCount = reader.ReadInt32();
-                for (var i = 0; i < mapCount; i++)
+                int i = 0;
+                for (i = 0; i < mapCount; i++)
                 {
                     int mapId = reader.ReadInt32();
                     int fileLength = reader.ReadInt32();
@@ -136,10 +138,10 @@ namespace MMORPGServer
                     int puzzleSize = reader.ReadInt32();
 
                     await gameWorld.LoadMapAsync((ushort)mapId, fileName);
-                }
-            }
 
-            Log.Information("Map initialization completed");
+                }
+                Log.Information("Map initialization completed with total maps of {i}", i);
+            }
         }
     }
 }

@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Application", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Infrastructure", "..\MMORPGServer.Infrastructure\MMORPGServer.Infrastructure.csproj", "{EEB255D8-71DB-4466-BE94-DD385DDF2DC4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Presentation.Network", "..\MMORPGServer.Presentation.Network\MMORPGServer.Presentation.Network.csproj", "{1696958F-4135-4057-B22F-9C12AE14FA5C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Network", "..\MMORPGServer.Network\MMORPGServer.Network.csproj", "{1696958F-4135-4057-B22F-9C12AE14FA5C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.BackgroundServices", "..\MMORPGServer.BackgroundServices\MMORPGServer.BackgroundServices.csproj", "{2BD1548E-3A73-4FBB-8C69-1EF6B686ABA5}"
 EndProject

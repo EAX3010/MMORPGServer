@@ -96,9 +96,9 @@ namespace MMORPGServer.Network.Packets
         [ProtoMember(45, IsRequired = true)]
         public uint u45;
         [ProtoMember(46, IsRequired = true)]
-        public string? Name;
+        public string Name;
         [ProtoMember(47, IsRequired = true)]
-        public string? SpouseName;
+        public string SpouseName;
         [ProtoMember(48, IsRequired = true)]
         public uint u48;
         [ProtoMember(49, IsRequired = true)]

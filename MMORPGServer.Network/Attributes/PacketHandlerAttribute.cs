@@ -1,4 +1,7 @@
-namespace MMORPGServer.Infrastructure.Attributes
+using MMORPGServer.Domain.Enums;
+using System;
+
+namespace MMORPGServer.Network.Attributes
 {
     /// <summary>
     /// Marks a method as a handler for a specific packet type.

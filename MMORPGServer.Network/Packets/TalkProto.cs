@@ -1,4 +1,6 @@
-﻿using ProtoBuf;
+﻿using MMORPGServer.Domain.Enums;
+using ProtoBuf;
+using System.Collections.Generic;
 
 namespace MMORPGServer.Network.Packets
 {
@@ -32,6 +34,6 @@ namespace MMORPGServer.Network.Packets
         [ProtoMember(13, IsRequired = true)]
         public uint Unknown13;
         [ProtoMember(14, IsRequired = true)]
-        public List<string>? Strings;
+        public List<string> Strings;
     }
 }

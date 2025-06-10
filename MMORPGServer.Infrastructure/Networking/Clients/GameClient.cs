@@ -1,13 +1,11 @@
 ﻿
 
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Infrastructure.Networking.Protocols;
 using MMORPGServer.Infrastructure.Security;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
-
 namespace MMORPGServer.Infrastructure.Networking.Clients
 {
 
@@ -619,6 +617,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
                 DisconnectAsync("Packet rate limit exceeded").GetAwaiter().GetResult();
                 return;
             }
+            //
 
             // Decrypt remaining bytes
             _cryptographer.Decrypt(

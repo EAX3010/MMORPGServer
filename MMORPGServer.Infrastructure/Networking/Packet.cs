@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 
-namespace MMORPGServer.Infrastructure.Networking.Protocols
+namespace MMORPGServer.Infrastructure.Networking
 {
     /// <summary>
     /// Represents a network packet with unified reading and writing operations.

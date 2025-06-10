@@ -104,7 +104,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
                 }
                 var imagePath = Path.Combine(AppContext.BaseDirectory, "maps", $"{map.Id}.png");
                 new MapVisualizer().GenerateMapImage(map, imagePath);
-                _logger.LogInformation("Successfully loaded map {MapId} ({MapName})", map.Id, fileName);
+                _logger.LogDebug("Successfully loaded map {MapId} ({MapName})", map.Id, fileName);
                 _maps.TryAdd(mapId, map);
                 return map;
             }

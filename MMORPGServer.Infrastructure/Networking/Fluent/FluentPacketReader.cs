@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Infrastructure.Networking.Protocols.Fluent
+﻿namespace MMORPGServer.Infrastructure.Networking.Fluent
 {
     internal class FluentPacketReader : IPacketReader
     {
