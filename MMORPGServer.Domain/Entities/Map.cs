@@ -46,7 +46,7 @@ namespace MMORPGServer.Domain.Entities
             get
             {
                 if (x < 0 || x >= Width || y < 0 || y >= Height)
-                    return new Cell(CellType.Terrain, 0, 0);
+                    return new Cell(CellType.Blocked, 0, 0);
                 return _cells[x, y];
             }
             set
@@ -127,7 +127,8 @@ namespace MMORPGServer.Domain.Entities
                 return false;
 
             var cell = _cells[x, y];
-            return cell[CellType.Open] && !cell[CellType.Portal];
+            var result = !cell[CellType.Blocked];
+            return result;
         }
 
         /// <summary>
@@ -176,12 +177,12 @@ namespace MMORPGServer.Domain.Entities
         public void AddPortal(int destinationMapId, Position position)
         {
             if (!IsValidPosition(position))
-                throw new ArgumentException("Portal position is not valid", nameof(position));
+                return;
 
             _portalPositions[destinationMapId] = position;
 
             // Mark the cell as a portal
-            this[position.X, position.Y] = new Cell(CellType.Portal, 0, 0);
+            this[position.X, position.Y] = new Cell(CellType.Blocked, 0, 0);
         }
 
         /// <summary>

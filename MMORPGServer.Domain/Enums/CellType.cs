@@ -1,14 +1,13 @@
 ﻿namespace MMORPGServer.Domain.Enums
 {
     [Flags]
-    public enum CellType : byte
+    public enum CellType
     {
-        None = 0x0,
-        Open = 0x1,
-        Portal = 0x2,
-        Item = 0x4,
-        Npc = 0x8,
-        Monster = 0x10,
-        Terrain = 0x20
+        Open = 0,
+        Blocked = 1,
+        Portal = 2,
+        Entity = 3,
+        StaticObj = 4,
+        BlockedObj = 5,
     }
 }

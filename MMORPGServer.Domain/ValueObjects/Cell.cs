@@ -1,6 +1,4 @@
-﻿using MMORPGServer.Domain.Enums;
-
-namespace MMORPGServer.Domain.ValueObjects
+﻿namespace MMORPGServer.Domain.ValueObjects
 {
     /// <summary>
     /// Represents a cell in the game map with its properties and flags.
@@ -27,7 +25,7 @@ namespace MMORPGServer.Domain.ValueObjects
 
         public bool this[CellType flag]
         {
-            get { return (Flags & flag) == flag; }
+            get { return Flags.HasFlag(flag); }
         }
 
         public Cell AddFlag(CellType flag)

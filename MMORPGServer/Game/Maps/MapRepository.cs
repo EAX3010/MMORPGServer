@@ -67,7 +67,7 @@ namespace MMORPGServer.Game.Maps
                 {
                     for (int x = 0; x < width; x++)
                     {
-                        CellType baseType = reader.ReadUInt16() == 0 ? CellType.Open : CellType.Terrain;
+                        CellType baseType = (CellType)reader.ReadUInt16();
                         ushort cellFlag = reader.ReadUInt16();
                         ushort cellHeight = reader.ReadUInt16();
                         map[x, y] = new Cell(baseType, cellHeight, cellFlag);
@@ -79,8 +79,8 @@ namespace MMORPGServer.Game.Maps
                 int totalPortals = reader.ReadInt32();
                 for (int i = 0; i < totalPortals; i++)
                 {
-                    int portalX = reader.ReadInt32() - 1;
-                    int portalY = reader.ReadInt32() - 1;
+                    int portalX = reader.ReadInt32();
+                    int portalY = reader.ReadInt32();
                     int destinationId = reader.ReadInt32();
 
                     map.AddPortal(destinationId, new Position((short)portalX, (short)portalY));
@@ -92,15 +92,16 @@ namespace MMORPGServer.Game.Maps
                         {
                             if (portalY + y < height && portalX + x < width)
                             {
-                                map[portalX + x, portalY + y]
+                                map[portalX + x, portalY + y] = map[portalX + x, portalY + y].RemoveFlag(CellType.Blocked).AddFlag(CellType.Open)
                                     .AddFlag(CellType.Portal)
                                     .SetArgument((ushort)destinationId);
                             }
                         }
                     }
                 }
-
-                _logger.LogInformation("Successfully loaded map {MapId} ({MapName})", map.Id);
+                var imagePath = Path.Combine(AppContext.BaseDirectory, "maps", $"{map.Id}.png");
+                MapVisualizer.GenerateMapImage(map, imagePath);
+                _logger.LogInformation("Successfully loaded map {MapId} ({MapName})", map.Id, fileName);
                 _maps.TryAdd(mapId, map);
                 return map;
             }
