@@ -100,7 +100,7 @@ namespace MMORPGServer.Game.Maps
                     }
                 }
                 var imagePath = Path.Combine(AppContext.BaseDirectory, "maps", $"{map.Id}.png");
-                MapVisualizer.GenerateMapImage(map, imagePath);
+                new MapVisualizer().GenerateMapImage(map, imagePath);
                 _logger.LogInformation("Successfully loaded map {MapId} ({MapName})", map.Id, fileName);
                 _maps.TryAdd(mapId, map);
                 return map;

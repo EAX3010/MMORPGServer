@@ -2,24 +2,24 @@
 using System.Drawing.Imaging;
 namespace MMORPGServer.Interfaces
 {
-    public static class MapVisualizer
+    public class MapVisualizer()
     {
         /// <summary>
         /// Generates a PNG image from a Map object and saves it to the specified path.
         /// </summary>
         /// <param name="map">The map to visualize.</param>
         /// <param name="outputPath">The path where the PNG file will be saved.</param>
-        public static void GenerateMapImage(Map map, string outputPath)
+        public void GenerateMapImage(Map map, string outputPath)
         {
             // Define colors for each cell type
             var colorMap = new Dictionary<CellType, Color>
             {
-                [CellType.Open] = Color.White, // Beige
-                [CellType.Blocked] = Color.Black,    // Blue
-                [CellType.StaticObj] = Color.Red,   // Red
-                [CellType.BlockedObj] = Color.Green,   // Red
-                [CellType.Portal] = Color.SkyBlue,   // Red
-                [CellType.Entity] = Color.Brown,   // Red
+                [CellType.Open] = Color.White,
+                [CellType.Blocked] = Color.Black,
+                [CellType.StaticObj] = Color.Green,
+                [CellType.BlockedObj] = Color.DarkRed,
+                [CellType.Portal] = Color.SkyBlue,
+                [CellType.Entity] = Color.Blue,
             };
 
             // Create a bitmap with the map's dimensions
@@ -60,7 +60,8 @@ namespace MMORPGServer.Interfaces
                     }
                     else
                     {
-                        pixelColor = Color.Brown;
+                        pixelColor = Color.Gray; // Default color for unknown flags
+                        Console.WriteLine($"Unknown map flag {cell.Flags}");
                     }
                     bitmap.SetPixel(x, y, pixelColor);
                 }
@@ -72,9 +73,8 @@ namespace MMORPGServer.Interfaces
             {
                 Directory.CreateDirectory(directory);
             }
-
-            // Save the bitmap as a PNG file
-            bitmap.Save(outputPath, ImageFormat.Png);
+            if (!File.Exists(outputPath))
+                bitmap.Save(outputPath, ImageFormat.Png);
         }
     }
 }
