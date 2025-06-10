@@ -1,4 +1,6 @@
-﻿using MMORPGServer.Core.Attributes;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using MMORPGServer.Infrastructure.Attributes;
 using System.Reflection;
 
 public sealed class PacketHandler : IPacketHandler
@@ -10,13 +12,13 @@ public sealed class PacketHandler : IPacketHandler
     // Enhanced struct to hold precomputed information for invoking handlers
     private readonly struct HandlerInfo
     {
-        public readonly Func<IGameClient, Packet, ValueTask> ExecuteHandler { get; }
+        public readonly Func<IGameClient, IPacket, ValueTask> ExecuteHandler { get; }
         public readonly Type HandlerType { get; }
         public readonly MethodInfo Method { get; }
         public readonly bool RequiresScope { get; }
 
         public HandlerInfo(
-            Func<IGameClient, Packet, ValueTask> executeHandler,
+            Func<IGameClient, IPacket, ValueTask> executeHandler,
             Type handlerType,
             MethodInfo method,
             bool requiresScope)
@@ -93,7 +95,7 @@ public sealed class PacketHandler : IPacketHandler
         // Basic validation of the method signature
         if (parameters.Length < 2 ||
             parameters[0].ParameterType != typeof(IGameClient) ||
-            parameters[1].ParameterType != typeof(Packet))
+            parameters[1].ParameterType != typeof(IPacket))
         {
             _logger.LogError("Invalid handler signature: {Type}.{Method} for {PacketType} - " +
                 "First two parameters must be (IGameClient client, Packet packet)",
@@ -286,7 +288,7 @@ public sealed class PacketHandler : IPacketHandler
             requiresScope: false);
     }
 
-    public ValueTask HandlePacketAsync(IGameClient client, Packet packet)
+    public ValueTask HandlePacketAsync(IGameClient client, IPacket packet)
     {
         if (_handlers.TryGetValue(packet.Type, out var handlerInfo))
         {

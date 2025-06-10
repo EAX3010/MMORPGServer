@@ -12,7 +12,6 @@
     IPacketWriter WriteDouble(double value);
 
     // Advanced methods
-    IPacketWriter WriteEncrypted(uint[] data, TransferCipher cipher);
     IPacketWriter WriteArray<T>(IEnumerable<T> items, Action<IPacketWriter, T> writeAction);
     IPacketWriter WriteConditional(bool condition, Action<IPacketWriter> writeAction);
 
@@ -22,7 +21,7 @@
     IPacketWriter Align(int boundary); // Align to 4-byte boundary, etc.
 
     // Finalization
-    Packet Build();
+    IPacket Build();
     ReadOnlyMemory<byte> BuildAndFinalize();
 
     // Debugging

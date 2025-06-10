@@ -7,10 +7,9 @@ namespace MMORPGServer.Domain.Entities
     public class Player : MapObject
     {
         private IGameClient _gameClient { get; set; }
-        public Player(IGameClient gameClient, uint objectId)
+        public Player(IGameClient gameClient)
         {
             _gameClient = gameClient;
-            ObjectId = objectId;
         }
         public int Name { get; set; } = default;
         // Basic stats

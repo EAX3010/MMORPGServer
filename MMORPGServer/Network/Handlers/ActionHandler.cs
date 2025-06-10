@@ -11,7 +11,7 @@ namespace MMORPGServer.Network.Handlers
         /// Processes action packets from clients.
         /// </summary>
         [PacketHandler(GamePackets.CMsgAction)]
-        public async ValueTask HandleAsync(IGameClient client, Packet packet)
+        public async ValueTask HandleAsync(IGameClient client, IPacket packet)
         {
             if (client.Player == null)
             {

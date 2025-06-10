@@ -1,19 +1,21 @@
 ﻿using ProtoBuf;
+using System.IO;
+using System.Text;
 
-namespace MMORPGServer.Network
+namespace MMORPGServer.Infrastructure.Networking.Protocols
 {
     /// <summary>
     /// Represents a network packet with unified reading and writing operations.
     /// Uses a single position tracker since packets are either read from OR written to.
     /// </summary>
-    public sealed class Packet : IDisposable
+    public sealed class Packet : IDisposable, IPacket
     {
         private const string CLIENT_SIGNATURE = "TQClient";
         private const string SERVER_SIGNATURE = "TQServer";
         private const int SIGNATURE_SIZE = 8; // "TQClient" or "TQServer"
         private const int HEADER_SIZE = 4;    // Packet Length (ushort) + Packet Type (ushort)
 
-        internal readonly IMemoryOwner<byte>? _memoryOwner;
+        internal readonly IMemoryOwner<byte> _memoryOwner;
         internal Memory<byte> _buffer;
         private int _dataLength;
 
@@ -341,7 +343,7 @@ namespace MMORPGServer.Network
         {
             WriteSeal();
             _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)(_dataLength - SIGNATURE_SIZE));
-            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], (ushort)Type);
+            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], Type);
 
         }
         /// <summary>

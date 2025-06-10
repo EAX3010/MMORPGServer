@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Network.Fluent
+﻿namespace MMORPGServer.Infrastructure.Networking.Protocols.Fluent
 {
     internal class FluentPacketReader : IPacketReader
     {
@@ -63,14 +63,6 @@
             return this;
         }
 
-
-
-        public IPacketReader ReadEncrypted(TransferCipher cipher, out uint[] decrypted)
-        {
-            var encrypted = new uint[] { _packet.ReadUInt32(), _packet.ReadUInt32() };
-            decrypted = cipher.Decrypt(encrypted);
-            return this;
-        }
 
         public IPacketReader ReadArray<T>(int count, Func<IPacketReader, T> readFunc, out T[] items)
         {

@@ -1,4 +1,7 @@
-namespace MMORPGServer.Game.Maps
+using Microsoft.Extensions.Logging;
+using System.IO;
+
+namespace MMORPGServer.Infrastructure.Persistence.Repositories
 {
     public class MapRepository : IMapRepository
     {
@@ -13,7 +16,7 @@ namespace MMORPGServer.Game.Maps
             _basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Database");
         }
 
-        public async Task<Map?> GetMapAsync(ushort mapId)
+        public async Task<Map> GetMapAsync(ushort mapId)
         {
             _maps.TryGetValue(mapId, out var map);
             return map;
@@ -44,7 +47,7 @@ namespace MMORPGServer.Game.Maps
             return map;
         }
 
-        public async Task<Map?> LoadMapDataAsync(ushort mapId, string fileName)
+        public async Task<Map> LoadMapDataAsync(ushort mapId, string fileName)
         {
             try
             {

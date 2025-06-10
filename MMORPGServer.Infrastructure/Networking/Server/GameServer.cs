@@ -1,4 +1,13 @@
-﻿namespace MMORPGServer.Network.Servers
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using MMORPGServer.Core;
+using MMORPGServer.Infrastructure.Networking.Clients;
+using MMORPGServer.Infrastructure.Security;
+using MMORPGServer.Network;
+using System.Net;
+using System.Threading.Channels;
+
+namespace MMORPGServer.Infrastructure.Networking.Server
 {
     public sealed class GameServer : IGameServer, IDisposable
     {
@@ -10,10 +19,10 @@
         private readonly ChannelWriter<ClientMessage> _messageWriter;
         private readonly ChannelReader<ClientMessage> _messageReader;
 
-        private TcpListener? _tcpListener;
-        private CancellationTokenSource? _cancellationTokenSource;
-        private Task? _acceptTask;
-        private Task? _messageProcessingTask;
+        private TcpListener _tcpListener;
+        private CancellationTokenSource _cancellationTokenSource;
+        private Task _acceptTask;
+        private Task _messageProcessingTask;
         private uint _nextClientId = 1;
         private long _totalConnectionsAccepted = 0;
         private long _totalMessagesProcessed = 0;
@@ -29,7 +38,6 @@
             _serviceProvider = serviceProvider;
             _networkManager = networkManager;
             _packetHandler = packetHandler;
-
             var channel = Channel.CreateUnbounded<ClientMessage>();
             _messageWriter = channel.Writer;
             _messageReader = channel.Reader;
@@ -88,15 +96,13 @@
                         dhKeyExchange,
                         cryptographer,
                         _messageWriter,
-                        _serviceProvider.GetRequiredService<ILogger<GameClient>>(),
-                        _serviceProvider.GetRequiredService<IPlayerManager>(),
-                        _serviceProvider.GetRequiredService<GameWorld>()
+                        _serviceProvider.GetRequiredService<ILogger<GameClient>>()
                     );
 
                     _networkManager.AddClient(gameClient);
                     _ = Task.Run(async () =>
                     {
-                        await gameClient.SpawnAndAssignPlayerAsync();
+                        await gameClient.ConnectPlayer();
                         await gameClient.StartAsync(cancellationToken);
                     }, cancellationToken);
 

@@ -4,7 +4,7 @@
         ILogger<LoginGameHandler> logger) : IPacketProcessor
     {
         [PacketHandler(GamePackets.CMsgLoginGame)]
-        public async ValueTask HandleAsync(IGameClient client, Packet packet)
+        public async ValueTask HandleAsync(IGameClient client, IPacket packet)
         {
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(packet);

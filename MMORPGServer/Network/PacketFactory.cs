@@ -1,3 +1,4 @@
+using MMORPGServer.Infrastructure.Networking.Protocols.Fluent;
 using MMORPGServer.Network.Packets;
 using ProtoBuf;
 

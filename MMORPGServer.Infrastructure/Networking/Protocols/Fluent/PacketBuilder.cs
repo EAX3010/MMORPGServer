@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Network.Fluent
+﻿using System.Runtime.CompilerServices;
+
+namespace MMORPGServer.Infrastructure.Networking.Protocols.Fluent
 {
     /// <summary>
     /// Provides a fluent interface for building network packets with type safety and validation.

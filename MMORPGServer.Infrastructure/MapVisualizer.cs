@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
-namespace MMORPGServer.Interfaces
+using System.IO;
+namespace MMORPGServer.Infrastructure
 {
     public class MapVisualizer()
     {

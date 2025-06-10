@@ -1,4 +1,15 @@
-﻿namespace MMORPGServer.Network
+﻿
+
+using Microsoft.Extensions.Logging;
+using MMORPGServer.Infrastructure.Networking.Protocols;
+using MMORPGServer.Infrastructure.Security;
+using MMORPGServer.Network;
+using System.Diagnostics;
+using System.Text;
+using System.Threading.Channels;
+using System.Threading.RateLimiting;
+
+namespace MMORPGServer.Infrastructure.Networking.Clients
 {
 
     public sealed class GameClient : IGameClient
@@ -24,9 +35,9 @@
 
         #region Properties
         public uint ClientId { get; }
-        public Player? Player { get; set; }
+        public Player Player { get; set; }
         public bool IsConnected => State != ClientState.Disconnected && _tcpClient?.Connected == true;
-        public string? IPAddress { get; }
+        public string IPAddress { get; }
         public DateTime ConnectedAt { get; }
         public ClientState State { get; private set; }
         public DateTime LastActivityTime { get; private set; }
@@ -76,7 +87,7 @@
         private const int FLOOD_DETECTION_WINDOW_MS = 100;
         private const int FLOOD_DETECTION_THRESHOLD = 10;
 
-        private readonly GameWorld _gameWorld;
+
         #endregion
 
         #region Constructor
@@ -86,9 +97,7 @@
             DiffieHellmanKeyExchange dhKeyExchange,
             TQCast5Cryptographer cryptographer,
             ChannelWriter<ClientMessage> messageWriter,
-            ILogger<GameClient> logger,
-            IPlayerManager playerManager,
-            GameWorld gameWorld)
+            ILogger<GameClient> logger)
         {
             ClientId = clientId;
             _tcpClient = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
@@ -97,7 +106,6 @@
             _cryptographer = cryptographer ?? throw new ArgumentNullException(nameof(cryptographer));
             _messageWriter = messageWriter ?? throw new ArgumentNullException(nameof(messageWriter));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _gameWorld = gameWorld;
 
             IPAddress = tcpClient.Client.RemoteEndPoint?.ToString();
             ConnectedAt = DateTime.UtcNow;
@@ -273,18 +281,9 @@
             _tcpClient?.Dispose();
         }
 
-        public async Task SpawnAndAssignPlayerAsync()
+        public async Task ConnectPlayer()
         {
-            var player = await _gameWorld.SpawnPlayerAsync(this, 1002);
-            if (player != null)
-            {
-                this.Player = player;
-
-            }
-            else
-            {
-                await DisconnectAsync("Failed to spawn player");
-            }
+            Player = new Player(this);
         }
         #endregion
 

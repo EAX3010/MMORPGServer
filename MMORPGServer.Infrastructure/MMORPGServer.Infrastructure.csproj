@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-  </PropertyGroup>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+   </PropertyGroup>
   
   <ItemGroup>
     <!-- Only references Domain -->
@@ -13,7 +14,10 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="protobuf-net" Version="3.2.52" />
     <PackageReference Include="System.Text.Json" Version="9.0.0" />
     <PackageReference Include="Serilog" Version="3.1.1" />
+	<PackageReference Include="System.Threading.RateLimiting" Version="9.0.0" />
+	<PackageReference Include="System.Drawing.Common" Version="10.0.0-preview.5.25277.114" />
   </ItemGroup>
 </Project>

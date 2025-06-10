@@ -31,7 +31,6 @@ namespace MMORPGServer.Domain.Enums
         ContinueRightCorner = 2109,
         SystemWhisper = 2110,
         GuildAnnouncement = 2111,
-
         Agate = 2115,
         BroadcastMessage = 2500,
         Monster = 2600,

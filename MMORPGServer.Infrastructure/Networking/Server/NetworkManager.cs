@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Network
+﻿using Microsoft.Extensions.Logging;
+
+namespace MMORPGServer.Infrastructure.Networking.Server
 {
     public sealed class NetworkManager : INetworkManager
     {
@@ -59,7 +61,7 @@
             }
         }
 
-        public IGameClient? GetClient(uint clientId)
+        public IGameClient GetClient(uint clientId)
         {
             _clients.TryGetValue(clientId, out var client);
             return client;

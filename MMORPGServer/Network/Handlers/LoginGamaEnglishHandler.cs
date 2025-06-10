@@ -23,7 +23,7 @@
 
         }
         [PacketHandler(GamePackets.LoginGamaEnglish)]
-        public async ValueTask HandleAsync(IGameClient client, Packet packet)
+        public async ValueTask HandleAsync(IGameClient client, IPacket packet)
         {
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(packet);
@@ -33,11 +33,9 @@
 
             TransferCipher transferCipher = new("127.0.0.99");
 
-            uint[] decrypted = new uint[2];
+            var outputDecrypted = transferCipher.Decrypt([packet.ReadUInt32(), packet.ReadUInt32()]);
 
-            _ = packet.GetReader().ReadEncrypted(transferCipher, out decrypted);
-
-            LoginGamaEnglishData data = new(decrypted[0], decrypted[1]);
+            LoginGamaEnglishData data = new(outputDecrypted[0], outputDecrypted[1]);
 
             var validationResult = await ValidateAsync(data);
             if (!validationResult.IsValid)

@@ -1,5 +1,3 @@
-using MMORPGServer.Game.Maps;
-
 namespace MMORPGServer.Game.World
 {
     public class GameWorld
@@ -65,13 +63,7 @@ namespace MMORPGServer.Game.World
                 _logger.LogError("Could not find valid spawn point on map {MapId}", mapId);
                 return null;
             }
-
-            var player = new Player(client, _nextEntityId++)
-            {
-                MapId = mapId,
-                Position = spawnPoint.Value
-            };
-
+            var player = client.Player;
             if (!map.AddEntity(player))
             {
                 _logger.LogError("Failed to add player to map {MapId}", mapId);

@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Network.Fluent
+﻿namespace MMORPGServer.Infrastructure.Networking.Protocols.Fluent
 {
     internal class FluentPacketWriter : IPacketWriter
     {
@@ -70,17 +70,6 @@
             _packet.WriteDouble(value);
             return this;
         }
-
-        public IPacketWriter WriteEncrypted(uint[] data, TransferCipher cipher)
-        {
-            var encrypted = cipher.Encrypt(data);
-            foreach (var value in encrypted)
-            {
-                _packet.WriteUInt32(value);
-            }
-            return this;
-        }
-
         public IPacketWriter WriteArray<T>(IEnumerable<T> items, Action<IPacketWriter, T> writeAction)
         {
             foreach (var item in items)
@@ -133,7 +122,7 @@
             return this;
         }
 
-        public Packet Build()
+        public IPacket Build()
         {
             _packet.FinalizePacket(_packetType);
             return _packet;

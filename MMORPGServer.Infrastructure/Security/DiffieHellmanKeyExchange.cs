@@ -1,6 +1,8 @@
 ﻿using MMORPGServer.Infrastructure.Networking.Protocols;
+using System.Security.Cryptography;
+using System.Text;
 
-namespace MMORPGServer.Security
+namespace MMORPGServer.Infrastructure.Security
 {
     /// <summary>
     /// Handles Diffie-Hellman key exchange for secure communication.
@@ -202,7 +204,7 @@ namespace MMORPGServer.Security
             return (uint)(75 + pLength + gLength + publicKeyLength);
         }
 
-        private static void WritePacketHeader(Packet packet, uint totalSize)
+        private static void WritePacketHeader(IPacket packet, uint totalSize)
         {
             packet.Seek(11);
             packet.WriteUInt32(totalSize - 11);
@@ -216,7 +218,7 @@ namespace MMORPGServer.Security
             packet.Skip(8);
         }
 
-        private static void WritePacketData(Packet packet, byte[] pBytes, byte[] gBytes, byte[] publicKeyBytes)
+        private static void WritePacketData(IPacket packet, byte[] pBytes, byte[] gBytes, byte[] publicKeyBytes)
         {
             // Write P parameter
             packet.WriteUInt32((uint)pBytes.Length);

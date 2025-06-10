@@ -10,7 +10,6 @@
     IPacketReader ReadFloat(out float value);
     IPacketReader ReadDouble(out double value);
 
-    IPacketReader ReadEncrypted(TransferCipher cipher, out uint[] decrypted);
     IPacketReader ReadArray<T>(int count, Func<IPacketReader, T> readFunc, out T[] items);
     IPacketReader ReadConditional(bool condition, Action<IPacketReader> readAction);
 

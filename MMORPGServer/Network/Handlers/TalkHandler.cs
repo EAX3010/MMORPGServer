@@ -12,7 +12,7 @@ namespace MMORPGServer.Network.Handlers
         }
 
         [PacketHandler(GamePackets.CMsgTalk)]
-        public async ValueTask HandleAsync(IGameClient client, Packet packet)
+        public async ValueTask HandleAsync(IGameClient client, IPacket packet)
         {
             // 1. Deserialize the packet payload from Protobuf
             // The new Packet class gives us a ReadOnlySpan of the data
