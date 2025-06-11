@@ -6,7 +6,7 @@ using MMORPGServer.Infrastructure.Persistence.Repositories;
 using MMORPGServer.Infrastructure.Security;
 using MMORPGServer.Network;
 
-namespace MMORPGServer
+namespace MMORPGServer.Server
 {
     public static class Program
     {

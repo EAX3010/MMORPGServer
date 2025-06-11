@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Core.Extensions
+﻿namespace MMORPGServer.Server.Core.Extensions
 {
     public static class Extensions
     {

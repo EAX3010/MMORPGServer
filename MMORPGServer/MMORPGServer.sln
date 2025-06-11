@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36127.28
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer", "MMORPGServer.csproj", "{9C03D26F-DE70-9D6A-4335-41A22D70F6E8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Server", "MMORPGServer.Server.csproj", "{9C03D26F-DE70-9D6A-4335-41A22D70F6E8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Domain", "..\MMORPGServer.Domain\MMORPGServer.Domain.csproj", "{50B65837-E755-4222-92A9-5283D5AA6B43}"
 EndProject
