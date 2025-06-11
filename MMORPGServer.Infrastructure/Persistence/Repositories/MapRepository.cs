@@ -18,7 +18,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
 
         public async Task<Map> GetMapAsync(ushort mapId)
         {
-            _maps.TryGetValue(mapId, out var map);
+            _maps.TryGetValue(mapId, out Map map);
             return map;
         }
 
@@ -39,7 +39,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
 
         public async Task<Map> CreateMapAsync(ushort mapId, string name, int width, int height)
         {
-            var map = new Map(mapId, width, height);
+            Map map = new Map(mapId, width, height);
             if (!_maps.TryAdd(mapId, map))
             {
                 throw new InvalidOperationException($"Map with ID {mapId} already exists");
@@ -51,19 +51,19 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
         {
             try
             {
-                var fullPath = Path.Combine(_basePath, fileName);
+                string fullPath = Path.Combine(_basePath, fileName);
                 if (!File.Exists(fullPath))
                 {
                     _logger.LogError("Map file not found: {FilePath}", fullPath);
                     return null;
                 }
 
-                using var reader = new BinaryReader(File.OpenRead(fullPath));
-                var skip = reader.ReadBytes(268); // Skip header
+                using BinaryReader reader = new BinaryReader(File.OpenRead(fullPath));
+                byte[] skip = reader.ReadBytes(268); // Skip header
                 int width = reader.ReadInt32();
                 int height = reader.ReadInt32();
 
-                var map = new Map(mapId, width, height);
+                Map map = new Map(mapId, width, height);
 
                 // Load cell data
                 for (int y = 0; y < height; y++)
@@ -102,7 +102,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
                         }
                     }
                 }
-                var imagePath = Path.Combine(AppContext.BaseDirectory, "maps", $"{map.Id}.png");
+                string imagePath = Path.Combine(AppContext.BaseDirectory, "maps", $"{map.Id}.png");
                 new MapVisualizer().GenerateMapImage(map, imagePath);
                 _logger.LogDebug("Successfully loaded map {MapId} ({MapName})", map.Id, fileName);
                 _maps.TryAdd(mapId, map);
@@ -117,16 +117,16 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
 
         public async Task<Position?> GetValidSpawnPointAsync(Map map)
         {
-            var random = new Random();
-            var attempts = 0;
+            Random random = new Random();
+            int attempts = 0;
             const int maxAttempts = 100;
 
             while (attempts < maxAttempts)
             {
-                var x = random.Next(0, map.Width);
-                var y = random.Next(0, map.Height);
+                int x = random.Next(0, map.Width);
+                int y = random.Next(0, map.Height);
 
-                var cell = map[x, y];
+                Cell cell = map[x, y];
                 if (cell[CellType.Open] && !cell[CellType.Portal])
                 {
                     return new Position((short)x, (short)y);

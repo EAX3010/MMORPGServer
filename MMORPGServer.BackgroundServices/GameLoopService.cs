@@ -33,17 +33,17 @@ namespace MMORPGServer.BackgroundServices
         {
             _logger.LogInformation("Game loop service is starting");
 
-            var lastUpdateTime = DateTime.UtcNow;
-            var accumulator = 0.0f;
+            DateTime lastUpdateTime = DateTime.UtcNow;
+            float accumulator = 0.0f;
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var currentTime = DateTime.UtcNow;
-                var deltaTime = (float)(currentTime - lastUpdateTime).TotalSeconds;
+                DateTime currentTime = DateTime.UtcNow;
+                float deltaTime = (float)(currentTime - lastUpdateTime).TotalSeconds;
                 lastUpdateTime = currentTime;
 
                 // Process any pending actions
-                while (_actionChannel.Reader.TryRead(out var action))
+                while (_actionChannel.Reader.TryRead(out GameAction action))
                 {
                     ProcessAction(action);
                 }
@@ -57,7 +57,7 @@ namespace MMORPGServer.BackgroundServices
                 }
 
                 // Cap the frame rate
-                var elapsed = (float)(DateTime.UtcNow - currentTime).TotalSeconds;
+                float elapsed = (float)(DateTime.UtcNow - currentTime).TotalSeconds;
                 if (elapsed < TARGET_FRAME_TIME)
                 {
                     await Task.Delay((int)((TARGET_FRAME_TIME - elapsed) * 1000), stoppingToken);

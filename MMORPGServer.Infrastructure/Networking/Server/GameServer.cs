@@ -37,7 +37,7 @@ namespace MMORPGServer.Infrastructure.Networking.Server
             _serviceProvider = serviceProvider;
             _networkManager = networkManager;
             _packetHandler = packetHandler;
-            var channel = Channel.CreateUnbounded<ClientMessage>();
+            Channel<ClientMessage> channel = Channel.CreateUnbounded<ClientMessage>();
             _messageWriter = channel.Writer;
             _messageReader = channel.Reader;
         }
@@ -71,11 +71,11 @@ namespace MMORPGServer.Infrastructure.Networking.Server
             {
                 try
                 {
-                    var tcpClient = await _tcpListener!.AcceptTcpClientAsync();
-                    var clientId = Interlocked.Increment(ref _nextClientId);
+                    TcpClient tcpClient = await _tcpListener!.AcceptTcpClientAsync();
+                    uint clientId = Interlocked.Increment(ref _nextClientId);
                     Interlocked.Increment(ref _totalConnectionsAccepted);
 
-                    var clientEndpoint = tcpClient.Client.RemoteEndPoint?.ToString() ?? "Unknown";
+                    string clientEndpoint = tcpClient.Client.RemoteEndPoint?.ToString() ?? "Unknown";
 
                     // Check if we're at capacity
                     if (_networkManager.ConnectionCount >= GameConstants.MAX_CLIENTS)
@@ -86,10 +86,10 @@ namespace MMORPGServer.Infrastructure.Networking.Server
                         continue;
                     }
 
-                    var dhKeyExchange = _serviceProvider.GetRequiredService<DiffieHellmanKeyExchange>();
-                    var cryptographer = _serviceProvider.GetRequiredService<TQCast5Cryptographer>();
+                    DiffieHellmanKeyExchange dhKeyExchange = _serviceProvider.GetRequiredService<DiffieHellmanKeyExchange>();
+                    TQCast5Cryptographer cryptographer = _serviceProvider.GetRequiredService<TQCast5Cryptographer>();
 
-                    var gameClient = new GameClient(
+                    GameClient gameClient = new GameClient(
                         clientId,
                         tcpClient,
                         dhKeyExchange,
@@ -134,11 +134,11 @@ namespace MMORPGServer.Infrastructure.Networking.Server
         {
             _logger.LogDebug("Message processing loop started");
 
-            await foreach (var message in _messageReader.ReadAllAsync(cancellationToken))
+            await foreach (ClientMessage message in _messageReader.ReadAllAsync(cancellationToken))
             {
                 try
                 {
-                    var client = _networkManager.GetClient(message.ClientId);
+                    IGameClient client = _networkManager.GetClient(message.ClientId);
                     if (client is not null)
                     {
                         message.Packet.Seek(4);
@@ -175,7 +175,7 @@ namespace MMORPGServer.Infrastructure.Networking.Server
 
         public async ValueTask BroadcastPacketAsync(ReadOnlyMemory<byte> packetData, uint excludeClientId = 0)
         {
-            var connectedClients = _networkManager.ConnectionCount;
+            int connectedClients = _networkManager.ConnectionCount;
             if (connectedClients > 0)
             {
                 _logger.LogDebug("Broadcasting packet to {ClientCount} clients", connectedClients);
@@ -185,7 +185,7 @@ namespace MMORPGServer.Infrastructure.Networking.Server
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
-            var uptime = DateTime.UtcNow - _serverStartTime;
+            TimeSpan uptime = DateTime.UtcNow - _serverStartTime;
 
             _logger.LogWarning("Initiating server shutdown...");
             _logger.LogInformation("Final Statistics:");
@@ -200,7 +200,7 @@ namespace MMORPGServer.Infrastructure.Networking.Server
             _logger.LogInformation("Stopping TCP listener...");
             _tcpListener?.Stop();
 
-            var tasks = new List<Task>();
+            List<Task> tasks = new List<Task>();
             if (_acceptTask is not null) tasks.Add(_acceptTask);
             if (_messageProcessingTask is not null) tasks.Add(_messageProcessingTask);
 

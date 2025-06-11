@@ -84,7 +84,7 @@ namespace MMORPGServer.Domain.Entities
         /// </summary>
         public bool RemoveEntity(uint entityId)
         {
-            if (!_entities.TryRemove(entityId, out var entity))
+            if (!_entities.TryRemove(entityId, out MapObject entity))
                 return false;
 
             _spatialGrid.Remove(entity);
@@ -100,7 +100,7 @@ namespace MMORPGServer.Domain.Entities
         /// </summary>
         public MapObject? GetEntity(uint entityId)
         {
-            _entities.TryGetValue(entityId, out var entity);
+            _entities.TryGetValue(entityId, out MapObject entity);
             return entity;
         }
 
@@ -126,8 +126,8 @@ namespace MMORPGServer.Domain.Entities
             if (x < 0 || x >= Width || y < 0 || y >= Height)
                 return false;
 
-            var cell = _cells[x, y];
-            var result = !cell[CellType.Blocked];
+            Cell cell = _cells[x, y];
+            bool result = !cell[CellType.Blocked];
             return result;
         }
 
@@ -143,11 +143,11 @@ namespace MMORPGServer.Domain.Entities
                 return false;
 
             // Check if position is occupied by another entity
-            var entitiesAtPosition = GetEntitiesInRange(newPosition, 0.5f);
+            IEnumerable<MapObject> entitiesAtPosition = GetEntitiesInRange(newPosition, 0.5f);
             if (entitiesAtPosition.Any(e => e.ObjectId != entity.ObjectId && e.Position == newPosition))
                 return false;
 
-            var oldPosition = entity.Position;
+            Position oldPosition = entity.Position;
             entity.Position = newPosition;
             _spatialGrid.Update(entity);
 
@@ -165,7 +165,7 @@ namespace MMORPGServer.Domain.Entities
             if (deltaTime <= 0)
                 return;
 
-            foreach (var entity in _entities.Values)
+            foreach (MapObject entity in _entities.Values)
             {
 
             }
@@ -190,7 +190,7 @@ namespace MMORPGServer.Domain.Entities
         /// </summary>
         public int? GetPortalDestination(Position position)
         {
-            foreach (var kvp in _portalPositions)
+            foreach (KeyValuePair<int, Position> kvp in _portalPositions)
             {
                 if (kvp.Value == position)
                     return kvp.Key;
@@ -252,7 +252,7 @@ namespace MMORPGServer.Domain.Entities
                 EntityMoved = null;
 
                 // Dispose of any disposable entities on the map.
-                foreach (var entity in _entities.Values)
+                foreach (MapObject entity in _entities.Values)
                 {
                     if (entity is IDisposable disposableEntity)
                     {

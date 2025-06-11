@@ -7,9 +7,8 @@
             return endPoint?.ToString()?.Split(':')[0] ?? "Unknown";
         }
 
-        public static bool IsValidPosition(this (ushort X, ushort Y) position, uint mapId)
+        public static bool IsValidPosition(this (ushort X, ushort Y) position)
         {
-            // TODO: Implement map boundary validation
             return position.X > 0 && position.Y > 0 && position.X < 1000 && position.Y < 1000;
         }
 
@@ -28,7 +27,7 @@
             return !string.IsNullOrWhiteSpace(name) &&
                    name.Length >= 2 &&
                    name.Length <= 16 &&
-                   name.All(c => char.IsLetterOrDigit(c));
+                   name.All(char.IsLetterOrDigit);
         }
     }
 }

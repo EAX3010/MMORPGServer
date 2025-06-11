@@ -11,7 +11,7 @@ namespace MMORPGServer.Application.Services
 
         public ValueTask<Player> GetPlayerAsync(uint playerId)
         {
-            _players.TryGetValue(playerId, out var player);
+            _players.TryGetValue(playerId, out Player player);
             return ValueTask.FromResult(player);
         }
 

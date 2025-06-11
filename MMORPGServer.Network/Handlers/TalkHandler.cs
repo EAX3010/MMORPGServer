@@ -21,16 +21,16 @@ namespace MMORPGServer.Network.Handlers
         {
             // 1. Deserialize the packet payload from Protobuf
             // The new Packet class gives us a ReadOnlySpan of the data
-            var talkData = Serializer.Deserialize<TalkProto>(packet.Data);
+            TalkProto talkData = Serializer.Deserialize<TalkProto>(packet.Data);
             if (talkData?.Strings == null || talkData.Strings.Count < 4)
             {
                 _logger.LogWarning("Received invalid TalkPacket from client {ClientId}", client.ClientId);
                 return;
             }
 
-            var from = talkData.Strings[0];
-            var to = talkData.Strings[1];
-            var message = talkData.Strings[3];
+            string from = talkData.Strings[0];
+            string to = talkData.Strings[1];
+            string message = talkData.Strings[3];
 
             _logger.LogDebug("Received chat message from {From} to {To}: {Message}", from, to, message);
 

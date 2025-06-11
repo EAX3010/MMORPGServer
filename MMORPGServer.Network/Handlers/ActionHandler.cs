@@ -25,7 +25,7 @@ namespace MMORPGServer.Network.Handlers
 
             try
             {
-                var actionProto = packet.DeserializeProto<ActionProto>();
+                ActionProto actionProto = packet.DeserializeProto<ActionProto>();
                 await ProcessActionAsync(client, actionProto);
             }
             catch (Exception ex)

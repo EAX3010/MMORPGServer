@@ -33,7 +33,7 @@ namespace MMORPGServer.Application.Game.World
             if (_activeMaps.ContainsKey(mapId))
                 return true;
 
-            var map = await _mapRepository.LoadMapDataAsync(mapId, fileName);
+            Map map = await _mapRepository.LoadMapDataAsync(mapId, fileName);
             if (map == null)
                 return false;
 
@@ -42,11 +42,11 @@ namespace MMORPGServer.Application.Game.World
 
         public async Task<bool> UnloadMapAsync(ushort mapId)
         {
-            if (!_activeMaps.TryRemove(mapId, out var map))
+            if (!_activeMaps.TryRemove(mapId, out Map map))
                 return false;
 
             // Remove all entities from the map
-            foreach (var entity in map.GetEntitiesInRange(Position.Zero, float.MaxValue))
+            foreach (MapObject entity in map.GetEntitiesInRange(Position.Zero, float.MaxValue))
             {
                 if (entity is Player player)
                 {
@@ -60,19 +60,19 @@ namespace MMORPGServer.Application.Game.World
 
         public async Task<Player> SpawnPlayerAsync(IGameClient client, ushort mapId)
         {
-            if (!_activeMaps.TryGetValue(mapId, out var map))
+            if (!_activeMaps.TryGetValue(mapId, out Map map))
             {
                 _logger.LogError("Map {MapId} is not loaded", mapId);
                 return null;
             }
 
-            var spawnPoint = await _mapRepository.GetValidSpawnPointAsync(map);
+            Position? spawnPoint = await _mapRepository.GetValidSpawnPointAsync(map);
             if (!spawnPoint.HasValue)
             {
                 _logger.LogError("Could not find valid spawn point on map {MapId}", mapId);
                 return null;
             }
-            var player = client.Player;
+            Player player = client.Player;
             if (!map.AddEntity(player))
             {
                 _logger.LogError("Failed to add player to map {MapId}", mapId);
@@ -85,11 +85,11 @@ namespace MMORPGServer.Application.Game.World
 
         public async Task<bool> MovePlayerAsync(uint playerId, Position newPosition)
         {
-            var player = await _playerManager.GetPlayerAsync(playerId);
+            Player player = await _playerManager.GetPlayerAsync(playerId);
             if (player == null)
                 return false;
 
-            if (!_activeMaps.TryGetValue(player.MapId, out var map))
+            if (!_activeMaps.TryGetValue(player.MapId, out Map map))
                 return false;
 
             return map.TryMoveEntity(player, newPosition);
@@ -97,11 +97,11 @@ namespace MMORPGServer.Application.Game.World
 
         public async Task<IEnumerable<MapObject>> GetEntitiesInRangeAsync(uint playerId, float range)
         {
-            var player = await _playerManager.GetPlayerAsync(playerId);
+            Player player = await _playerManager.GetPlayerAsync(playerId);
             if (player == null)
                 return Enumerable.Empty<MapObject>();
 
-            if (!_activeMaps.TryGetValue(player.MapId, out var map))
+            if (!_activeMaps.TryGetValue(player.MapId, out Map map))
                 return Enumerable.Empty<MapObject>();
 
             return map.GetEntitiesInRange(player.Position, range);
@@ -109,7 +109,7 @@ namespace MMORPGServer.Application.Game.World
 
         public void Update(float deltaTime)
         {
-            foreach (var map in _activeMaps.Values)
+            foreach (Map map in _activeMaps.Values)
             {
                 map.Update(deltaTime);
             }

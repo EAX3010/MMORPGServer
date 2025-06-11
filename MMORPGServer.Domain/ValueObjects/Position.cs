@@ -71,9 +71,9 @@ namespace MMORPGServer.Domain.ValueObjects
 
         private Position GetRandom(int distance, Random rnd)
         {
-            var angle = rnd.NextDouble() * Math.PI * 2;
-            var x = X + distance * Math.Cos(angle);
-            var y = Y + distance * Math.Sin(angle);
+            double angle = rnd.NextDouble() * Math.PI * 2;
+            double x = X + distance * Math.Cos(angle);
+            double y = Y + distance * Math.Sin(angle);
 
             return new Position((short)x, (short)y);
         }
@@ -83,7 +83,7 @@ namespace MMORPGServer.Domain.ValueObjects
             double deltaX = other.X - X;
             double deltaY = other.Y - Y;
 
-            var radian = Math.Atan2(deltaY, deltaX);
+            double radian = Math.Atan2(deltaY, deltaX);
             radian -= Math.PI / 2;
             if (radian < 0) radian += Math.PI * 2;
 
@@ -95,7 +95,7 @@ namespace MMORPGServer.Domain.ValueObjects
             double deltaX = other.X - X;
             double deltaY = other.Y - Y;
 
-            var radian = Math.Atan2(deltaY, deltaX);
+            double radian = Math.Atan2(deltaY, deltaX);
             radian -= Math.PI / 2;
             if (radian < 0) radian += 2 * Math.PI;
 
@@ -125,7 +125,7 @@ namespace MMORPGServer.Domain.ValueObjects
 
         public Position Slide(Orientation movementOrientation)
         {
-            var direction = Directions[(int)movementOrientation];
+            Direction direction = Directions[(int)movementOrientation];
             return new Position(
                 (short)(X + direction.XChange),
                 (short)(Y + direction.YChange),

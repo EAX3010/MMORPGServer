@@ -27,7 +27,7 @@ public sealed class TQCast5Cryptographer : IDisposable
         if (keyData.Length < 16)
             throw new ArgumentException("Key data must be at least 16 bytes", nameof(keyData));
 
-        var key = new byte[16];
+        byte[] key = new byte[16];
         keyData.Slice(0, 16).CopyTo(key);
 
         _implementation = new TQCast5FullImplementation(key);
@@ -70,7 +70,7 @@ public sealed class TQCast5Cryptographer : IDisposable
                 _implementation!.EncryptBlock(_encryptIV, 0, _encryptIV, 0);
             }
 
-            var encrypted = (byte)(input[i] ^ _encryptIV[_encryptCounter]);
+            byte encrypted = (byte)(input[i] ^ _encryptIV[_encryptCounter]);
             output[i] = encrypted;
             _encryptIV[_encryptCounter] = encrypted;
 
@@ -109,7 +109,7 @@ public sealed class TQCast5Cryptographer : IDisposable
                 else
                 {
                     // Handle unaligned case
-                    var encrypted = (byte)(pInput[i] ^ pIV[_encryptCounter]);
+                    byte encrypted = (byte)(pInput[i] ^ pIV[_encryptCounter]);
                     pOutput[i] = encrypted;
                     pIV[_encryptCounter] = encrypted;
                     _encryptCounter = (_encryptCounter + 1) & 0x07;
@@ -125,7 +125,7 @@ public sealed class TQCast5Cryptographer : IDisposable
                     _implementation!.EncryptBlock(_encryptIV, 0, _encryptIV, 0);
                 }
 
-                var encrypted = (byte)(pInput[i] ^ pIV[_encryptCounter]);
+                byte encrypted = (byte)(pInput[i] ^ pIV[_encryptCounter]);
                 pOutput[i] = encrypted;
                 pIV[_encryptCounter] = encrypted;
                 _encryptCounter = (_encryptCounter + 1) & 0x07;
@@ -161,8 +161,8 @@ public sealed class TQCast5Cryptographer : IDisposable
                 _implementation!.EncryptBlock(_decryptIV, 0, _decryptIV, 0);
             }
 
-            var inputByte = input[i];
-            var ivByte = _decryptIV[_decryptCounter];
+            byte inputByte = input[i];
+            byte ivByte = _decryptIV[_decryptCounter];
             _decryptIV[_decryptCounter] = inputByte;
             output[i] = (byte)(ivByte ^ inputByte);
 
@@ -186,8 +186,8 @@ public sealed class TQCast5Cryptographer : IDisposable
                     _implementation!.EncryptBlock(_decryptIV, 0, _decryptIV, 0);
                 }
 
-                var inputByte = pInput[i];
-                var ivByte = pIV[_decryptCounter];
+                byte inputByte = pInput[i];
+                byte ivByte = pIV[_decryptCounter];
                 pIV[_decryptCounter] = inputByte;
                 pOutput[i] = (byte)(ivByte ^ inputByte);
 
@@ -220,9 +220,9 @@ public sealed class TQCast5Cryptographer : IDisposable
             _implementation.EncryptBlock(_encryptIV, 0, _encryptIV, 0);
             _implementation.EncryptBlock(_encryptIV, 8, _encryptIV, 8);
 
-            var inputVector = Vector128.Create(input.Slice(i, 16));
-            var ivVector = Vector128.Create(_encryptIV);
-            var encrypted = Sse2.Xor(inputVector, ivVector);
+            Vector128<byte> inputVector = Vector128.Create(input.Slice(i, 16));
+            Vector128<byte> ivVector = Vector128.Create(_encryptIV);
+            Vector128<byte> encrypted = Sse2.Xor(inputVector, ivVector);
 
             encrypted.CopyTo(output.Slice(i, 16));
             encrypted.CopyTo(_encryptIV);
@@ -238,7 +238,7 @@ public sealed class TQCast5Cryptographer : IDisposable
                 _implementation.EncryptBlock(_encryptIV, 0, _encryptIV, 0);
             }
 
-            var encrypted = (byte)(input[i] ^ _encryptIV[_encryptCounter]);
+            byte encrypted = (byte)(input[i] ^ _encryptIV[_encryptCounter]);
             output[i] = encrypted;
             _encryptIV[_encryptCounter] = encrypted;
             _encryptCounter = (_encryptCounter + 1) & 0x07;

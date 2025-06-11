@@ -17,13 +17,13 @@ namespace MMORPGServer.Network
             services.AddSingleton<IPacketHandler, PacketHandler>();
 
             // Auto-discover and register all IPacketHandlerGroup implementations
-            var handlerTypes = Assembly.GetExecutingAssembly()
+            System.Collections.Generic.IEnumerable<Type> handlerTypes = Assembly.GetExecutingAssembly()
                 .GetTypes()
                 .Where(t => t.IsClass &&
                            !t.IsAbstract &&
                            typeof(IPacketProcessor).IsAssignableFrom(t));
 
-            foreach (var handlerType in handlerTypes)
+            foreach (Type handlerType in handlerTypes)
             {
                 // Register as scoped so each packet handling gets fresh instance
                 services.AddScoped(handlerType);
@@ -36,13 +36,13 @@ namespace MMORPGServer.Network
         /// </summary>
         public static IServiceCollection AddPacketHandlers(this IServiceCollection services, ServiceLifetime lifetime)
         {
-            var handlerTypes = Assembly.GetExecutingAssembly()
+            System.Collections.Generic.IEnumerable<Type> handlerTypes = Assembly.GetExecutingAssembly()
                 .GetTypes()
                 .Where(t => t.IsClass &&
                            !t.IsAbstract &&
                            typeof(IPacketProcessor).IsAssignableFrom(t));
 
-            foreach (var handlerType in handlerTypes)
+            foreach (Type handlerType in handlerTypes)
             {
                 services.Add(new ServiceDescriptor(handlerType, handlerType, lifetime));
             }

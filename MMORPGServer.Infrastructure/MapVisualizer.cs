@@ -13,7 +13,7 @@ namespace MMORPGServer.Infrastructure
         public void GenerateMapImage(Map map, string outputPath)
         {
             // Define colors for each cell type
-            var colorMap = new Dictionary<CellType, Color>
+            Dictionary<CellType, Color> colorMap = new Dictionary<CellType, Color>
             {
                 [CellType.Open] = Color.White,
                 [CellType.Blocked] = Color.Black,
@@ -24,7 +24,7 @@ namespace MMORPGServer.Infrastructure
             };
 
             // Create a bitmap with the map's dimensions
-            using var bitmap = new Bitmap(map.Width, map.Height);
+            using Bitmap bitmap = new Bitmap(map.Width, map.Height);
 
             for (int y = 0; y < map.Height; y++)
             {
@@ -69,7 +69,7 @@ namespace MMORPGServer.Infrastructure
             }
 
             // Ensure the directory exists
-            var directory = Path.GetDirectoryName(outputPath);
+            string directory = Path.GetDirectoryName(outputPath);
             if (directory != null && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);

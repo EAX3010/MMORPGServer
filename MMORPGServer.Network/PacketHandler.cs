@@ -45,7 +45,7 @@ public sealed class PacketHandler : IPacketHandler
 
     private void RegisterHandlers()
     {
-        var allTypes = AppDomain.CurrentDomain
+        IEnumerable<Type> allTypes = AppDomain.CurrentDomain
             .GetAssemblies()
             .Where(a => !a.IsDynamic &&
                        !a.FullName!.StartsWith("System") &&
@@ -60,9 +60,9 @@ public sealed class PacketHandler : IPacketHandler
 
         int registeredCount = 0;
 
-        foreach (var type in allTypes)
+        foreach (Type type in allTypes)
         {
-            var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            IEnumerable<MethodInfo> methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                               .Where(m => m.GetCustomAttribute<PacketHandlerAttribute>() != null);
 
             if (!methods.Any()) continue;
@@ -71,13 +71,13 @@ public sealed class PacketHandler : IPacketHandler
             bool isPacketHandlerGroup = typeof(IPacketProcessor).IsAssignableFrom(type);
             bool isRegisteredInDI = _serviceProvider.GetService(type) != null;
 
-            foreach (var method in methods)
+            foreach (MethodInfo method in methods)
             {
-                var attr = method.GetCustomAttribute<PacketHandlerAttribute>()!;
+                PacketHandlerAttribute attr = method.GetCustomAttribute<PacketHandlerAttribute>()!;
 
                 if (ValidateHandlerMethod(type, method, attr))
                 {
-                    var handlerInfo = CreateHandlerInfo(type, method, attr, isPacketHandlerGroup || isRegisteredInDI);
+                    HandlerInfo? handlerInfo = CreateHandlerInfo(type, method, attr, isPacketHandlerGroup || isRegisteredInDI);
                     if (handlerInfo.HasValue)
                     {
                         _handlers[attr.PacketType] = handlerInfo.Value;
@@ -96,7 +96,7 @@ public sealed class PacketHandler : IPacketHandler
 
     private bool ValidateHandlerMethod(Type type, MethodInfo method, PacketHandlerAttribute attr)
     {
-        var parameters = method.GetParameters();
+        ParameterInfo[] parameters = method.GetParameters();
 
         // Basic validation of the method signature
         if (parameters.Length < 2 ||
@@ -132,7 +132,7 @@ public sealed class PacketHandler : IPacketHandler
 
     private HandlerInfo? CreateHandlerInfo(Type type, MethodInfo method, PacketHandlerAttribute attr, bool preferScoped)
     {
-        var parameters = method.GetParameters();
+        ParameterInfo[] parameters = method.GetParameters();
 
         try
         {
@@ -161,22 +161,22 @@ public sealed class PacketHandler : IPacketHandler
             async (client, packet) =>
             {
                 // Create a scope for each handler execution
-                using var scope = _serviceProvider.CreateScope();
+                using IServiceScope scope = _serviceProvider.CreateScope();
 
                 try
                 {
                     // Get handler instance from DI container
-                    var instance = scope.ServiceProvider.GetRequiredService(type);
+                    object instance = scope.ServiceProvider.GetRequiredService(type);
 
                     // Resolve additional parameters
-                    var args = new object[parameters.Length];
+                    object[] args = new object[parameters.Length];
                     args[0] = client;
                     args[1] = packet;
 
                     for (int i = 2; i < parameters.Length; i++)
                     {
-                        var paramType = parameters[i].ParameterType;
-                        var service = scope.ServiceProvider.GetService(paramType);
+                        Type paramType = parameters[i].ParameterType;
+                        object service = scope.ServiceProvider.GetService(paramType);
 
                         if (service == null && !parameters[i].HasDefaultValue)
                         {
@@ -188,7 +188,7 @@ public sealed class PacketHandler : IPacketHandler
                     }
 
                     // Invoke the method
-                    var result = method.Invoke(instance, args);
+                    object result = method.Invoke(instance, args);
 
                     // Handle different return types
                     switch (result)
@@ -237,10 +237,10 @@ public sealed class PacketHandler : IPacketHandler
         }
 
         // Pre-resolve additional dependencies
-        var additionalArgs = new object?[parameters.Length - 2];
+        object[] additionalArgs = new object?[parameters.Length - 2];
         for (int i = 2; i < parameters.Length; i++)
         {
-            var paramType = parameters[i].ParameterType;
+            Type paramType = parameters[i].ParameterType;
             try
             {
                 additionalArgs[i - 2] = _serviceProvider.GetService(paramType);
@@ -260,7 +260,7 @@ public sealed class PacketHandler : IPacketHandler
         return new HandlerInfo(
             (client, packet) =>
             {
-                var args = new object[parameters.Length];
+                object[] args = new object[parameters.Length];
                 args[0] = client;
                 args[1] = packet;
 
@@ -272,7 +272,7 @@ public sealed class PacketHandler : IPacketHandler
 
                 try
                 {
-                    var result = method.Invoke(instance, args);
+                    object result = method.Invoke(instance, args);
 
                     return result switch
                     {
@@ -296,7 +296,7 @@ public sealed class PacketHandler : IPacketHandler
 
     public ValueTask HandlePacketAsync(IGameClient client, IPacket packet)
     {
-        if (_handlers.TryGetValue(packet.Type, out var handlerInfo))
+        if (_handlers.TryGetValue(packet.Type, out HandlerInfo handlerInfo))
         {
             try
             {

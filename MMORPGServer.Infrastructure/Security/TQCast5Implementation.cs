@@ -460,7 +460,7 @@
         uint L0 = BE_To_UInt32(input, inputOffset);
         uint R0 = BE_To_UInt32(input, inputOffset + 4);
 
-        var result = new uint[2];
+        uint[] result = new uint[2];
         CAST_Encipher(L0, R0, result);
 
         UInt32_To_BE(result[0], output, outputOffset);
@@ -476,7 +476,7 @@
         uint L0 = BE_To_UInt32(input[..4]);
         uint R0 = BE_To_UInt32(input[4..]);
 
-        var result = new uint[2];
+        uint[] result = new uint[2];
         CAST_Encipher(L0, R0, result);
 
         UInt32_To_BE(result[0], output[..4]);

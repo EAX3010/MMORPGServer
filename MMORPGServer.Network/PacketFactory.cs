@@ -27,7 +27,7 @@ namespace MMORPGServer.Network
         }
         public static ReadOnlyMemory<byte> CreateTalkPacket(string from, string to, string suffix, string message, ChatType chatType, uint mesh)
         {
-            var talkPacket = new TalkProto
+            TalkProto talkPacket = new TalkProto
             {
                 ChatType = chatType,
                 Mesh = mesh,
@@ -35,16 +35,16 @@ namespace MMORPGServer.Network
             };
 
             // Serialize our object to a byte array using Protobuf
-            using var memoryStream = new MemoryStream();
+            using MemoryStream memoryStream = new MemoryStream();
             Serializer.Serialize(memoryStream, talkPacket);
-            var payload = memoryStream.ToArray();
+            byte[] payload = memoryStream.ToArray();
 
             // Use the new PacketBuilder to construct the final packet for sending
             return CreateProtoPacket(GamePackets.CMsgTalk, payload);
         }
         public static ReadOnlyMemory<byte> CreateHeroInfoPacket(Player player)
         {
-            var proto = new HeroInfoProto
+            HeroInfoProto proto = new HeroInfoProto
             {
                 UID = player.ObjectId,
                 Name = "Hero",
@@ -100,16 +100,16 @@ namespace MMORPGServer.Network
                 u52 = 0,
                 u53 = 0
             };
-            using var ms = new MemoryStream();
+            using MemoryStream ms = new MemoryStream();
             Serializer.Serialize(ms, proto);
-            var payload = ms.ToArray();
+            byte[] payload = ms.ToArray();
             return CreateProtoPacket(GamePackets.CMsgUserInfo, payload);
         }
         public static ReadOnlyMemory<byte> CreateActionPacket(ActionProto proto)
         {
-            using var memoryStream = new MemoryStream();
+            using MemoryStream memoryStream = new MemoryStream();
             Serializer.Serialize(memoryStream, proto);
-            var payload = memoryStream.ToArray();
+            byte[] payload = memoryStream.ToArray();
             return CreateProtoPacket(GamePackets.CMsgAction, payload);
         }
     }

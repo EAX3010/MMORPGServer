@@ -65,8 +65,8 @@ namespace MMORPGServer.Infrastructure.Networking
                 if (declaredLength < HEADER_SIZE) return false;
 
                 // Check signature at the end of total packet
-                var signatureSpan = _buffer.Span.Slice(totalPacketSize - SIGNATURE_SIZE, SIGNATURE_SIZE);
-                var signature = Encoding.ASCII.GetString(signatureSpan);
+                Span<byte> signatureSpan = _buffer.Span.Slice(totalPacketSize - SIGNATURE_SIZE, SIGNATURE_SIZE);
+                string signature = Encoding.ASCII.GetString(signatureSpan);
                 return signature == CLIENT_SIGNATURE || signature == SERVER_SIGNATURE;
             }
         }
@@ -89,7 +89,7 @@ namespace MMORPGServer.Infrastructure.Networking
         public Packet(byte[] data, int offset, int length)
         {
             _memoryOwner = null;
-            var packetData = new byte[length];
+            byte[] packetData = new byte[length];
             Array.Copy(data, offset, packetData, 0, length);
             _buffer = packetData;
             _dataLength = length;
@@ -129,7 +129,7 @@ namespace MMORPGServer.Infrastructure.Networking
         public ushort ReadUInt16()
         {
             EnsureCanRead(2);
-            var value = BitConverter.ToUInt16(_buffer.Span[Position..]);
+            ushort value = BitConverter.ToUInt16(_buffer.Span[Position..]);
             Position += 2;
             return value;
         }
@@ -137,7 +137,7 @@ namespace MMORPGServer.Infrastructure.Networking
         public uint ReadUInt32()
         {
             EnsureCanRead(4);
-            var value = BitConverter.ToUInt32(_buffer.Span[Position..]);
+            uint value = BitConverter.ToUInt32(_buffer.Span[Position..]);
             Position += 4;
             return value;
         }
@@ -145,7 +145,7 @@ namespace MMORPGServer.Infrastructure.Networking
         public int ReadInt32()
         {
             EnsureCanRead(4);
-            var value = BitConverter.ToInt32(_buffer.Span[Position..]);
+            int value = BitConverter.ToInt32(_buffer.Span[Position..]);
             Position += 4;
             return value;
         }
@@ -153,7 +153,7 @@ namespace MMORPGServer.Infrastructure.Networking
         public ulong ReadUInt64()
         {
             EnsureCanRead(8);
-            var value = BitConverter.ToUInt64(_buffer.Span[Position..]);
+            ulong value = BitConverter.ToUInt64(_buffer.Span[Position..]);
             Position += 8;
             return value;
         }
@@ -161,7 +161,7 @@ namespace MMORPGServer.Infrastructure.Networking
         public byte ReadByte()
         {
             EnsureCanRead(1);
-            var value = _buffer.Span[Position];
+            byte value = _buffer.Span[Position];
             Position++;
             return value;
         }
@@ -176,7 +176,7 @@ namespace MMORPGServer.Infrastructure.Networking
         public byte[] ReadBytes(int count)
         {
             EnsureCanRead(count);
-            var result = _buffer.Span.Slice(Position, count).ToArray();
+            byte[] result = _buffer.Span.Slice(Position, count).ToArray();
             Position += count;
             return result;
         }
@@ -184,10 +184,10 @@ namespace MMORPGServer.Infrastructure.Networking
         public string ReadString(int length)
         {
             EnsureCanRead(length);
-            var stringSpan = _buffer.Span.Slice(Position, length);
+            Span<byte> stringSpan = _buffer.Span.Slice(Position, length);
             Position += length;
 
-            var nullIndex = stringSpan.IndexOf((byte)0);
+            int nullIndex = stringSpan.IndexOf((byte)0);
             if (nullIndex >= 0)
                 stringSpan = stringSpan[..nullIndex];
 
@@ -197,7 +197,7 @@ namespace MMORPGServer.Infrastructure.Networking
         public float ReadFloat()
         {
             EnsureCanRead(4);
-            var value = BitConverter.ToSingle(_buffer.Span[Position..]);
+            float value = BitConverter.ToSingle(_buffer.Span[Position..]);
             Position += 4;
             return value;
         }
@@ -205,7 +205,7 @@ namespace MMORPGServer.Infrastructure.Networking
         public double ReadDouble()
         {
             EnsureCanRead(8);
-            var value = BitConverter.ToDouble(_buffer.Span[Position..]);
+            double value = BitConverter.ToDouble(_buffer.Span[Position..]);
             Position += 8;
             return value;
         }
@@ -263,10 +263,10 @@ namespace MMORPGServer.Infrastructure.Networking
         public void WriteString(string value, int maxLength)
         {
             EnsureCanWrite(maxLength);
-            var valueSpan = value.AsSpan();
-            var valueToEncode = valueSpan.Length > maxLength ? valueSpan[..maxLength] : valueSpan;
+            ReadOnlySpan<char> valueSpan = value.AsSpan();
+            ReadOnlySpan<char> valueToEncode = valueSpan.Length > maxLength ? valueSpan[..maxLength] : valueSpan;
 
-            var bytesWritten = Encoding.UTF8.GetBytes(valueToEncode, _buffer.Span.Slice(Position, maxLength));
+            int bytesWritten = Encoding.UTF8.GetBytes(valueToEncode, _buffer.Span.Slice(Position, maxLength));
 
             if (bytesWritten < maxLength)
             {
@@ -352,7 +352,7 @@ namespace MMORPGServer.Infrastructure.Networking
         /// </summary>
         public void WriteSeal()
         {
-            var signatureBytes = Encoding.ASCII.GetBytes(SERVER_SIGNATURE);
+            byte[] signatureBytes = Encoding.ASCII.GetBytes(SERVER_SIGNATURE);
             EnsureCanWrite(signatureBytes.Length);
 
             signatureBytes.CopyTo(_buffer.Span[Position..]);
@@ -438,8 +438,8 @@ namespace MMORPGServer.Infrastructure.Networking
         {
             if (!IsComplete) return false;
             // Signature is at the end of the actual data, not at Length position
-            var signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
-            var signature = Encoding.ASCII.GetString(signatureSpan);
+            Span<byte> signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
+            string signature = Encoding.ASCII.GetString(signatureSpan);
             return signature == CLIENT_SIGNATURE;
         }
 
@@ -450,8 +450,8 @@ namespace MMORPGServer.Infrastructure.Networking
         {
             if (!IsComplete) return false;
             // Signature is at the end of the actual data, not at Length position
-            var signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
-            var signature = Encoding.ASCII.GetString(signatureSpan);
+            Span<byte> signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
+            string signature = Encoding.ASCII.GetString(signatureSpan);
             return signature == SERVER_SIGNATURE;
         }
 
@@ -503,7 +503,7 @@ namespace MMORPGServer.Infrastructure.Networking
                 byte[] data = ReadBytes(dataLength);
 
                 // Deserialize the protobuf message
-                using var ms = new MemoryStream(data);
+                using MemoryStream ms = new MemoryStream(data);
                 return Serializer.Deserialize<T>(ms);
             }
             finally
@@ -528,7 +528,7 @@ namespace MMORPGServer.Infrastructure.Networking
                 Seek(4);
 
                 // Serialize the protobuf message
-                using var ms = new MemoryStream();
+                using MemoryStream ms = new MemoryStream();
                 Serializer.Serialize(ms, message);
                 byte[] data = ms.ToArray();
 

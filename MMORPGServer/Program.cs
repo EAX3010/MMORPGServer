@@ -8,7 +8,7 @@ using MMORPGServer.Network;
 
 namespace MMORPGServer
 {
-    public class Program
+    public static class Program
     {
 
         public static async Task Main(string[] args)
@@ -37,7 +37,7 @@ namespace MMORPGServer
             {
                 DisplayStartupBanner();
 
-                var builder = Host.CreateApplicationBuilder(args);
+                HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
                 // Use Serilog as the logging provider
                 _ = builder.Services.AddSerilog();
@@ -65,7 +65,7 @@ namespace MMORPGServer
                 Log.Information("MMORPG Server starting up...");
 
                 // Initialize maps
-                var gameWorld = host.Services.GetRequiredService<IGameWorld>();
+                IGameWorld gameWorld = host.Services.GetRequiredService<IGameWorld>();
                 await InitializeMapsAsync(gameWorld);
 
                 await host.RunAsync();
@@ -117,7 +117,7 @@ namespace MMORPGServer
         private static async Task InitializeMapsAsync(IGameWorld gameWorld)
         {
             string applicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            var gameMapPath = Path.Combine(applicationDataPath, @"Database\ini\GameMap.dat");
+            string gameMapPath = Path.Combine(applicationDataPath, @"Database\ini\GameMap.dat");
             Log.Information("Initializing spatial system for maps...");
 
             if (!File.Exists(gameMapPath))
@@ -126,22 +126,20 @@ namespace MMORPGServer
                 return;
             }
 
-            using (var reader = new BinaryReader(File.OpenRead(gameMapPath)))
+            using BinaryReader reader = new(File.OpenRead(gameMapPath));
+            int mapCount = reader.ReadInt32();
+            int i = 0;
+            for (i = 0; i < mapCount; i++)
             {
-                var mapCount = reader.ReadInt32();
-                int i = 0;
-                for (i = 0; i < mapCount; i++)
-                {
-                    int mapId = reader.ReadInt32();
-                    int fileLength = reader.ReadInt32();
-                    string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength)).Replace(".7z", ".dmap");
-                    int puzzleSize = reader.ReadInt32();
+                int mapId = reader.ReadInt32();
+                int fileLength = reader.ReadInt32();
+                string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength)).Replace(".7z", ".dmap");
+                _ = reader.ReadInt32();//  puzzleSize
 
-                    await gameWorld.LoadMapAsync((ushort)mapId, fileName);
+                _ = await gameWorld.LoadMapAsync((ushort)mapId, fileName);
 
-                }
-                Log.Information("Map initialization completed with total maps of {i}", i);
             }
+            Log.Information("Map initialization completed with total maps of {i}", i);
         }
     }
 }

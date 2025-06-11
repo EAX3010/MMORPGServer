@@ -166,9 +166,9 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         #region Public Methods
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _cancellationTokenSource.Token);
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _cancellationTokenSource.Token);
 
-            var processTasks = new[]
+            Task[] processTasks = new[]
             {
                 ProcessIncomingDataAsync(linkedCts.Token),
                 ProcessOutgoingPacketsAsync(linkedCts.Token),
@@ -210,7 +210,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
             try
             {
                 // Check rate limit for outgoing packets
-                using var lease = await _byteRateLimiter.AcquireAsync(packetData.Length, _cancellationTokenSource.Token);
+                using RateLimitLease lease = await _byteRateLimiter.AcquireAsync(packetData.Length, _cancellationTokenSource.Token);
                 if (!lease.IsAcquired)
                 {
                     _logger.LogWarning("Client {ClientId} exceeded outgoing byte rate limit", ClientId);
@@ -295,11 +295,11 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         {
             try
             {
-                var defaultKey = Encoding.ASCII.GetBytes("R3Xx97ra5j8D6uZz");
+                byte[] defaultKey = Encoding.ASCII.GetBytes("R3Xx97ra5j8D6uZz");
                 _cryptographer.GenerateKey(defaultKey);
 
-                var memory = _dhKeyExchange.CreateKeyExchangePacket();
-                var encryptedPacket = ArrayPool<byte>.Shared.Rent(memory.Length);
+                ReadOnlyMemory<byte> memory = _dhKeyExchange.CreateKeyExchangePacket();
+                byte[] encryptedPacket = ArrayPool<byte>.Shared.Rent(memory.Length);
 
                 try
                 {
@@ -322,11 +322,11 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         #region Outgoing Data Processing
         private async Task ProcessOutgoingPacketsAsync(CancellationToken cancellationToken)
         {
-            await foreach (var packetMemory in _sendChannel.Reader.ReadAllAsync(cancellationToken))
+            await foreach (ReadOnlyMemory<byte> packetMemory in _sendChannel.Reader.ReadAllAsync(cancellationToken))
             {
                 try
                 {
-                    var dataToSend = PrepareOutgoingData(packetMemory);
+                    ReadOnlyMemory<byte> dataToSend = PrepareOutgoingData(packetMemory);
                     await SendDataWithRetryAsync(dataToSend, cancellationToken);
 
                     Interlocked.Add(ref _bytesSent, dataToSend.Length);
@@ -348,7 +348,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
 
         private async Task SendDataWithRetryAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
         {
-            var retryCount = 0;
+            int retryCount = 0;
             const int maxRetries = 3;
 
             while (retryCount < maxRetries)
@@ -376,7 +376,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         {
             if (State == ClientState.Connected && _cryptographer.IsInitialized)
             {
-                var encryptedMemory = ArrayPool<byte>.Shared.Rent(packetData.Length);
+                byte[] encryptedMemory = ArrayPool<byte>.Shared.Rent(packetData.Length);
                 try
                 {
                     _cryptographer.Encrypt(packetData.Span, encryptedMemory.AsSpan(0, packetData.Length));
@@ -400,7 +400,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
             {
                 try
                 {
-                    var bytesRead = await ReceiveDataWithRetryAsync(cancellationToken);
+                    int bytesRead = await ReceiveDataWithRetryAsync(cancellationToken);
                     if (bytesRead == 0)
                     {
                         _logger.LogDebug("Client {ClientId} closed connection gracefully", ClientId);
@@ -412,7 +412,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
                     UpdateActivity();
 
                     // Check byte rate limit
-                    using var lease = await _byteRateLimiter.AcquireAsync(bytesRead, cancellationToken);
+                    using RateLimitLease lease = await _byteRateLimiter.AcquireAsync(bytesRead, cancellationToken);
                     if (!lease.IsAcquired)
                     {
                         _logger.LogWarning("Client {ClientId} exceeded incoming byte rate limit", ClientId);
@@ -448,11 +448,11 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
 
         private async Task<int> ReceiveDataWithRetryAsync(CancellationToken cancellationToken)
         {
-            var bufferFreeSpace = _receiveBuffer.Slice(_receiveBufferOffset);
+            Memory<byte> bufferFreeSpace = _receiveBuffer.Slice(_receiveBufferOffset);
 
             try
             {
-                var result = await _socket.ReceiveAsync(bufferFreeSpace, SocketFlags.None, cancellationToken);
+                int result = await _socket.ReceiveAsync(bufferFreeSpace, SocketFlags.None, cancellationToken);
                 return result;
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.WouldBlock)
@@ -464,10 +464,10 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
 
         private void ProcessReceivedData()
         {
-            var processedPackets = 0;
+            int processedPackets = 0;
             const int maxPacketsPerIteration = 10; // Prevent starvation
 
-            while (processedPackets < maxPacketsPerIteration && TryProcessNextPacket(out var consumedLength))
+            while (processedPackets < maxPacketsPerIteration && TryProcessNextPacket(out int consumedLength))
             {
                 if (consumedLength == 0)
                     break;
@@ -479,7 +479,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
 
         private void ShiftBuffer(int consumedLength)
         {
-            var remainingLength = _receiveBufferOffset - consumedLength;
+            int remainingLength = _receiveBufferOffset - consumedLength;
             if (remainingLength > 0)
             {
                 _receiveBuffer.Slice(consumedLength, remainingLength).CopyTo(_receiveBuffer);
@@ -492,7 +492,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         private bool TryProcessNextPacket(out int consumedLength)
         {
             consumedLength = 0;
-            var bufferSpan = _receiveBuffer.Span.Slice(0, _receiveBufferOffset);
+            Span<byte> bufferSpan = _receiveBuffer.Span.Slice(0, _receiveBufferOffset);
 
             // Check flood detection
             if (IsFlooding())
@@ -547,7 +547,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
             if (buffer.Length < PACKET_LENGTH_SIZE)
                 return false;
 
-            var packetLength = BitConverter.ToUInt16(buffer);
+            ushort packetLength = BitConverter.ToUInt16(buffer);
 
             if (!ValidatePacketSize(packetLength, "Dummy"))
             {
@@ -570,7 +570,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
             // Handle partial length decryption
             if (_decryptedBufferOffset < PACKET_LENGTH_SIZE)
             {
-                var lengthBytesNeeded = PACKET_LENGTH_SIZE - _decryptedBufferOffset;
+                int lengthBytesNeeded = PACKET_LENGTH_SIZE - _decryptedBufferOffset;
                 if (buffer.Length < lengthBytesNeeded)
                     return false;
 
@@ -584,8 +584,8 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
             }
 
             // Now we have the full length
-            var declaredLength = BitConverter.ToUInt16(_decryptedBuffer.Span);
-            var totalPacketSize = declaredLength + PACKET_SIGNATURE_SIZE;
+            ushort declaredLength = BitConverter.ToUInt16(_decryptedBuffer.Span);
+            int totalPacketSize = declaredLength + PACKET_SIGNATURE_SIZE;
 
             if (!ValidatePacketSize(totalPacketSize, "Game"))
             {
@@ -595,7 +595,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
             }
 
             // Check if we have enough data for the full packet
-            var remainingEncryptedBytes = totalPacketSize - _decryptedBufferOffset;
+            int remainingEncryptedBytes = totalPacketSize - _decryptedBufferOffset;
             if (buffer.Length - consumedLength < remainingEncryptedBytes)
                 return false;
 
@@ -609,7 +609,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         private void ProcessPacket(ReadOnlySpan<byte> buffer, int bytesToDecrypt, int totalPacketSize)
         {
             // Check packet rate limit
-            using var lease = _packetRateLimiter.AcquireAsync(1).GetAwaiter().GetResult();
+            using RateLimitLease lease = _packetRateLimiter.AcquireAsync(1).GetAwaiter().GetResult();
             if (!lease.IsAcquired)
             {
                 _logger.LogWarning("Client {ClientId} exceeded packet rate limit", ClientId);
@@ -626,13 +626,13 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
             );
 
             // Create packet from complete decrypted data
-            var packetData = _decryptedBuffer.Slice(0, totalPacketSize).ToArray();
+            byte[] packetData = _decryptedBuffer.Slice(0, totalPacketSize).ToArray();
 
             // Reset for next packet
             _decryptedBufferOffset = 0;
 
             // Send to processing pipeline
-            using var packet = new Packet(packetData);
+            using Packet packet = new Packet(packetData);
 
             // Track packet type diversity (security check)
             TrackPacketType(packet.Type);
@@ -680,14 +680,14 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         {
             try
             {
-                var decryptedBuffer = ArrayPool<byte>.Shared.Rent(dhKeyBuffer.Length);
+                byte[] decryptedBuffer = ArrayPool<byte>.Shared.Rent(dhKeyBuffer.Length);
                 try
                 {
                     _cryptographer.Decrypt(dhKeyBuffer, decryptedBuffer.AsSpan(0, dhKeyBuffer.Length));
 
-                    using var packet = new Packet(decryptedBuffer.AsSpan(0, dhKeyBuffer.Length));
+                    using Packet packet = new Packet(decryptedBuffer.AsSpan(0, dhKeyBuffer.Length));
 
-                    if (packet.TryExtractDHKey(out var clientPublicKey))
+                    if (packet.TryExtractDHKey(out string clientPublicKey))
                     {
                         CompleteDhKeyExchange(clientPublicKey);
                     }
@@ -712,7 +712,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         private void CompleteDhKeyExchange(string clientPublicKey)
         {
             _dhKeyExchange.HandleClientResponse(clientPublicKey);
-            var finalKey = _dhKeyExchange.DeriveEncryptionKey();
+            byte[] finalKey = _dhKeyExchange.DeriveEncryptionKey();
             _cryptographer.GenerateKey(finalKey);
             _cryptographer.Reset();
 
@@ -724,7 +724,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         #region Connection Health Monitoring
         private async Task MonitorConnectionHealthAsync(CancellationToken cancellationToken)
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromSeconds(30));
 
             while (await timer.WaitForNextTickAsync(cancellationToken))
             {
@@ -825,7 +825,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
 
         private void RecordPacketTime()
         {
-            var now = DateTime.UtcNow;
+            DateTime now = DateTime.UtcNow;
             lock (_recentPacketTimes)
             {
                 _recentPacketTimes.Enqueue(now);

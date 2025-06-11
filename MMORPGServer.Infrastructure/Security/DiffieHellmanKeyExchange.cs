@@ -76,7 +76,7 @@ namespace MMORPGServer.Infrastructure.Security
             _privateKey = BigInteger.genPseudoPrime(256, 30, new Random());
             _publicKey = _generator.modPow(_privateKey, _prime);
 
-            var serverKey = new BigInteger(serverPublicKey, 16);
+            BigInteger serverKey = new BigInteger(serverPublicKey, 16);
             _sharedSecret = serverKey.modPow(_privateKey, _prime);
 
             return _publicKey.ToHexString();
@@ -94,7 +94,7 @@ namespace MMORPGServer.Infrastructure.Security
             if (_privateKey == 0)
                 throw new InvalidOperationException("Server request must be generated first.");
 
-            var clientKey = new BigInteger(clientPublicKey, 16);
+            BigInteger clientKey = new BigInteger(clientPublicKey, 16);
             _sharedSecret = clientKey.modPow(_privateKey, _prime);
         }
 
@@ -107,23 +107,23 @@ namespace MMORPGServer.Infrastructure.Security
             if (!IsComplete)
                 throw new InvalidOperationException("Key exchange must be completed first.");
 
-            using var md5 = MD5.Create();
+            using MD5 md5 = MD5.Create();
 
-            var secretBytes = _sharedSecret.getBytes();
-            var validLength = GetValidKeyLength(secretBytes);
+            byte[] secretBytes = _sharedSecret.getBytes();
+            int validLength = GetValidKeyLength(secretBytes);
 
             // First hash: MD5(shared_secret)
-            var firstHash = md5.ComputeHash(secretBytes, 0, validLength);
-            var firstHex = ConvertToHex(firstHash);
+            byte[] firstHash = md5.ComputeHash(secretBytes, 0, validLength);
+            string firstHex = ConvertToHex(firstHash);
 
             // Second hash: MD5(firstHex + firstHex)
-            var concatenated = firstHex + firstHex;
-            var concatenatedBytes = Encoding.ASCII.GetBytes(concatenated);
-            var secondHash = md5.ComputeHash(concatenatedBytes);
-            var secondHex = ConvertToHex(secondHash);
+            string concatenated = firstHex + firstHex;
+            byte[] concatenatedBytes = Encoding.ASCII.GetBytes(concatenated);
+            byte[] secondHash = md5.ComputeHash(concatenatedBytes);
+            string secondHex = ConvertToHex(secondHash);
 
             // Final result: firstHex + secondHex
-            var finalKey = firstHex + secondHex;
+            string finalKey = firstHex + secondHex;
             return ConvertStringToByteArray(finalKey);
         }
 
@@ -133,14 +133,14 @@ namespace MMORPGServer.Infrastructure.Security
         /// <returns>The packet data ready for transmission.</returns>
         public ReadOnlyMemory<byte> CreateKeyExchangePacket()
         {
-            var publicKeyHex = GenerateServerRequest();
-            var publicKeyBytes = Encoding.ASCII.GetBytes(publicKeyHex);
+            string publicKeyHex = GenerateServerRequest();
+            byte[] publicKeyBytes = Encoding.ASCII.GetBytes(publicKeyHex);
 
-            using var packet = new Packet(0, isServerPacket: true, capacity: 1024);
+            using Packet packet = new Packet(0, isServerPacket: true, capacity: 1024);
 
-            var pBytes = KeyExchange.GetP();
-            var gBytes = KeyExchange.GetG();
-            var totalSize = CalculatePacketSize(pBytes.Length, gBytes.Length, publicKeyBytes.Length);
+            byte[] pBytes = KeyExchange.GetP();
+            byte[] gBytes = KeyExchange.GetG();
+            uint totalSize = CalculatePacketSize(pBytes.Length, gBytes.Length, publicKeyBytes.Length);
 
             WritePacketHeader(packet, totalSize);
             WritePacketData(packet, pBytes, gBytes, publicKeyBytes);
@@ -165,12 +165,12 @@ namespace MMORPGServer.Infrastructure.Security
         #region Private Helper Methods
         private static string ConvertToHex(byte[] bytes)
         {
-            var result = new char[bytes.Length * 2];
+            char[] result = new char[bytes.Length * 2];
 
             for (int i = 0, j = 0; i < bytes.Length; i++, j += 2)
             {
-                var highNibble = (byte)(bytes[i] >> 4);
-                var lowNibble = (byte)(bytes[i] & 0x0F);
+                byte highNibble = (byte)(bytes[i] >> 4);
+                byte lowNibble = (byte)(bytes[i] & 0x0F);
 
                 result[j] = (char)(highNibble > 9 ? highNibble + 0x57 : highNibble + 0x30);
                 result[j + 1] = (char)(lowNibble > 9 ? lowNibble + 0x57 : lowNibble + 0x30);
@@ -181,7 +181,7 @@ namespace MMORPGServer.Infrastructure.Security
 
         private static byte[] ConvertStringToByteArray(string input)
         {
-            var result = new byte[input.Length];
+            byte[] result = new byte[input.Length];
             for (int i = 0; i < input.Length; i++)
             {
                 result[i] = (byte)input[i];

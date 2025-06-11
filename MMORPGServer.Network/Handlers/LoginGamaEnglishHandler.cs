@@ -44,11 +44,11 @@ namespace MMORPGServer.Network.Handlers
 
             TransferCipher transferCipher = new("127.0.0.99");
 
-            var outputDecrypted = transferCipher.Decrypt([packet.ReadUInt32(), packet.ReadUInt32()]);
+            uint[] outputDecrypted = transferCipher.Decrypt([packet.ReadUInt32(), packet.ReadUInt32()]);
 
             LoginGamaEnglishData data = new(outputDecrypted[0], outputDecrypted[1]);
 
-            var validationResult = await ValidateAsync(data);
+            FluentValidation.Results.ValidationResult validationResult = await ValidateAsync(data);
             if (!validationResult.IsValid)
             {
                 string errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));

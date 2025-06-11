@@ -31,7 +31,7 @@ namespace MMORPGServer.Infrastructure.Networking.Server
                     client.ClientId, client.IPAddress ?? "Unknown");
 
                 // Log connection milestones
-                var currentCount = _clients.Count;
+                int currentCount = _clients.Count;
                 if (currentCount % 10 == 0 && currentCount > 0)
                 {
                     _logger.LogInformation("Network milestone: {ClientCount} concurrent connections", currentCount);
@@ -45,9 +45,9 @@ namespace MMORPGServer.Infrastructure.Networking.Server
 
         public void RemoveClient(uint clientId)
         {
-            if (_clients.TryRemove(clientId, out var client))
+            if (_clients.TryRemove(clientId, out IGameClient client))
             {
-                var connectionDuration = DateTime.UtcNow - client.ConnectedAt;
+                TimeSpan connectionDuration = DateTime.UtcNow - client.ConnectedAt;
 
                 _logger.LogInformation("Client {ClientId} removed from network manager (Duration: {Duration}, Remaining: {Count})",
                     clientId, connectionDuration.ToString(@"hh\:mm\:ss"), _clients.Count);
@@ -69,16 +69,16 @@ namespace MMORPGServer.Infrastructure.Networking.Server
 
         public IGameClient GetClient(uint clientId)
         {
-            _clients.TryGetValue(clientId, out var client);
+            _clients.TryGetValue(clientId, out IGameClient client);
             return client;
         }
 
         public async ValueTask BroadcastAsync(ReadOnlyMemory<byte> packetData, uint excludeClientId = 0)
         {
-            var tasks = new List<ValueTask>();
-            var clientCount = 0;
+            List<ValueTask> tasks = new List<ValueTask>();
+            int clientCount = 0;
 
-            foreach (var client in _clients.Values)
+            foreach (IGameClient client in _clients.Values)
             {
                 if (client.ClientId != excludeClientId && client.IsConnected)
                 {
@@ -92,7 +92,7 @@ namespace MMORPGServer.Infrastructure.Networking.Server
                 _logger.LogDebug("Broadcasting packet to {ClientCount} clients (Size: {PacketSize} bytes)",
                     clientCount, packetData.Length);
 
-                foreach (var task in tasks)
+                foreach (ValueTask task in tasks)
                 {
                     try
                     {

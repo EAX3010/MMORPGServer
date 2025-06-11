@@ -85,19 +85,19 @@ namespace MMORPGServer.BackgroundServices
         {
             _logger.LogDebug("Game server monitoring service active");
 
-            var serverStartTime = DateTime.UtcNow;
-            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
+            DateTime serverStartTime = DateTime.UtcNow;
+            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
 
             try
             {
                 while (await timer.WaitForNextTickAsync(stoppingToken))
                 {
-                    var uptime = DateTime.UtcNow - serverStartTime;
+                    TimeSpan uptime = DateTime.UtcNow - serverStartTime;
                     _logger.LogInformation("Server Status - Uptime: {Days}d {Hours}h {Minutes}m",
                         uptime.Days, uptime.Hours, uptime.Minutes);
 
                     // Log memory usage
-                    var memoryUsage = GC.GetTotalMemory(false) / 1024 / 1024;
+                    long memoryUsage = GC.GetTotalMemory(false) / 1024 / 1024;
                     _logger.LogInformation("Memory Usage: {MemoryMB} MB", memoryUsage);
                 }
             }

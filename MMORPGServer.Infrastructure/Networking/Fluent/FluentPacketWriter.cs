@@ -77,7 +77,7 @@ namespace MMORPGServer.Infrastructure.Networking.Fluent
         }
         public IPacketWriter WriteArray<T>(IEnumerable<T> items, Action<IPacketWriter, T> writeAction)
         {
-            foreach (var item in items)
+            foreach (T item in items)
             {
                 writeAction(this, item);
             }
@@ -107,11 +107,11 @@ namespace MMORPGServer.Infrastructure.Networking.Fluent
 
         public IPacketWriter Align(int boundary)
         {
-            var currentPos = _packet.Position;
-            var remainder = currentPos % boundary;
+            int currentPos = _packet.Position;
+            int remainder = currentPos % boundary;
             if (remainder != 0)
             {
-                var padding = boundary - remainder;
+                int padding = boundary - remainder;
                 for (int i = 0; i < padding; i++)
                 {
                     _packet.WriteByte(0);

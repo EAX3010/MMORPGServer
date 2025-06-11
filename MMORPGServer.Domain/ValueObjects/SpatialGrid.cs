@@ -28,7 +28,7 @@ namespace MMORPGServer.Domain.ValueObjects
 
         public void Add(MapObject entity)
         {
-            var key = GetCellKey(entity.Position);
+            (int, int) key = GetCellKey(entity.Position);
             if (!_grid.ContainsKey(key))
             {
                 _grid[key] = new HashSet<MapObject>();
@@ -38,8 +38,8 @@ namespace MMORPGServer.Domain.ValueObjects
 
         public void Remove(MapObject entity)
         {
-            var key = GetCellKey(entity.Position);
-            if (_grid.TryGetValue(key, out var cell))
+            (int, int) key = GetCellKey(entity.Position);
+            if (_grid.TryGetValue(key, out HashSet<MapObject> cell))
             {
                 cell.Remove(entity);
                 if (cell.Count == 0)
@@ -57,18 +57,18 @@ namespace MMORPGServer.Domain.ValueObjects
 
         public IEnumerable<MapObject> GetEntitiesInRange(Position position, float range)
         {
-            var result = new HashSet<MapObject>();
-            var centerKey = GetCellKey(position);
-            var cellRange = (int)Math.Ceiling(range / _cellSize);
+            HashSet<MapObject> result = new HashSet<MapObject>();
+            (int, int) centerKey = GetCellKey(position);
+            int cellRange = (int)Math.Ceiling(range / _cellSize);
 
             for (int x = -cellRange; x <= cellRange; x++)
             {
                 for (int y = -cellRange; y <= cellRange; y++)
                 {
-                    var key = (centerKey.Item1 + x, centerKey.Item2 + y);
-                    if (_grid.TryGetValue(key, out var cell))
+                    (int, int) key = (centerKey.Item1 + x, centerKey.Item2 + y);
+                    if (_grid.TryGetValue(key, out HashSet<MapObject> cell))
                     {
-                        foreach (var entity in cell)
+                        foreach (MapObject entity in cell)
                         {
                             if (Vector2.Distance((Vector2)position, (Vector2)entity.Position) <= range)
                             {
