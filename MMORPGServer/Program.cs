@@ -1,12 +1,11 @@
-﻿using MMORPGServer.Application.Game.World;
-using MMORPGServer.Application.Services;
-using MMORPGServer.BackgroundServices;
-using MMORPGServer.Infrastructure.Networking.Server;
-using MMORPGServer.Infrastructure.Persistence.Repositories;
-using MMORPGServer.Infrastructure.Security;
-using MMORPGServer.Network;
+﻿using MMORPGServer.Game.World;
+using MMORPGServer.Networking.Server;
+using MMORPGServer.Persistence.Repositories;
+using MMORPGServer.Repositories;
+using MMORPGServer.Security;
+using MMORPGServer.Services;
 
-namespace MMORPGServer.Server
+namespace MMORPGServer
 {
     public static class Program
     {
