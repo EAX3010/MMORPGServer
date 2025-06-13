@@ -1,4 +1,6 @@
 ﻿using MMORPGServer.Domain.Enums;
+using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace MMORPGServer.Domain.ValueObjects
 {

@@ -1,4 +1,5 @@
 ﻿using MMORPGServer.Domain.Enums;
+using System.Net;
 
 namespace MMORPGServer.Domain.Extensions
 {

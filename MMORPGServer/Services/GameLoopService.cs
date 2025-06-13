@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace MMORPGServer
+namespace MMORPGServer.Services
 {
     public class GameLoopService : BackgroundService
     {

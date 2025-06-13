@@ -1,6 +1,8 @@
 ﻿
 
 using MMORPGServer.Domain.Enums;
+using MMORPGServer.Networking.Fluent;
+using System.Runtime.CompilerServices;
 
 namespace MMORPGServer.Networking
 {

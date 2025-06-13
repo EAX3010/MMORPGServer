@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Networking.Security
+﻿using System.Runtime.InteropServices;
+
+namespace MMORPGServer.Networking.Security
 {
     public static unsafe class NativeFunctionCalls
     {

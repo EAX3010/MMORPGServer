@@ -1,4 +1,6 @@
-﻿namespace MMORPGServer.Domain.ValueObjects
+﻿using System.Runtime.InteropServices;
+
+namespace MMORPGServer.Domain.ValueObjects
 {
     /// <summary>
     /// Represents a direction vector in 2D space.

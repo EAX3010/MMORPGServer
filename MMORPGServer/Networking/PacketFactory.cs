@@ -1,13 +1,9 @@
 using MMORPGServer.Domain.Enums;
 using MMORPGServer.Game.Entities;
-using MMORPGServer.Networking;
 using MMORPGServer.Networking.Packets;
 using ProtoBuf;
-using System;
-using System.Collections.Generic;
-using System.IO;
 
-namespace MMORPGServer
+namespace MMORPGServer.Networking
 {
     public class PacketFactory
     {

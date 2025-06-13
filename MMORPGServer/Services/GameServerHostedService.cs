@@ -6,7 +6,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MMORPGServer
+namespace MMORPGServer.Services
 {
     public sealed class GameServerHostedService : BackgroundService
     {

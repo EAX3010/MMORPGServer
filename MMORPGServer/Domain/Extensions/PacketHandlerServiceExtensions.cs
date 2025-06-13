@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MMORPGServer.Domain.Interfaces;
-using System;
-using System.Linq;
 using System.Reflection;
 
-namespace MMORPGServer
+namespace MMORPGServer.Domain.Extensions
 {
     public static class PacketHandlerServiceExtensions
     {

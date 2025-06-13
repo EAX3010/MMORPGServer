@@ -1,6 +1,7 @@
 using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.Events;
 using MMORPGServer.Domain.ValueObjects;
+using System.Collections.Concurrent;
 
 namespace MMORPGServer.Game.Entities
 {

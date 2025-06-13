@@ -3,6 +3,9 @@
 
 using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.Interfaces;
+using ProtoBuf;
+using System.Buffers;
+using System.Text;
 
 namespace MMORPGServer.Networking
 {
