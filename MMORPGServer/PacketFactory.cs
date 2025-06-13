@@ -1,7 +1,7 @@
-using MMORPGServer.Entities;
-using MMORPGServer.Enums;
+using MMORPGServer.Domain.Enums;
+using MMORPGServer.Game.Entities;
 using MMORPGServer.Networking;
-using MMORPGServer.Packets;
+using MMORPGServer.Networking.Packets;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;

@@ -1,6 +1,9 @@
 ﻿
 
 
+using MMORPGServer.Domain.Enums;
+using MMORPGServer.Domain.Interfaces;
+
 namespace MMORPGServer.Networking
 {
     /// <summary>

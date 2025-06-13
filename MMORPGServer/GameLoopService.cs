@@ -1,8 +1,8 @@
 ﻿
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Repositories;
-using MMORPGServer.ValueObjects;
+using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.ValueObjects;
 using System;
 using System.Threading;
 using System.Threading.Channels;

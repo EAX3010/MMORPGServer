@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Entities;
-using MMORPGServer.Enums;
-using MMORPGServer.Repositories;
-using MMORPGServer.ValueObjects;
+using MMORPGServer.Domain.Enums;
+using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.ValueObjects;
+using MMORPGServer.Game.Entities;
 using System.IO;
 
 namespace MMORPGServer.Persistence.Repositories

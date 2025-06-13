@@ -1,8 +1,8 @@
-﻿using MMORPGServer.Game.World;
+﻿using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Game.World;
+using MMORPGServer.Networking.Security;
 using MMORPGServer.Networking.Server;
 using MMORPGServer.Persistence.Repositories;
-using MMORPGServer.Repositories;
-using MMORPGServer.Security;
 using MMORPGServer.Services;
 
 namespace MMORPGServer

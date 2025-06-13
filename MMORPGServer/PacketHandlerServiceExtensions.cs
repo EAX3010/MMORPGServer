@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using MMORPGServer.Repositories;
+using MMORPGServer.Domain.Interfaces;
 using System;
 using System.Linq;
 using System.Reflection;

@@ -1,5 +1,5 @@
-﻿using MMORPGServer.Entities;
-using MMORPGServer.Repositories;
+﻿using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Game.Entities;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 

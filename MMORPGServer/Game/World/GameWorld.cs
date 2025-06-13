@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Entities;
-using MMORPGServer.Repositories;
-using MMORPGServer.ValueObjects;
+using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.ValueObjects;
+using MMORPGServer.Game.Entities;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;

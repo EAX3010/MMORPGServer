@@ -1,5 +1,5 @@
-﻿using MMORPGServer.Enums;
-using MMORPGServer.Repositories;
+﻿using MMORPGServer.Domain.Enums;
+using MMORPGServer.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 

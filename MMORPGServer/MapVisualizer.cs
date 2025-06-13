@@ -1,6 +1,6 @@
-﻿using MMORPGServer.Entities;
-using MMORPGServer.Enums;
-using MMORPGServer.ValueObjects;
+﻿using MMORPGServer.Domain.Enums;
+using MMORPGServer.Domain.ValueObjects;
+using MMORPGServer.Game.Entities;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;

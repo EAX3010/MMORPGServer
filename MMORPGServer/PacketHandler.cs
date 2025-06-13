@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Attributes;
-using MMORPGServer.Enums;
-using MMORPGServer.Repositories;
+using MMORPGServer.Domain.Attributes;
+using MMORPGServer.Domain.Enums;
+using MMORPGServer.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
