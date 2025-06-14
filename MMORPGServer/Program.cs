@@ -1,9 +1,17 @@
-﻿using MMORPGServer.Domain.Interfaces;
-using MMORPGServer.Game.World;
-using MMORPGServer.Networking.Security;
-using MMORPGServer.Networking.Server;
-using MMORPGServer.Persistence.Repositories;
-using MMORPGServer.Services;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using MMORPGServer.Application.Extensions;
+using MMORPGServer.Application.Interfaces;
+using MMORPGServer.Application.Services;
+using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Infrastructure.Networking.Packets;
+using MMORPGServer.Infrastructure.Networking.Security;
+using MMORPGServer.Infrastructure.Networking.Server;
+using MMORPGServer.Infrastructure.Persistence.Repositories;
+using MMORPGServer.Infrastructure.Services;
+using Serilog;
+using Serilog.Events;
+using System.Text;
 
 namespace MMORPGServer
 {
@@ -57,6 +65,7 @@ namespace MMORPGServer
                 // Configure Background services
                 _ = builder.Services.AddHostedService<GameServerHostedService>();
                 _ = builder.Services.AddHostedService<GameLoopService>();
+                _ = builder.Services.AddTransient<IPacketFactory, PacketFactory>();
 
                 _ = builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
 
