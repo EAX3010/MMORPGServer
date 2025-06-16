@@ -4,6 +4,7 @@ using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.Interfaces;
 using MMORPGServer.Domain.ValueObjects;
 using System.Collections.Concurrent;
+using System.Text;
 
 namespace MMORPGServer.Infrastructure.Persistence.Repositories
 {
@@ -118,30 +119,33 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
                 return null;
             }
         }
-
-        public async Task<Position?> GetValidSpawnPointAsync(Map map)
+        private static async Task InitializeMapsAsync()
         {
-            Random random = new Random();
-            int attempts = 0;
-            const int maxAttempts = 100;
+            string applicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            string gameMapPath = Path.Combine(applicationDataPath, @"Database\ini\GameMap.dat");
+            Log.Information("Initializing spatial system for maps...");
 
-            while (attempts < maxAttempts)
+            if (!File.Exists(gameMapPath))
             {
-                int x = random.Next(0, map.Width);
-                int y = random.Next(0, map.Height);
-
-                Cell cell = map[x, y];
-                if (cell[CellType.Open] && !cell[CellType.Portal])
-                {
-                    return new Position((short)x, (short)y);
-                }
-
-                attempts++;
+                Log.Error("{0} Not found", gameMapPath);
+                return;
             }
 
-            _logger.LogWarning("Could not find valid spawn point for map {MapId} after {Attempts} attempts",
-                map.Id, maxAttempts);
-            return null;
+            using BinaryReader reader = new(File.OpenRead(gameMapPath));
+            int mapCount = reader.ReadInt32();
+            int i = 0;
+            for (i = 0; i < mapCount; i++)
+            {
+                int mapId = reader.ReadInt32();
+                int fileLength = reader.ReadInt32();
+                string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength)).Replace(".7z", ".dmap");
+                _ = reader.ReadInt32();//  puzzleSize
+
+                _ = await gameWorld.LoadMapAsync((ushort)mapId, fileName);
+
+            }
+            ConsolelLog.Information("Map initialization completed with total maps of {i}", i);
         }
+
     }
 }

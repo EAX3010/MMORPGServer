@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 
 namespace MMORPGServer.Application.Services
 {
-    public class GameWorld : IGameWorld
+    public class GameWorld
     {
         private readonly ILogger<GameWorld> _logger;
         private readonly IMapRepository _mapRepository;
@@ -55,7 +55,7 @@ namespace MMORPGServer.Application.Services
             return true;
         }
 
-        public async Task<Player> SpawnPlayerAsync(IGameClient client, ushort mapId)
+        public async Task<Player> SpawnPlayerAsync(Player player, ushort mapId)
         {
             if (!_activeMaps.TryGetValue(mapId, out Map? map))
             {
@@ -63,13 +63,14 @@ namespace MMORPGServer.Application.Services
                 return null;
             }
 
-            Position? spawnPoint = await _mapRepository.GetValidSpawnPointAsync(map);
+            Position? spawnPoint = await map.GetValidSpawnPointAsync();
             if (!spawnPoint.HasValue)
             {
                 _logger.LogError("Could not find valid spawn point on map {MapId}", mapId);
                 return null;
             }
-            Player player = new Player(client.ClientId);
+            player.Position = spawnPoint.Value;
+            player.MapId = mapId;
             if (!map.AddEntity(player))
             {
                 _logger.LogError("Failed to add player to map {MapId}", mapId);

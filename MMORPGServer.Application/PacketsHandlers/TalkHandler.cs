@@ -43,7 +43,6 @@ namespace MMORPGServer.Application.PacketsHandlers
                     break;
             }
 
-            await ValueTask.CompletedTask;
         }
     }
 }

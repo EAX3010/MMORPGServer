@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.Logging;
 using MMORPGServer.Application.Interfaces;
+using MMORPGServer.Application.Services;
 using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.Interfaces;
 
@@ -12,8 +13,11 @@ namespace MMORPGServer.Application.PacketsHandlers
     {
         private readonly ILogger<LoginGamaEnglishHandler> _logger;
         private readonly IPacketFactory _packetFactory;
+        private readonly ITransferCipher _transferCipher;
+        private readonly IPlayerManager _playerManager;
+        private readonly GameWorld _gameWorld;
 
-        public LoginGamaEnglishHandler(ILogger<LoginGamaEnglishHandler> logger, IPacketFactory packetFactory)
+        public LoginGamaEnglishHandler(ILogger<LoginGamaEnglishHandler> logger, IPacketFactory packetFactory, ITransferCipher transferCipher, IPlayerManager playerManager, GameWorld gameWorld)
         {
             _logger = logger;
 
@@ -29,6 +33,9 @@ namespace MMORPGServer.Application.PacketsHandlers
                 .LessThanOrEqualTo(10U)
                 .WithMessage("State value cannot exceed 10");
             _packetFactory = packetFactory;
+            _transferCipher = transferCipher;
+            _playerManager = playerManager;
+            _gameWorld = gameWorld;
         }
         public GamePackets PacketType => GamePackets.LoginGamaEnglish;
         public async ValueTask HandleAsync(IGameClient client, IPacket packet)
@@ -36,14 +43,10 @@ namespace MMORPGServer.Application.PacketsHandlers
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(packet);
 
-            // TransferCipher transferCipher =
-            //   new("127.0.0.99",
-            //  Encoding.ASCII.GetBytes("xBV1fH70fulyJyMapXdxWSnggELPwrPrRymW6jK93Wv9i79xUaSGR5Luzm9UCMhj"),
-            //  Encoding.ASCII.GetBytes("z63b8u4NsNrHNFNPNeVB57tmt6gZQFfhz7hxr99HMqcpVQ3xSOYLJhX2b4PRzTXX"));
 
-            //uint[] outputDecrypted = transferCipher.Decrypt([packet.ReadUInt32(), packet.ReadUInt32()]);
+            uint[] outputDecrypted = _transferCipher.Decrypt([packet.ReadUInt32(), packet.ReadUInt32()]);
 
-            LoginGamaEnglishData data = new(123123213, 21312321);
+            LoginGamaEnglishData data = new(outputDecrypted[0], outputDecrypted[1]);
 
             FluentValidation.Results.ValidationResult validationResult = await ValidateAsync(data);
             if (!validationResult.IsValid)
@@ -53,8 +56,11 @@ namespace MMORPGServer.Application.PacketsHandlers
                 return;
             }
             _logger.LogInformation("LoginGamaEnglish decrypted UID: {uid}, State: {state}", data.Uid, data.State);
+            client.Player = new Domain.Entities.Player(client.ClientId, data.Uid);
+            await _playerManager.AddPlayerAsync(client.Player);
+            await _gameWorld.SpawnPlayerAsync(client.Player, 1002);
             await client.SendPacketAsync(_packetFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
-            //await client.SendPacketAsync(_packetFactory.CreateHeroInfoPacket(client));
+            await client.SendPacketAsync(_packetFactory.CreateHeroInfoPacket(client.Player));
         }
     }
 

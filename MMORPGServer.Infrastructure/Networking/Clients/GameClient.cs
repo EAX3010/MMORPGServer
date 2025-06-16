@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using MMORPGServer.Domain.Entities;
 using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.Interfaces;
 using MMORPGServer.Domain.ValueObjects;
@@ -34,7 +35,6 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         private static readonly TimeSpan IDLE_TIMEOUT = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan WOULD_BLOCK_RETRY_DELAY = TimeSpan.FromMilliseconds(10);
         #endregion
-
         #region Properties
         public uint ClientId { get; }
         public bool IsConnected => State != ClientState.Disconnected && _tcpClient?.Connected == true;
@@ -42,6 +42,9 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         public DateTime ConnectedAt { get; }
         public ClientState State { get; private set; }
         public DateTime LastActivityTime { get; private set; }
+
+        public Player Player { get; set; }
+
         #endregion
 
         #region Private Fields

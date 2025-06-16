@@ -1,8 +1,11 @@
-﻿namespace MMORPGServer.Domain.Interfaces
+﻿using MMORPGServer.Domain.Entities;
+
+namespace MMORPGServer.Domain.Interfaces
 {
     public interface IGameClient : IDisposable
     {
         uint ClientId { get; }
+        Player Player { get; set; }
         bool IsConnected { get; }
         string IPAddress { get; }
         DateTime ConnectedAt { get; }

@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MMORPGServer.Application.Extensions;
 using MMORPGServer.Application.Interfaces;
 using MMORPGServer.Application.Services;
 using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Infrastructure.Extensions;
 using MMORPGServer.Infrastructure.Networking.Packets;
 using MMORPGServer.Infrastructure.Networking.Security;
 using MMORPGServer.Infrastructure.Networking.Server;
@@ -40,6 +40,11 @@ namespace MMORPGServer
                     outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
                 .CreateLogger();
 
+            // Global exception handler for unhandled exceptions
+            AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) =>
+            {
+                Log.Fatal(eventArgs.ExceptionObject as Exception, "Unhandled exception occurred");
+            };
             try
             {
                 DisplayStartupBanner();
@@ -60,7 +65,7 @@ namespace MMORPGServer
                 // Configure Business services
                 _ = builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
                 _ = builder.Services.AddSingleton<IMapRepository, MapRepository>();
-                _ = builder.Services.AddSingleton<IGameWorld, GameWorld>();
+                _ = builder.Services.AddSingleton<GameWorld>();
 
                 // Configure Background services
                 _ = builder.Services.AddHostedService<GameServerHostedService>();
@@ -68,12 +73,20 @@ namespace MMORPGServer
                 _ = builder.Services.AddTransient<IPacketFactory, PacketFactory>();
 
                 _ = builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
+                _ = builder.Services.AddSingleton<ITransferCipher, TransferCipher>(service =>
+                {
+                    return new TransferCipher(
+                             "127.0.0.99",
+                             Encoding.ASCII.GetBytes("xBV1fH70fulyJyMapXdxWSnggELPwrPrRymW6jK93Wv9i79xUaSGR5Luzm9UCMhj"),
+                             Encoding.ASCII.GetBytes("z63b8u4NsNrHNFNPNeVB57tmt6gZQFfhz7hxr99HMqcpVQ3xSOYLJhX2b4PRzTXX")
+                         );
+                });
 
                 IHost host = builder.Build();
                 Log.Information("MMORPG Server starting up...");
 
                 // Initialize maps
-                IGameWorld gameWorld = host.Services.GetRequiredService<IGameWorld>();
+                GameWorld gameWorld = host.Services.GetRequiredService<GameWorld>();
                 await InitializeMapsAsync(gameWorld);
 
                 await host.RunAsync();
@@ -122,32 +135,6 @@ namespace MMORPGServer
             Console.WriteLine();
         }
 
-        private static async Task InitializeMapsAsync(IGameWorld gameWorld)
-        {
-            string applicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string gameMapPath = Path.Combine(applicationDataPath, @"Database\ini\GameMap.dat");
-            Log.Information("Initializing spatial system for maps...");
 
-            if (!File.Exists(gameMapPath))
-            {
-                Log.Error("{0} Not found", gameMapPath);
-                return;
-            }
-
-            using BinaryReader reader = new(File.OpenRead(gameMapPath));
-            int mapCount = reader.ReadInt32();
-            int i = 0;
-            for (i = 0; i < mapCount; i++)
-            {
-                int mapId = reader.ReadInt32();
-                int fileLength = reader.ReadInt32();
-                string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength)).Replace(".7z", ".dmap");
-                _ = reader.ReadInt32();//  puzzleSize
-
-                _ = await gameWorld.LoadMapAsync((ushort)mapId, fileName);
-
-            }
-            Log.Information("Map initialization completed with total maps of {i}", i);
-        }
     }
 }

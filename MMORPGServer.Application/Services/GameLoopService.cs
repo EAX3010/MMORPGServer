@@ -1,7 +1,6 @@
 ﻿
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Domain.Interfaces;
 using MMORPGServer.Domain.ValueObjects;
 using System.Threading.Channels;
 
@@ -10,12 +9,12 @@ namespace MMORPGServer.Application.Services
     public class GameLoopService : BackgroundService
     {
         private readonly ILogger<GameLoopService> _logger;
-        private readonly IGameWorld _gameWorld;
+        private readonly GameWorld _gameWorld;
         private readonly Channel<GameAction> _actionChannel;
         private const float TARGET_FPS = 60.0f;
         private const float TARGET_FRAME_TIME = 1.0f / TARGET_FPS;
 
-        public GameLoopService(ILogger<GameLoopService> logger, IGameWorld gameWorld)
+        public GameLoopService(ILogger<GameLoopService> logger, GameWorld gameWorld)
         {
             _logger = logger;
             _gameWorld = gameWorld;

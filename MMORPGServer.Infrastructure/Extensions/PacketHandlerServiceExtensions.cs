@@ -3,7 +3,7 @@ using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.Interfaces;
 using System.Reflection;
 
-namespace MMORPGServer.Application.Extensions
+namespace MMORPGServer.Infrastructure.Extensions
 {
     public static class PacketHandlerServiceExtensions
     {

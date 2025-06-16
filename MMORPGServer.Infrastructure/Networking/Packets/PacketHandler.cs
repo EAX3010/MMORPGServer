@@ -9,12 +9,15 @@ public sealed class PacketHandler : IPacketHandler
     private readonly ILogger<PacketHandler> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly Dictionary<GamePackets, HandlerInfo> _handlers = [];
-
+    private readonly List<IPacketMiddleware> _middlewares;
     private readonly struct HandlerInfo
     {
         public readonly Func<IGameClient, IPacket, ValueTask> ExecuteHandler { get; }
         public readonly Type HandlerType { get; }
         public readonly MethodInfo Method { get; }
+
+        private readonly List<IPacketMiddleware> _middlewares;
+
 
         public HandlerInfo(
             Func<IGameClient, IPacket, ValueTask> executeHandler,
@@ -31,6 +34,10 @@ public sealed class PacketHandler : IPacketHandler
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _middlewares = new List<IPacketMiddleware>
+        {
+
+        };
         RegisterHandlers();
     }
 
@@ -261,6 +268,10 @@ public sealed class PacketHandler : IPacketHandler
                                 break;
                             case null: // void method
                                 break;
+                            default:
+                                {
+                                    break;
+                                }
                         }
                     }
                     catch (Exception ex)
@@ -280,23 +291,43 @@ public sealed class PacketHandler : IPacketHandler
         }
     }
 
-    public ValueTask HandlePacketAsync(IGameClient client, IPacket packet)
+    public async ValueTask HandlePacketAsync(IGameClient client, IPacket packet)
     {
-        if (_handlers.TryGetValue(packet.Type, out var handlerInfo))
+        if (!_handlers.TryGetValue(packet.Type, out var handlerInfo))
         {
-            try
-            {
-                return handlerInfo.ExecuteHandler(client, packet);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Critical error in packet handler for {PacketType}", packet.Type);
-                return ValueTask.CompletedTask;
-            }
+            _logger.LogWarning("No handler registered for packet type {PacketType}", packet.Type);
+            return;
         }
 
-        _logger.LogWarning("No handler registered for packet type {PacketType}", packet.Type);
-        return ValueTask.CompletedTask;
+        try
+        {
+            // Build middleware pipeline
+            Func<ValueTask> pipeline = () => handlerInfo.ExecuteHandler(client, packet);
+
+            // Build pipeline from end to start
+            for (int i = _middlewares.Count - 1; i >= 0; i--)
+            {
+                var middleware = _middlewares[i];
+                var next = pipeline;
+                pipeline = async () =>
+                {
+                    var shouldContinue = await middleware.InvokeAsync(client, packet, next);
+                    if (!shouldContinue)
+                    {
+                        _logger.LogDebug("Middleware {MiddlewareType} blocked packet {PacketType} from client {ClientId}",
+                            middleware.GetType().Name, packet.Type, client.ClientId);
+                    }
+                };
+            }
+
+            // Execute the pipeline
+            await pipeline();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Critical error in packet pipeline for {PacketType} from client {ClientId}",
+                packet.Type, client.ClientId);
+        }
     }
 
     public IReadOnlyDictionary<GamePackets, string> GetRegisteredHandlers()

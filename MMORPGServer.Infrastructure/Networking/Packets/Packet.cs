@@ -83,8 +83,17 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
             _buffer = data.ToArray();
             _dataLength = data.Length;
             Position = HEADER_SIZE; // Start reading after header
-        }
 
+        }
+        public Packet()
+        {
+            _memoryOwner = MemoryPool<byte>.Shared.Rent(Math.Max(1024, HEADER_SIZE + SIGNATURE_SIZE));
+            _buffer = _memoryOwner.Memory;
+            _buffer.Span.Clear();
+            _dataLength = HEADER_SIZE;
+            Position = HEADER_SIZE; // Start writing after header
+
+        }
         /// <summary>
         /// Constructor for incoming packets from an array segment.
         /// </summary>

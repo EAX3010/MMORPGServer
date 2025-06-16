@@ -13,7 +13,7 @@ namespace MMORPGServer.Application.PacketsHandlers
         public GamePackets PacketType => GamePackets.CMsgAction;
         public async ValueTask HandleAsync(IGameClient client, IPacket packet)
         {
-            if (client.ClientId != 0)
+            if (client.ClientId is 0)
             {
                 return;
             }
@@ -55,11 +55,11 @@ namespace MMORPGServer.Application.PacketsHandlers
         {
             await client.SendPacketAsync(PacketFactory.CreateActionPacket(new ActionProto
             {
-                UID = 1,
-                Type = ActionType.AbortMagic,
-                dwParam = 1,
-                wParam1 = (ushort)1,
-                wParam2 = (ushort)1,
+                UID = client.Player.ObjectId,
+                Type = ActionType.SetLocation,
+                dwParam = client.Player.MapId,
+                wParam1 = (ushort)client.Player.Position.X,
+                wParam2 = (ushort)client.Player.Position.Y,
             }));
         }
     }

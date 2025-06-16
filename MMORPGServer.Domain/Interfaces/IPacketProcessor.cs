@@ -4,5 +4,6 @@
     {
         T PacketType { get; }
         ValueTask HandleAsync(IGameClient client, IPacket packet);
+
     }
 }

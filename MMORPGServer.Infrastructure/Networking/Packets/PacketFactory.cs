@@ -11,7 +11,7 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
         private ReadOnlyMemory<byte> CreateProtoPacket(GamePackets packetType, byte[] protoData)
         {
             return new Packet(packetType).GetWriter()
-               .WriteBytes(protoData)
+               .Seek(4).WriteBytes(protoData)
                .BuildAndFinalize();
         }
         public ReadOnlyMemory<byte> CreateLoginGamaEnglish()
@@ -97,9 +97,9 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
                 u52 = 0,
                 u53 = 0
             };
-            using MemoryStream ms = new MemoryStream();
-            Serializer.Serialize(ms, proto);
-            byte[] payload = ms.ToArray();
+            using MemoryStream memoryStream = new MemoryStream();
+            Serializer.Serialize(memoryStream, proto);
+            byte[] payload = memoryStream.ToArray();
             return CreateProtoPacket(GamePackets.CMsgUserInfo, payload);
         }
         public ReadOnlyMemory<byte> CreateActionPacket(ActionProto proto)

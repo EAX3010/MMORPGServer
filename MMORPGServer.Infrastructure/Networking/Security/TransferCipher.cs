@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using MMORPGServer.Domain.Interfaces;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 namespace MMORPGServer.Infrastructure.Networking.Security
@@ -373,7 +374,7 @@ namespace MMORPGServer.Infrastructure.Networking.Security
         }
         private static byte GetByte(int byteNum, ulong input) => (byte)(input >> (sizeof(ulong) - 1 - (byteNum & sizeof(ulong) - 1) << 3));
     }
-    public sealed unsafe class TransferCipher
+    public sealed unsafe class TransferCipher : ITransferCipher
     {
         private readonly byte[] Key;
         private readonly byte[] Salt;

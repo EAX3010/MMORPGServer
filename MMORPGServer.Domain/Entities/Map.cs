@@ -75,10 +75,8 @@ namespace MMORPGServer.Domain.Entities
 
             entity.MapId = Id;
             _spatialGrid.Add(entity);
-
-            // Raise domain event
+            this[entity.Position.X, entity.Position.Y].AddFlag(CellType.Entity);
             EntityAdded?.Invoke(new MapEntityAddedEvent(Id, entity.ObjectId, entity.Position));
-
             return true;
         }
 
@@ -91,7 +89,7 @@ namespace MMORPGServer.Domain.Entities
                 return false;
 
             _spatialGrid.Remove(entity);
-
+            this[entity.Position.X, entity.Position.Y].RemoveFlag(CellType.Entity);
             // Raise domain event
             EntityRemoved?.Invoke(new MapEntityRemovedEvent(Id, entityId));
 
@@ -225,7 +223,21 @@ namespace MMORPGServer.Domain.Entities
         {
             return _entities.ContainsKey(entityId);
         }
+        public async Task<Position?> GetValidSpawnPointAsync()
+        {
+            Random random = new Random();
+            while (true)
+            {
+                int x = random.Next(0, this.Width);
+                int y = random.Next(0, this.Height);
 
+                Cell cell = this[x, y];
+                if (cell.Flags == CellType.Open)
+                {
+                    return new Position((short)x, (short)y);
+                }
+            }
+        }
         /// <summary>
         /// Releases all resources used by the Map instance.
         /// </summary>

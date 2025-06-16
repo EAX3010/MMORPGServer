@@ -5,15 +5,15 @@ namespace MMORPGServer.Domain.Entities
 {
     public class Player : MapObject
     {
-        public Player(uint connectionId)
+        public Player(uint connectionId, uint objectId)
         {
-            ConnectionId = ConnectionId;
-            ObjectId = 1000000;
+            ConnectionId = connectionId;
+            ObjectId = objectId;
             MapId = 1002; // Default map ID
             Position = new Position(300, 300);
         }
-        public int ConnectionId { get; set; }
-        public int Name { get; set; }
+        public uint ConnectionId { get; set; }
+        public string Name { get; set; }
         // Basic stats
         public int Level { get; set; } = 1;
         public int Experience { get; set; }
