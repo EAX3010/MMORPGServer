@@ -7,7 +7,19 @@ namespace MMORPGServer.Domain.Entities
     {
         public uint IndexID { get; set; }
         public uint ObjectId { get; set; }
-        public uint MapId { get; set; }
+        private Map _map;
+
+        public Map Map
+        {
+            get => _map;
+            set
+            {
+                _map = value;
+                MapId = value?.Id ?? 0;
+            }
+        }
+
+        public ushort MapId { get; private set; }
         public bool IsActive { get; set; }
         public MapObjectType ObjectType { get; set; }
         public Position Position { get; set; }

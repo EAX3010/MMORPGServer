@@ -73,7 +73,6 @@ namespace MMORPGServer.Domain.Entities
             if (!_entities.TryAdd(entity.ObjectId, entity))
                 return false;
 
-            entity.MapId = Id;
             _spatialGrid.Add(entity);
             this[entity.Position.X, entity.Position.Y].AddFlag(CellType.Entity);
             EntityAdded?.Invoke(new MapEntityAddedEvent(Id, entity.ObjectId, entity.Position));

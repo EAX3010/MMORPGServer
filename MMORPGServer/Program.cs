@@ -7,6 +7,7 @@ using MMORPGServer.Infrastructure.Extensions;
 using MMORPGServer.Infrastructure.Networking.Packets;
 using MMORPGServer.Infrastructure.Networking.Security;
 using MMORPGServer.Infrastructure.Networking.Server;
+using MMORPGServer.Infrastructure.Persistence;
 using MMORPGServer.Infrastructure.Persistence.Repositories;
 using MMORPGServer.Infrastructure.Services;
 using Serilog;
@@ -81,13 +82,13 @@ namespace MMORPGServer
                              Encoding.ASCII.GetBytes("z63b8u4NsNrHNFNPNeVB57tmt6gZQFfhz7hxr99HMqcpVQ3xSOYLJhX2b4PRzTXX")
                          );
                 });
-
+                builder.Services.AddSingleton<MapVisualizer>();
                 IHost host = builder.Build();
                 Log.Information("MMORPG Server starting up...");
 
                 // Initialize maps
-                GameWorld gameWorld = host.Services.GetRequiredService<GameWorld>();
-                await InitializeMapsAsync(gameWorld);
+                var mapRepository = host.Services.GetRequiredService<IMapRepository>();
+                await mapRepository.InitializeMapsAsync();
 
                 await host.RunAsync();
 

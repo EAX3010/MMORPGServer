@@ -7,9 +7,9 @@ namespace MMORPGServer.Domain.Entities
     {
         public Player(uint connectionId, uint objectId)
         {
+            Name = "New Player";
             ConnectionId = connectionId;
             ObjectId = objectId;
-            MapId = 1002; // Default map ID
             Position = new Position(300, 300);
         }
         public uint ConnectionId { get; set; }

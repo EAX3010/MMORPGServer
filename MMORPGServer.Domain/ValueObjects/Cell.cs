@@ -17,13 +17,13 @@ namespace MMORPGServer.Domain.ValueObjects
         ///     If the tile is flagged as a portal, this will be the portal's destination ID.
         /// </summary>
         public readonly ushort Argument;
-        public readonly ushort CellFlag;
+        public readonly ushort FloorType;
 
-        public Cell(CellType baseType, ushort altitude, ushort cellFlag)
+        public Cell(CellType baseType, ushort altitude, ushort floorType)
         {
             Flags = baseType;
             Argument = altitude;
-            CellFlag = cellFlag;
+            FloorType = floorType;
         }
 
         public bool this[CellType flag]
@@ -33,17 +33,17 @@ namespace MMORPGServer.Domain.ValueObjects
 
         public Cell AddFlag(CellType flag)
         {
-            return new Cell(Flags | flag, Argument, CellFlag);
+            return new Cell(Flags | flag, Argument, FloorType);
         }
 
         public Cell RemoveFlag(CellType flag)
         {
-            return new Cell(Flags & ~flag, Argument, CellFlag);
+            return new Cell(Flags & ~flag, Argument, FloorType);
         }
 
         public Cell SetArgument(ushort value)
         {
-            return new Cell(Flags, value, CellFlag);
+            return new Cell(Flags, value, FloorType);
         }
 
         public static implicit operator bool(Cell cell)
@@ -55,7 +55,7 @@ namespace MMORPGServer.Domain.ValueObjects
         {
             return left.Flags == right.Flags &&
                    left.Argument == right.Argument &&
-                   left.CellFlag == right.CellFlag;
+                   left.FloorType == right.FloorType;
         }
 
         public static bool operator !=(Cell left, Cell right)
@@ -72,17 +72,17 @@ namespace MMORPGServer.Domain.ValueObjects
         {
             return Flags == other.Flags &&
                    Argument == other.Argument &&
-                   CellFlag == other.CellFlag;
+                   FloorType == other.FloorType;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Flags, Argument, CellFlag);
+            return HashCode.Combine(Flags, Argument, FloorType);
         }
 
         public override string ToString()
         {
-            return $"Flags: {Flags} | Argument: {Argument} | Flag: {CellFlag}";
+            return $"Flags: {Flags} | Argument: {Argument} | FloorType: {FloorType}";
         }
     }
 }

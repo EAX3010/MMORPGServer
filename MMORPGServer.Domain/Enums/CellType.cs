@@ -3,11 +3,12 @@
     [Flags]
     public enum CellType
     {
-        Open = 0,
+        None = 0,
         Blocked = 1,
-        Portal = 2,
-        Entity = 3,
+        Open = 2,
         StaticObj = 4,
-        BlockedObj = 5,
+        Entity = 8,
+        Gate = 16,
+        BlockedObj = 32,
     }
 }

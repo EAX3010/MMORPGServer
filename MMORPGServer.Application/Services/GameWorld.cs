@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using MMORPGServer.Domain.Entities;
 using MMORPGServer.Domain.Interfaces;
 using MMORPGServer.Domain.ValueObjects;
-using System.Collections.Concurrent;
 
 namespace MMORPGServer.Application.Services
 {
@@ -11,8 +10,6 @@ namespace MMORPGServer.Application.Services
         private readonly ILogger<GameWorld> _logger;
         private readonly IMapRepository _mapRepository;
         private readonly IPlayerManager _playerManager;
-        private readonly ConcurrentDictionary<uint, Map> _activeMaps;
-        private uint _nextEntityId = 1;
 
         public GameWorld(
             ILogger<GameWorld> logger,
@@ -22,44 +19,13 @@ namespace MMORPGServer.Application.Services
             _logger = logger;
             _mapRepository = mapRepository;
             _playerManager = playerManager;
-            _activeMaps = new ConcurrentDictionary<uint, Map>();
         }
-
-        public async Task<bool> LoadMapAsync(ushort mapId, string fileName)
+        public async Task<Player?> SpawnPlayerAsync(Player player, ushort mapId)
         {
-            if (_activeMaps.ContainsKey(mapId))
-                return true;
-
-            Map map = await _mapRepository.LoadMapDataAsync(mapId, fileName);
-            if (map == null)
-                return false;
-
-            return _activeMaps.TryAdd(mapId, map);
-        }
-
-        public async Task<bool> UnloadMapAsync(ushort mapId)
-        {
-            if (!_activeMaps.TryRemove(mapId, out Map map))
-                return false;
-
-            // Remove all entities from the map
-            foreach (MapObject entity in map.GetEntitiesInRange(Position.Zero, float.MaxValue))
+            Map map = await _mapRepository.GetMapAsync(mapId);
+            if (map is null)
             {
-                if (entity is Player player)
-                {
-                    await _playerManager.RemovePlayerAsync(player.ObjectId);
-                }
-            }
-
-            map.Dispose();
-            return true;
-        }
-
-        public async Task<Player> SpawnPlayerAsync(Player player, ushort mapId)
-        {
-            if (!_activeMaps.TryGetValue(mapId, out Map? map))
-            {
-                _logger.LogError("Map {MapId} is not loaded", mapId);
+                _logger.LogError("Map {MapId} not found", mapId);
                 return null;
             }
 
@@ -70,7 +36,7 @@ namespace MMORPGServer.Application.Services
                 return null;
             }
             player.Position = spawnPoint.Value;
-            player.MapId = mapId;
+            player.Map = map;
             if (!map.AddEntity(player))
             {
                 _logger.LogError("Failed to add player to map {MapId}", mapId);
@@ -87,10 +53,12 @@ namespace MMORPGServer.Application.Services
             if (player == null)
                 return false;
 
-            if (!_activeMaps.TryGetValue(player.MapId, out Map map))
+            if (player.Map is null)
+            {
+                _logger.LogError("Map {MapId} not found", player.MapId);
                 return false;
-
-            return map.TryMoveEntity(player, newPosition);
+            }
+            return player.Map.TryMoveEntity(player, newPosition);
         }
 
         public async Task<IEnumerable<MapObject>> GetEntitiesInRangeAsync(uint playerId, float range)
@@ -99,15 +67,19 @@ namespace MMORPGServer.Application.Services
             if (player == null)
                 return Enumerable.Empty<MapObject>();
 
-            if (!_activeMaps.TryGetValue(player.MapId, out Map map))
+            if (player.Map is null)
+            {
+                _logger.LogError("Map {MapId} not found", player.MapId);
                 return Enumerable.Empty<MapObject>();
+            }
 
-            return map.GetEntitiesInRange(player.Position, range);
+            return player.Map.GetEntitiesInRange(player.Position, range);
         }
 
-        public void Update(float deltaTime)
+        public async void Update(float deltaTime)
         {
-            foreach (Map map in _activeMaps.Values)
+            var maps = await _mapRepository.GetAllMapsAsync();
+            foreach (Map map in maps)
             {
                 map.Update(deltaTime);
             }
