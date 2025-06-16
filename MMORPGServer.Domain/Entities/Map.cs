@@ -1,5 +1,4 @@
 using MMORPGServer.Domain.Enums;
-using MMORPGServer.Domain.Events;
 using MMORPGServer.Domain.ValueObjects;
 using System.Collections.Concurrent;
 
@@ -15,12 +14,6 @@ namespace MMORPGServer.Domain.Entities
         private readonly Dictionary<int, Position> _portalPositions;
         private readonly ConcurrentDictionary<uint, MapObject> _entities;
         private readonly SpatialGrid _spatialGrid;
-
-        // Domain events for infrastructure to handle
-        public event Action<MapEntityAddedEvent>? EntityAdded;
-        public event Action<MapEntityRemovedEvent>? EntityRemoved;
-        public event Action<MapEntityMovedEvent>? EntityMoved;
-
         public ushort Id { get; }
         public int Width { get; }
         public int Height { get; }
@@ -75,7 +68,7 @@ namespace MMORPGServer.Domain.Entities
 
             _spatialGrid.Add(entity);
             this[entity.Position.X, entity.Position.Y].AddFlag(CellType.Entity);
-            EntityAdded?.Invoke(new MapEntityAddedEvent(Id, entity.ObjectId, entity.Position));
+
             return true;
         }
 
@@ -89,8 +82,7 @@ namespace MMORPGServer.Domain.Entities
 
             _spatialGrid.Remove(entity);
             this[entity.Position.X, entity.Position.Y].RemoveFlag(CellType.Entity);
-            // Raise domain event
-            EntityRemoved?.Invoke(new MapEntityRemovedEvent(Id, entityId));
+
 
             return true;
         }
@@ -151,8 +143,7 @@ namespace MMORPGServer.Domain.Entities
             entity.Position = newPosition;
             _spatialGrid.Update(entity);
 
-            // Raise domain event
-            EntityMoved?.Invoke(new MapEntityMovedEvent(Id, entity.ObjectId, oldPosition, newPosition));
+
 
             return true;
         }
@@ -258,12 +249,6 @@ namespace MMORPGServer.Domain.Entities
 
             if (disposing)
             {
-                // 1. Clear managed resources.
-
-                // Clear all event subscribers to prevent memory leaks.
-                EntityAdded = null;
-                EntityRemoved = null;
-                EntityMoved = null;
 
                 // Dispose of any disposable entities on the map.
                 foreach (MapObject entity in _entities.Values)

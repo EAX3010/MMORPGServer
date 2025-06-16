@@ -126,28 +126,28 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
                     }
 
                     // Load portals
-                    int totalPortals = reader.ReadInt32();
-                    for (int i = 0; i < totalPortals; i++)
-                    {
-                        int portalX = reader.ReadInt32();
-                        int portalY = reader.ReadInt32();
-                        int destinationId = reader.ReadInt32();
+                    //int totalPortals = reader.ReadInt32();
+                    //for (int i = 0; i < totalPortals; i++)
+                    //{
+                    //    int portalX = reader.ReadInt32();
+                    //    int portalY = reader.ReadInt32();
+                    //    int destinationId = reader.ReadInt32();
 
-                        map.AddPortal(destinationId, new Position((short)portalX, (short)portalY));
+                    //    map.AddPortal(destinationId, new Position((short)portalX, (short)portalY));
 
-                        //// Mark portal cells
-                        //for (int x = 0; x < 3; x++)
-                        //{
-                        //    for (int y = 0; y < 3; y++)
-                        //    {
-                        //        if (portalY + y < height && portalX + x < width)
-                        //        {
-                        //            map[portalX + x, portalY + y] = map[portalX + x, portalY + y]
-                        //                .SetArgument((ushort)destinationId);
-                        //        }
-                        //    }
-                        //}
-                    }
+                    //    //// Mark portal cells
+                    //    //for (int x = 0; x < 3; x++)
+                    //    //{
+                    //    //    for (int y = 0; y < 3; y++)
+                    //    //    {
+                    //    //        if (portalY + y < height && portalX + x < width)
+                    //    //        {
+                    //    //            map[portalX + x, portalY + y] = map[portalX + x, portalY + y]
+                    //    //                .SetArgument((ushort)destinationId);
+                    //    //        }
+                    //    //    }
+                    //    //}
+                    //}
                     string imagePath = Path.Combine(AppContext.BaseDirectory, "maps", $"{map.Id}.png");
                     _mapVisualizer.GenerateMapImage(map, imagePath);
                     _logger.LogDebug("Successfully loaded map {MapId} ({MapName})", map.Id, fileName);

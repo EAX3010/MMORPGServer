@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MMORPGServer.Application.Interfaces;
 using MMORPGServer.Application.Services;
@@ -51,6 +52,8 @@ namespace MMORPGServer
                 DisplayStartupBanner();
 
                 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+                builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                builder.Services.AddInfrastructure(builder.Configuration);
 
                 // Use Serilog as the logging provider
                 _ = builder.Services.AddSerilog();
