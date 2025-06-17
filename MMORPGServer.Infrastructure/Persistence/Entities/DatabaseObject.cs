@@ -13,7 +13,6 @@
         // Soft delete support
         public bool IsDeleted { get; set; } = false;
         public DateTime? DeletedAt { get; set; }
-        public uint? DeletedById { get; set; }  // Who deleted this
 
         // Optimistic concurrency control
         public uint Version { get; set; } = 1;  // Incremented on each update

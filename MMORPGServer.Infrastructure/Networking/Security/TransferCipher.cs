@@ -1,4 +1,5 @@
-﻿using MMORPGServer.Domain.Interfaces;
+﻿using Microsoft.Extensions.Configuration;
+using MMORPGServer.Domain.Interfaces;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -381,9 +382,16 @@ namespace MMORPGServer.Infrastructure.Networking.Security
         private readonly RivestCipher5 _rivest;
 
 
-        public TransferCipher()
+        public TransferCipher(IConfiguration configuration)
         {
-
+            Key = Encoding.ASCII.GetBytes(configuration["TransferCipher:Key"]);
+            Salt = Encoding.ASCII.GetBytes(configuration["TransferCipher:Key"]);
+            TigerHashAlgorithm tigerHash = new TigerHashAlgorithm();
+            tigerHash.Hash(Encoding.ASCII.GetBytes(configuration["TransferCipher:IP"]));
+            tigerHash.Hash(Key);
+            PasswordDeriveBytes password = new PasswordDeriveBytes(tigerHash.Final(0x10), Salt);
+            _rivest = new RivestCipher5();
+            _rivest.GenerateKeys(password.GetBytes(16));
 
         }
 

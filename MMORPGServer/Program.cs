@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MMORPGServer.Application.Interfaces;
 using MMORPGServer.Application.Services;
@@ -13,7 +12,6 @@ using MMORPGServer.Infrastructure.Persistence.Repositories;
 using MMORPGServer.Infrastructure.Services;
 using Serilog;
 using Serilog.Events;
-using System.Text;
 
 namespace MMORPGServer
 {
@@ -52,7 +50,6 @@ namespace MMORPGServer
                 DisplayStartupBanner();
 
                 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
-                builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
                 builder.Services.AddInfrastructure(builder.Configuration);
 
                 // Use Serilog as the logging provider
@@ -79,13 +76,10 @@ namespace MMORPGServer
                 _ = builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
                 _ = builder.Services.AddSingleton<ITransferCipher, TransferCipher>(service =>
                 {
-                    return new TransferCipher(
-                             "127.0.0.99",
-                             Encoding.ASCII.GetBytes("xBV1fH70fulyJyMapXdxWSnggELPwrPrRymW6jK93Wv9i79xUaSGR5Luzm9UCMhj"),
-                             Encoding.ASCII.GetBytes("z63b8u4NsNrHNFNPNeVB57tmt6gZQFfhz7hxr99HMqcpVQ3xSOYLJhX2b4PRzTXX")
-                         );
+                    return new TransferCipher(builder.Configuration);
                 });
-                builder.Services.AddSingleton<MapVisualizer>();
+                _ = builder.Services.AddSingleton<MapVisualizer>();
+
                 IHost host = builder.Build();
                 Log.Information("MMORPG Server starting up...");
 
