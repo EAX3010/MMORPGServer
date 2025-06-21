@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace MMORPGServer.Infrastructure.Migrations
 {
     [DbContext(typeof(GameDbContext))]
-    [Migration("20250620123942_n1")]
-    partial class n1
+    [Migration("20250621164438_inital")]
+    partial class inital
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -26,13 +26,28 @@ namespace MMORPGServer.Infrastructure.Migrations
 
             modelBuilder.Entity("MMORPGServer.Domain.Persistence.PlayerEntity", b =>
                 {
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint");
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<short>("Agility")
+                        .HasColumnType("smallint");
+
+                    b.Property<int>("BoundConquerPoints")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ConquerPoints")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("CurrentHealth")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CurrentMana")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
@@ -53,10 +68,8 @@ namespace MMORPGServer.Infrastructure.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
-                    b.Property<DateTime>("LastLogin")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                    b.Property<DateTime?>("LastLogin")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("LastLogout")
                         .HasColumnType("datetime2");
@@ -69,7 +82,13 @@ namespace MMORPGServer.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(1);
 
-                    b.Property<int>("MapId")
+                    b.Property<short>("MapId")
+                        .HasColumnType("smallint");
+
+                    b.Property<int>("MaxHealth")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxMana")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
@@ -84,11 +103,20 @@ namespace MMORPGServer.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<int>("X")
-                        .HasColumnType("int");
+                    b.Property<short>("Spirit")
+                        .HasColumnType("smallint");
 
-                    b.Property<int>("Y")
-                        .HasColumnType("int");
+                    b.Property<short>("Strength")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Vitality")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("X")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Y")
+                        .HasColumnType("smallint");
 
                     b.HasKey("Id");
 

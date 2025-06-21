@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MMORPGServer.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class n1 : Migration
+    public partial class inital : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,15 +15,25 @@ namespace MMORPGServer.Infrastructure.Migrations
                 name: "Players",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false, collation: "Arabic_CI_AS"),
                     Level = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
                     Experience = table.Column<long>(type: "bigint", nullable: false, defaultValue: 0L),
-                    MapId = table.Column<int>(type: "int", nullable: false),
-                    X = table.Column<int>(type: "int", nullable: false),
-                    Y = table.Column<int>(type: "int", nullable: false),
+                    MapId = table.Column<short>(type: "smallint", nullable: false),
+                    X = table.Column<short>(type: "smallint", nullable: false),
+                    Y = table.Column<short>(type: "smallint", nullable: false),
                     Gold = table.Column<long>(type: "bigint", nullable: false, defaultValue: 0L),
-                    LastLogin = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    ConquerPoints = table.Column<int>(type: "int", nullable: false),
+                    BoundConquerPoints = table.Column<int>(type: "int", nullable: false),
+                    MaxHealth = table.Column<int>(type: "int", nullable: false),
+                    CurrentHealth = table.Column<int>(type: "int", nullable: false),
+                    MaxMana = table.Column<int>(type: "int", nullable: false),
+                    CurrentMana = table.Column<int>(type: "int", nullable: false),
+                    Strength = table.Column<short>(type: "smallint", nullable: false),
+                    Agility = table.Column<short>(type: "smallint", nullable: false),
+                    Vitality = table.Column<short>(type: "smallint", nullable: false),
+                    Spirit = table.Column<short>(type: "smallint", nullable: false),
+                    LastLogin = table.Column<DateTime>(type: "datetime2", nullable: true),
                     LastLogout = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
                     LastModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),

@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using MMORPGServer.Domain.Common;
+using MMORPGServer.Domain.Common.Interfaces;
 
 namespace MMORPGServer.Infrastructure.Persistence.Interceptors
 {
@@ -47,15 +47,9 @@ namespace MMORPGServer.Infrastructure.Persistence.Interceptors
             {
                 switch (entry.State)
                 {
-                    case EntityState.Added:
-                        // New entity: Set creation timestamp
-                        entry.Entity.CreatedAt = currentTime;
-                        break;
-
                     case EntityState.Modified:
                         // Modified entity: Update modification timestamp
                         entry.Entity.LastModifiedAt = currentTime;
-
                         // Ensure CreatedAt is never modified
                         entry.Property(e => e.CreatedAt).IsModified = false;
                         break;

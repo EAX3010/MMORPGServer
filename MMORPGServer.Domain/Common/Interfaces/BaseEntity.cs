@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Domain.Common
+﻿namespace MMORPGServer.Domain.Common.Interfaces
 {
     /// <summary>
     /// Base entity class that provides common properties for all domain entities.

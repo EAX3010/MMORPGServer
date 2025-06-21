@@ -42,7 +42,7 @@ namespace MMORPGServer
                 _ = builder.Services.AddTransient<TQCast5Cryptographer>();
 
                 // Configure Business services
-                _ = builder.Services.AddSingleton<IPlayerManager, PlayerManager>();
+                _ = builder.Services.AddSingleton<PlayerService>();
                 _ = builder.Services.AddSingleton<IMapRepository, MapRepository>();
                 _ = builder.Services.AddSingleton<GameWorld>();
 

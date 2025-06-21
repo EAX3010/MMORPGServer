@@ -14,10 +14,10 @@ namespace MMORPGServer.Application.PacketsHandlers
         private readonly ILogger<LoginGamaEnglishHandler> _logger;
         private readonly IPacketFactory _packetFactory;
         private readonly ITransferCipher _transferCipher;
-        private readonly IPlayerManager _playerManager;
+        private readonly PlayerService _playerManager;
         private readonly GameWorld _gameWorld;
 
-        public LoginGamaEnglishHandler(ILogger<LoginGamaEnglishHandler> logger, IPacketFactory packetFactory, ITransferCipher transferCipher, IPlayerManager playerManager, GameWorld gameWorld)
+        public LoginGamaEnglishHandler(ILogger<LoginGamaEnglishHandler> logger, IPacketFactory packetFactory, ITransferCipher transferCipher, PlayerManager playerManager, GameWorld gameWorld)
         {
             _logger = logger;
 

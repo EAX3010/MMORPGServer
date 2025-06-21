@@ -10,7 +10,9 @@
       <PackageReference Include="protobuf-net" Version="3.2.52" />
     </ItemGroup>
     <ItemGroup>
-      <Folder Include="Repositories\" />
+      <Folder Include="Common\Exceptions\" />
+      <Folder Include="Common\Extensions\" />
+      <Folder Include="Common\Constants\" />
     </ItemGroup>
 
     <!-- No dependencies - pure business logic -->

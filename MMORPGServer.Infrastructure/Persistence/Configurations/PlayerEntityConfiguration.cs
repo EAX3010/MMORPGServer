@@ -24,7 +24,7 @@ public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerEntity>
         builder.Property(e => e.Name)
             .IsRequired()
             .HasMaxLength(15)
-            .UseCollation("Arabic_CI_AS"); // Case-insensitive collation supporting Arabic
+            .UseCollation("LATIN1_GENERAL_100_CI_AS_SC_UTF8"); // Case-insensitive collation supporting Arabic
 
         // Level: Default value 1
         builder.Property(e => e.Level)
@@ -51,9 +51,7 @@ public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerEntity>
 
 
         // Last login: Required with default current UTC time
-        builder.Property(e => e.LastLogin)
-            .IsRequired()
-            .HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(e => e.LastLogin);
 
         // Last logout: Optional (null when player is online)
         builder.Property(e => e.LastLogout);
@@ -66,7 +64,8 @@ public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerEntity>
             .HasDefaultValueSql("GETUTCDATE()");
 
         // Modified timestamp: Optional (null until first modification)
-        builder.Property(e => e.LastModifiedAt);
+        builder.Property(e => e.LastModifiedAt).IsRequired()
+             .HasDefaultValueSql("GETUTCDATE()");
 
         // === Soft Delete Fields ===
 

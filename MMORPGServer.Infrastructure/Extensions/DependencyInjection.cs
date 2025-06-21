@@ -2,11 +2,14 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MMORPGServer.Application.Common.Interfaces;
+using MMORPGServer.Application.Common.Interfaces.Repositories;
 using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.Interfaces;
 using MMORPGServer.Infrastructure.Persistence;
 using MMORPGServer.Infrastructure.Persistence.Common;
 using MMORPGServer.Infrastructure.Persistence.Interceptors;
+using MMORPGServer.Infrastructure.Persistence.Repositories;
+using MMORPGServer.Infrastructure.Persistence.UnitOfWork;
 using System.Reflection;
 
 namespace MMORPGServer.Infrastructure.Extensions
@@ -62,8 +65,8 @@ namespace MMORPGServer.Infrastructure.Extensions
                 // options.UseLazyLoadingProxies();
             });
 
-            // Register DbContext as IApplicationDbContext for clean architecture
-            services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<GameDbContext>());
+            services.AddScoped<IPlayerRepository, PlayerRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             AddPacketHandlers(services);
             return services;
         }

@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Domain.Common;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Domain.Entities;
 using MMORPGServer.Domain.Interfaces;
 using MMORPGServer.Domain.ValueObjects;
@@ -10,12 +10,12 @@ namespace MMORPGServer.Application.Services
     {
         private readonly ILogger<GameWorld> _logger;
         private readonly IMapRepository _mapRepository;
-        private readonly IPlayerManager _playerManager;
+        private readonly PlayerService _playerManager;
 
         public GameWorld(
             ILogger<GameWorld> logger,
             IMapRepository mapRepository,
-            IPlayerManager playerManager)
+            PlayerService playerManager)
         {
             _logger = logger;
             _mapRepository = mapRepository;

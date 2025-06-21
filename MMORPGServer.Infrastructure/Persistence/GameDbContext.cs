@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MMORPGServer.Application.Common.Interfaces;
-using MMORPGServer.Domain.Common;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Domain.Persistence;
 using MMORPGServer.Infrastructure.Persistence.Interceptors;
 using System.Linq.Expressions;
@@ -10,7 +9,7 @@ using System.Reflection;
 /// Entity Framework Core database context for the MMORPG game.
 /// Manages database connections and entity configurations.
 /// </summary>
-public sealed class GameDbContext : DbContext, IApplicationDbContext
+public sealed class GameDbContext : DbContext
 {
     private readonly AuditableEntitySaveChangesInterceptor _auditableEntitySaveChangesInterceptor;
 

@@ -1,4 +1,4 @@
-﻿using MMORPGServer.Domain.Common;
+﻿using MMORPGServer.Domain.Common.Interfaces;
 
 namespace MMORPGServer.Domain.Persistence
 {
