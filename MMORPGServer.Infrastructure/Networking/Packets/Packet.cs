@@ -15,7 +15,7 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
         private const string CLIENT_SIGNATURE = "TQClient";
         private const string SERVER_SIGNATURE = "TQServer";
         private const int SIGNATURE_SIZE = 8; // "TQClient" or "TQServer"
-        private const int HEADER_SIZE = 4;    // Packet Length (ushort) + Packet Type (ushort)
+        private const int HEADER_SIZE = 4;    // Packet Length (short) + Packet Type (short)
 
         internal readonly IMemoryOwner<byte> _memoryOwner;
         internal Memory<byte> _buffer;
@@ -30,12 +30,12 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
         /// Gets the total length of the packet as declared in its header (first 2 bytes).
         /// This is the length WITHOUT the signature.
         /// </summary>
-        public ushort Length => _dataLength >= 2 ? BitConverter.ToUInt16(_buffer.Span[..2]) : (ushort)0;
+        public short Length => _dataLength >= 2 ? BitConverter.ToInt16(_buffer.Span[..2]) : (short)0;
 
         /// <summary>
         /// Gets the type of the packet as declared in its header (bytes 2-3).
         /// </summary>
-        public GamePackets Type => (GamePackets)(_dataLength >= 4 ? BitConverter.ToUInt16(_buffer.Span[2..4]) : (ushort)0);
+        public GamePackets Type => (GamePackets)(_dataLength >= 4 ? BitConverter.ToInt16(_buffer.Span[2..4]) : (short)0);
 
         /// <summary>
         /// Current position in the buffer (for reading or writing operations).
@@ -58,7 +58,7 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
         {
             get
             {
-                ushort declaredLength = Length;
+                short declaredLength = Length;
                 if (declaredLength == 0) return false;
 
                 // Total packet size = declared length + signature size
@@ -122,14 +122,14 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
         /// Constructor for outgoing packets. Creates buffer and writes header.
         /// Position starts after the header for writing payload data.
         /// </summary>
-        public Packet(ushort type, bool isServerPacket = true, int capacity = 1024)
+        public Packet(short type, bool isServerPacket = true, int capacity = 1024)
         {
             _memoryOwner = MemoryPool<byte>.Shared.Rent(Math.Max(capacity, HEADER_SIZE + SIGNATURE_SIZE));
             _buffer = _memoryOwner.Memory;
             _buffer.Span.Clear();
 
             // Write header: placeholder length (0) and packet type
-            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)0);
+            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (short)0);
             _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], type);
             _dataLength = HEADER_SIZE;
             Position = HEADER_SIZE; // Start writing after header
@@ -142,8 +142,8 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
             _buffer.Span.Clear();
 
             // Write header: placeholder length (0) and packet type
-            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)0);
-            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], (ushort)type);
+            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (short)0);
+            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], (short)type);
             _dataLength = HEADER_SIZE;
             Position = HEADER_SIZE; // Start writing after header
         }
@@ -357,14 +357,14 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
         public void FinalizePacket(GamePackets Type)
         {
             WriteSeal();
-            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)(_dataLength - SIGNATURE_SIZE));
-            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], (ushort)Type);
+            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (short)(_dataLength - SIGNATURE_SIZE));
+            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], (short)Type);
 
         }
-        public void FinalizePacket(ushort Type)
+        public void FinalizePacket(short Type)
         {
             WriteSeal();
-            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (ushort)(_dataLength - SIGNATURE_SIZE));
+            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (short)(_dataLength - SIGNATURE_SIZE));
             _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], Type);
 
         }

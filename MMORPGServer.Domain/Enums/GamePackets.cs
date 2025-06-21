@@ -1,6 +1,6 @@
 namespace MMORPGServer.Domain.Enums
 {
-    public enum GamePackets : ushort
+    public enum GamePackets : short
     {
         // Connection and System Messages
         CMsgConnectOtherErr = 1055, // 0x41f

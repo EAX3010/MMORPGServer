@@ -2,11 +2,11 @@
 
 public interface INetworkManager
 {
-    IReadOnlyDictionary<uint, IGameClient> ConnectedClients { get; }
+    IReadOnlyDictionary<int, IGameClient> ConnectedClients { get; }
     int ConnectionCount { get; }
 
     void AddClient(IGameClient client);
-    void RemoveClient(uint clientId);
-    IGameClient? GetClient(uint clientId);
-    ValueTask BroadcastAsync(ReadOnlyMemory<byte> packetData, uint excludeClientId = 0);
+    void RemoveClient(int clientId);
+    IGameClient? GetClient(int clientId);
+    ValueTask BroadcastAsync(ReadOnlyMemory<byte> packetData, int excludeClientId = 0);
 }

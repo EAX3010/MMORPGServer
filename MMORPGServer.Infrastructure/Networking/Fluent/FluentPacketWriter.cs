@@ -1,8 +1,6 @@
 ﻿using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.Interfaces;
 using MMORPGServer.Infrastructure.Networking.Packets;
-using System;
-using System.Collections.Generic;
 
 namespace MMORPGServer.Infrastructure.Networking.Fluent
 {
@@ -14,10 +12,10 @@ namespace MMORPGServer.Infrastructure.Networking.Fluent
         public FluentPacketWriter(GamePackets type)
         {
             _packetType = type;
-            _packet = new Packet((ushort)type);
+            _packet = new Packet((short)type);
         }
 
-        public FluentPacketWriter(ushort type)
+        public FluentPacketWriter(short type)
         {
             _packetType = (GamePackets)type;
             _packet = new Packet(type);

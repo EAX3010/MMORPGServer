@@ -6,9 +6,9 @@ namespace MMORPGServer.Application.Services
 {
     public sealed class PlayerManager : IPlayerManager
     {
-        public ConcurrentDictionary<uint, Player> _players = [];
+        public ConcurrentDictionary<int, Player> _players = [];
 
-        public ValueTask<Player> GetPlayerAsync(uint playerId)
+        public ValueTask<Player> GetPlayerAsync(int playerId)
         {
             _players.TryGetValue(playerId, out Player player);
             return ValueTask.FromResult(player);
@@ -16,11 +16,11 @@ namespace MMORPGServer.Application.Services
 
         public ValueTask AddPlayerAsync(Player player)
         {
-            _players.TryAdd(player.ObjectId, player);
+            _players.TryAdd(player.Id, player);
             return ValueTask.CompletedTask;
         }
 
-        public ValueTask RemovePlayerAsync(uint playerId)
+        public ValueTask RemovePlayerAsync(int playerId)
         {
             _players.TryRemove(playerId, out _);
             return ValueTask.CompletedTask;
@@ -31,7 +31,7 @@ namespace MMORPGServer.Application.Services
             return ValueTask.FromResult(_players.Count);
         }
 
-        public ConcurrentDictionary<uint, Player> GetPlayers()
+        public ConcurrentDictionary<int, Player> GetPlayers()
         {
             return _players;
         }

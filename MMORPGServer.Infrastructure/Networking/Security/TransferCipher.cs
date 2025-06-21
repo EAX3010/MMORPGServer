@@ -417,27 +417,27 @@ namespace MMORPGServer.Infrastructure.Networking.Security
             _rivest = new RivestCipher5();
             _rivest.GenerateKeys(password.GetBytes(16));
         }
-        public unsafe uint[] Encrypt(uint[] input)
+        public unsafe int[] Encrypt(int[] input)
         {
             byte[] buffer = new byte[8];
             fixed (byte* ptr = buffer)
             {
-                *(uint*)ptr = input[0];
-                *(uint*)(ptr + 4) = input[1];
+                *(int*)ptr = input[0];
+                *(int*)(ptr + 4) = input[1];
             }
             _rivest.Encrypt(buffer);
-            return new uint[2] { BitConverter.ToUInt32(buffer, 0), BitConverter.ToUInt32(buffer, 4) };
+            return new int[2] { BitConverter.ToInt32(buffer, 0), BitConverter.ToInt32(buffer, 4) };
         }
-        public uint[] Decrypt(uint[] input)
+        public int[] Decrypt(int[] input)
         {
             byte[] buffer = new byte[8];
             fixed (byte* ptr = buffer)
             {
-                *(uint*)(ptr + 0) = input[0];
-                *(uint*)(ptr + 4) = input[1];
+                *(int*)(ptr + 0) = input[0];
+                *(int*)(ptr + 4) = input[1];
             }
             _rivest.Decrypt(buffer);
-            return new uint[2] { BitConverter.ToUInt32(buffer, 0), BitConverter.ToUInt32(buffer, 4) };
+            return new int[2] { BitConverter.ToInt32(buffer, 0), BitConverter.ToInt32(buffer, 4) };
         }
     }
 }

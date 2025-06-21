@@ -139,7 +139,7 @@ namespace MMORPGServer.Application.Services
 
     public class PlayerCastAction : GameAction
     {
-        public ushort SkillId { get; set; }
+        public short SkillId { get; set; }
         public uint? TargetId { get; set; }
         public Position? TargetPosition { get; set; }
     }

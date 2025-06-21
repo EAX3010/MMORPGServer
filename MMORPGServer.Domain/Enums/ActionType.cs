@@ -3,7 +3,7 @@ namespace MMORPGServer.Domain.Enums
     /// <summary>
     /// Defines all possible action types that can be performed in the game.
     /// </summary>
-    public enum ActionType : ushort
+    public enum ActionType : short
     {
         #region Movement and Position
         /// <summary>

@@ -11,7 +11,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
     public class MapRepository : IMapRepository
     {
         private readonly ILogger<MapRepository> _logger;
-        private readonly ConcurrentDictionary<ushort, Map> _maps;
+        private readonly ConcurrentDictionary<short, Map> _maps;
         private readonly MapVisualizer _mapVisualizer;
         private readonly string _basePath;
 
@@ -19,12 +19,12 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
         {
             _logger = logger;
             _mapVisualizer = mapVisualizer;
-            _maps = new ConcurrentDictionary<ushort, Map>();
+            _maps = new ConcurrentDictionary<short, Map>();
             _basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Database");
 
         }
 
-        public async Task<Map> GetMapAsync(ushort mapId)
+        public async Task<Map> GetMapAsync(short mapId)
         {
             _maps.TryGetValue(mapId, out Map map);
             return map;
@@ -40,7 +40,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
             return _maps.TryAdd(map.Id, map);
         }
 
-        public async Task<bool> DeleteMapAsync(ushort mapId)
+        public async Task<bool> DeleteMapAsync(short mapId)
         {
             return _maps.TryRemove(mapId, out _);
         }
@@ -68,14 +68,14 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
                 string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength)).Replace(".7z", ".dmap");
                 _ = reader.ReadInt32();//  puzzleSize
 
-                var map = await LoadMapDataAsync((ushort)mapId, fileName);
+                var map = await LoadMapDataAsync((short)mapId, fileName);
 
                 await SaveMapAsync(map);
 
 
             }
             _logger.LogInformation("Map initialization completed with total maps of {i}", i);
-            async Task<Map> LoadMapDataAsync(ushort mapId, string fileName)
+            async Task<Map> LoadMapDataAsync(short mapId, string fileName)
             {
                 try
                 {
@@ -113,12 +113,12 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
                             {
                                 CellFlag = CellType.Open;
                             }
-                            ushort FloorType = (ushort)(reader.ReadUInt16());
+                            short FloorType = (short)(reader.ReadUInt16());
                             if (!IsValidCellType((int)CellFlag))
                             {
                                 _logger.LogError("Invalid cell type flags: {CellFlag}", CellFlag);
                             }
-                            ushort cellHeight = reader.ReadUInt16();
+                            short cellHeight = reader.ReadInt16();
                             map[x, y] = new Cell(CellFlag, cellHeight, FloorType);
 
                         }
@@ -143,7 +143,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
                     //    //        if (portalY + y < height && portalX + x < width)
                     //    //        {
                     //    //            map[portalX + x, portalY + y] = map[portalX + x, portalY + y]
-                    //    //                .SetArgument((ushort)destinationId);
+                    //    //                .SetArgument((short)destinationId);
                     //    //        }
                     //    //    }
                     //    //}

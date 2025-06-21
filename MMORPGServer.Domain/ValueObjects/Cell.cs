@@ -16,10 +16,10 @@ namespace MMORPGServer.Domain.ValueObjects
         ///     Holds altitude for valid tiles. Jump height difference limit is 200.
         ///     If the tile is flagged as a portal, this will be the portal's destination ID.
         /// </summary>
-        public readonly ushort Argument;
-        public readonly ushort FloorType;
+        public readonly short Argument;
+        public readonly short FloorType;
 
-        public Cell(CellType baseType, ushort altitude, ushort floorType)
+        public Cell(CellType baseType, short altitude, short floorType)
         {
             Flags = baseType;
             Argument = altitude;
@@ -41,7 +41,7 @@ namespace MMORPGServer.Domain.ValueObjects
             return new Cell(Flags & ~flag, Argument, FloorType);
         }
 
-        public Cell SetArgument(ushort value)
+        public Cell SetArgument(short value)
         {
             return new Cell(Flags, value, FloorType);
         }

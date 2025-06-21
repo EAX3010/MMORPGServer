@@ -13,16 +13,16 @@ namespace MMORPGServer.Domain.Entities
         private bool _disposed = false;
         private readonly Cell[,] _cells;
         private readonly Dictionary<int, Position> _portalPositions;
-        private readonly ConcurrentDictionary<uint, MapObject> _entities;
+        private readonly ConcurrentDictionary<int, MapObject> _entities;
         private readonly SpatialGrid _spatialGrid;
-        public ushort Id { get; }
+        public short Id { get; }
         public int Width { get; }
         public int Height { get; }
         public IReadOnlyDictionary<int, Position> PortalPositions => _portalPositions;
         public IReadOnlyCollection<MapObject> Entities => _entities.Values.ToList();
         public int EntityCount => _entities.Count;
 
-        public Map(ushort id, int width, int height)
+        public Map(short id, int width, int height)
         {
             if (width <= 0 || height <= 0)
                 throw new ArgumentException("Map dimensions must be positive");
@@ -30,7 +30,7 @@ namespace MMORPGServer.Domain.Entities
             Id = id;
             Width = width;
             Height = height;
-            _entities = new ConcurrentDictionary<uint, MapObject>();
+            _entities = new ConcurrentDictionary<int, MapObject>();
             _cells = new Cell[width, height];
             _portalPositions = new Dictionary<int, Position>();
             _spatialGrid = new SpatialGrid(width, height, 32); // 32x32 cell size
@@ -64,7 +64,7 @@ namespace MMORPGServer.Domain.Entities
             if (!IsValidPosition(entity.Position))
                 return false;
 
-            if (!_entities.TryAdd(entity.ObjectId, entity))
+            if (!_entities.TryAdd(entity.Id, entity))
                 return false;
 
             _spatialGrid.Add(entity);
@@ -76,7 +76,7 @@ namespace MMORPGServer.Domain.Entities
         /// <summary>
         /// Removes an entity from the map
         /// </summary>
-        public bool RemoveEntity(uint entityId)
+        public bool RemoveEntity(int entityId)
         {
             if (!_entities.TryRemove(entityId, out MapObject entity))
                 return false;
@@ -91,7 +91,7 @@ namespace MMORPGServer.Domain.Entities
         /// <summary>
         /// Gets an entity by its ID
         /// </summary>
-        public MapObject? GetEntity(uint entityId)
+        public MapObject? GetEntity(int entityId)
         {
             _entities.TryGetValue(entityId, out MapObject entity);
             return entity;
@@ -137,7 +137,7 @@ namespace MMORPGServer.Domain.Entities
 
             // Check if position is occupied by another entity
             IEnumerable<MapObject> entitiesAtPosition = GetEntitiesInRange(newPosition, 0.5f);
-            if (entitiesAtPosition.Any(e => e.ObjectId != entity.ObjectId && e.Position == newPosition))
+            if (entitiesAtPosition.Any(e => e.Id != entity.Id && e.Position == newPosition))
                 return false;
 
             Position oldPosition = entity.Position;
@@ -210,7 +210,7 @@ namespace MMORPGServer.Domain.Entities
         /// <summary>
         /// Checks if the map contains an entity
         /// </summary>
-        public bool ContainsEntity(uint entityId)
+        public bool ContainsEntity(int entityId)
         {
             return _entities.ContainsKey(entityId);
         }

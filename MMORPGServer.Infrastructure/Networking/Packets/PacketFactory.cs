@@ -43,7 +43,7 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
         {
             HeroInfoProto proto = new HeroInfoProto
             {
-                UID = player.ObjectId,
+                Id = player.Id,
                 Name = "Hero",
                 Level = (uint)player.Level,
                 Strength = (uint)player.Strength,
@@ -62,7 +62,7 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
                 SpecialWingID = 0,
                 HeavenBlessing = 0,
                 Atributes = 0,
-                HitPoints = player.MaxHealth,
+                HitPoints = player.CurrentHealth,
                 Mana = (uint)player.MaxMana,
                 PKPoints = 0,
                 FullClass = 0,

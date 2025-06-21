@@ -25,7 +25,7 @@ namespace MMORPGServer.Infrastructure.Networking.Server
         private CancellationTokenSource _cancellationTokenSource;
         private Task _acceptTask;
         private Task _messageProcessingTask;
-        private uint _nextClientId = 1;
+        private int _nextClientId = 1;
         private long _totalConnectionsAccepted = 0;
         private long _totalMessagesProcessed = 0;
         private DateTime _serverStartTime;
@@ -75,7 +75,7 @@ namespace MMORPGServer.Infrastructure.Networking.Server
                 try
                 {
                     TcpClient tcpClient = await _tcpListener!.AcceptTcpClientAsync();
-                    uint clientId = Interlocked.Increment(ref _nextClientId);
+                    int clientId = Interlocked.Increment(ref _nextClientId);
                     Interlocked.Increment(ref _totalConnectionsAccepted);
 
                     string clientEndpoint = tcpClient.Client.RemoteEndPoint?.ToString() ?? "Unknown";
@@ -161,14 +161,14 @@ namespace MMORPGServer.Infrastructure.Networking.Server
             _logger.LogDebug("Message processing loop stopped");
         }
 
-        public void RemoveClient(uint clientId)
+        public void RemoveClient(int clientId)
         {
             _networkManager.RemoveClient(clientId);
             _logger.LogInformation("Player #{ClientId} disconnected (Remaining: {CurrentConnections})",
                 clientId, _networkManager.ConnectionCount);
         }
 
-        public async ValueTask BroadcastPacketAsync(ReadOnlyMemory<byte> packetData, uint excludeClientId = 0)
+        public async ValueTask BroadcastPacketAsync(ReadOnlyMemory<byte> packetData, int excludeClientId = 0)
         {
             int connectedClients = _networkManager.ConnectionCount;
             if (connectedClients > 0)

@@ -55,11 +55,11 @@ namespace MMORPGServer.Application.PacketsHandlers
         {
             await client.SendPacketAsync(PacketFactory.CreateActionPacket(new ActionProto
             {
-                UID = client.Player.ObjectId,
+                UID = client.Player.Id,
                 Type = ActionType.SetLocation,
                 dwParam = client.Player.MapId,
-                wParam1 = (ushort)client.Player.Position.X,
-                wParam2 = (ushort)client.Player.Position.Y,
+                wParam1 = (short)client.Player.Position.X,
+                wParam2 = (short)client.Player.Position.Y,
             }));
         }
     }

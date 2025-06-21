@@ -7,7 +7,7 @@ using MMORPGServer.Domain.Interfaces;
 
 namespace MMORPGServer.Application.PacketsHandlers
 {
-    public record LoginGamaEnglishData(uint Uid, uint State);
+    public record LoginGamaEnglishData(int Id, int State);
     public sealed class LoginGamaEnglishHandler : AbstractValidator<LoginGamaEnglishData>,
         IPacketProcessor<GamePackets>
     {
@@ -21,16 +21,16 @@ namespace MMORPGServer.Application.PacketsHandlers
         {
             _logger = logger;
 
-            _ = RuleFor(x => x.Uid)
+            _ = RuleFor(x => x.Id)
                 .NotEmpty()
                 .WithMessage("UID cannot be empty")
-                .GreaterThan(1000000u)
+                .GreaterThan(1000000)
                 .WithMessage("UID must be greater than 0")
-                .LessThanOrEqualTo(10000000u)
+                .LessThanOrEqualTo(10000000)
                 .WithMessage("UID exceeds maximum allowed value");
 
             _ = RuleFor(x => x.State)
-                .LessThanOrEqualTo(10U)
+                .LessThanOrEqualTo(10)
                 .WithMessage("State value cannot exceed 10");
             _packetFactory = packetFactory;
             _transferCipher = transferCipher;
@@ -44,7 +44,7 @@ namespace MMORPGServer.Application.PacketsHandlers
             ArgumentNullException.ThrowIfNull(packet);
 
 
-            uint[] outputDecrypted = _transferCipher.Decrypt([packet.ReadUInt32(), packet.ReadUInt32()]);
+            int[] outputDecrypted = _transferCipher.Decrypt([packet.ReadInt32(), packet.ReadInt32()]);
 
             LoginGamaEnglishData data = new(outputDecrypted[0], outputDecrypted[1]);
 
@@ -55,8 +55,8 @@ namespace MMORPGServer.Application.PacketsHandlers
                 _logger.LogWarning("Packet validation failed: {Errors}", errors);
                 return;
             }
-            _logger.LogInformation("LoginGamaEnglish decrypted UID: {uid}, State: {state}", data.Uid, data.State);
-            client.Player = new Domain.Entities.Player(client.ClientId, data.Uid);
+            _logger.LogInformation("LoginGamaEnglish decrypted UID: {uid}, State: {state}", data.Id, data.State);
+            client.Player = new Domain.Entities.Player(client.ClientId, data.Id);
             await _playerManager.AddPlayerAsync(client.Player);
             await _gameWorld.SpawnPlayerAsync(client.Player, 1002);
             await client.SendPacketAsync(_packetFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));

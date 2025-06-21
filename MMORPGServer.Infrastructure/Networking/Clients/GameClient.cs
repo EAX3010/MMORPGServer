@@ -36,7 +36,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
         private static readonly TimeSpan WOULD_BLOCK_RETRY_DELAY = TimeSpan.FromMilliseconds(10);
         #endregion
         #region Properties
-        public uint ClientId { get; }
+        public int ClientId { get; }
         public bool IsConnected => State != ClientState.Disconnected && _tcpClient?.Connected == true;
         public string IPAddress { get; }
         public DateTime ConnectedAt { get; }
@@ -96,7 +96,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
 
         #region Constructor
         public GameClient(
-            uint clientId,
+            int clientId,
             TcpClient tcpClient,
             DiffieHellmanKeyExchange dhKeyExchange,
             TQCast5Cryptographer cryptographer,
@@ -549,7 +549,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
             if (buffer.Length < PACKET_LENGTH_SIZE)
                 return false;
 
-            ushort packetLength = BitConverter.ToUInt16(buffer);
+            short packetLength = BitConverter.ToInt16(buffer);
 
             if (!ValidatePacketSize(packetLength, "Dummy"))
             {
@@ -586,7 +586,7 @@ namespace MMORPGServer.Infrastructure.Networking.Clients
             }
 
             // Now we have the full length
-            ushort declaredLength = BitConverter.ToUInt16(_decryptedBuffer.Span);
+            short declaredLength = BitConverter.ToInt16(_decryptedBuffer.Span);
             int totalPacketSize = declaredLength + PACKET_SIGNATURE_SIZE;
 
             if (!ValidatePacketSize(totalPacketSize, "Game"))

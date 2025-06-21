@@ -21,7 +21,7 @@ namespace MMORPGServer.Application.Services
             _mapRepository = mapRepository;
             _playerManager = playerManager;
         }
-        public async Task<Player?> SpawnPlayerAsync(Player player, ushort mapId)
+        public async Task<Player?> SpawnPlayerAsync(Player player, short mapId)
         {
             Map map = await _mapRepository.GetMapAsync(mapId);
             if (map is null)
@@ -48,7 +48,7 @@ namespace MMORPGServer.Application.Services
             return player;
         }
 
-        public async Task<bool> MovePlayerAsync(uint playerId, Position newPosition)
+        public async Task<bool> MovePlayerAsync(int playerId, Position newPosition)
         {
             Player player = await _playerManager.GetPlayerAsync(playerId);
             if (player == null)
@@ -62,7 +62,7 @@ namespace MMORPGServer.Application.Services
             return player.Map.TryMoveEntity(player, newPosition);
         }
 
-        public async Task<IEnumerable<MapObject>> GetEntitiesInRangeAsync(uint playerId, float range)
+        public async Task<IEnumerable<MapObject>> GetEntitiesInRangeAsync(int playerId, float range)
         {
             Player player = await _playerManager.GetPlayerAsync(playerId);
             if (player == null)

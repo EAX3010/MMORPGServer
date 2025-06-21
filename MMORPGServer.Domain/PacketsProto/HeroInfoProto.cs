@@ -6,7 +6,7 @@ namespace MMORPGServer.Domain.PacketsProto
     public class HeroInfoProto
     {
         [ProtoMember(1, IsRequired = true)]
-        public uint UID;
+        public int Id;
         [ProtoMember(2, IsRequired = true)]
         public uint AparenceType;
         [ProtoMember(3, IsRequired = true)]

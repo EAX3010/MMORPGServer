@@ -6,28 +6,38 @@ namespace MMORPGServer.Domain.Entities
 {
     public class Player : MapObject
     {
-        public Player(uint connectionId, uint objectId)
+        public Player(int connectionId, int id)
         {
             Name = "New Player";
             ConnectionId = connectionId;
-            ObjectId = objectId;
+            Id = id;
             Position = new Position(300, 300);
         }
-        public uint ConnectionId { get; set; }
-        public string Name { get; set; }
-        // Basic stats
+        public int ConnectionId { get; set; }
+        public string Name { get; set; } = default!;
         public int Level { get; set; } = 1;
-        public int Experience { get; set; }
-        public int MaxHealth { get; set; } = 100;
-        public int CurrentHealth { get; set; }
-        public int MaxMana { get; set; } = 100;
-        public int CurrentMana { get; set; }
+        public long Experience { get; set; } = 0;
 
-        // Conquer Online specific stats
-        public int Strength { get; set; } = 10;
-        public int Agility { get; set; } = 10;
-        public int Vitality { get; set; } = 10;
-        public int Spirit { get; set; } = 10;
+
+
+        // Resources
+        public long Gold { get; set; } = 0;
+        public int ConquerPoints { get; set; } = 0;
+        public int BoundConquerPoints { get; set; } = 0;
+
+        // Stats
+        public int MaxHealth { get; set; } = 0;
+        public int CurrentHealth { get; set; } = 0;
+        public int MaxMana { get; set; } = 0;
+        public int CurrentMana { get; set; } = 0;
+        public short Strength { get; set; } = 0;
+        public short Agility { get; set; } = 0;
+        public short Vitality { get; set; } = 0;
+        public short Spirit { get; set; } = 0;
+
+        public bool IsDirty { get; set; }
+        public DateTime LastSaveTime { get; set; }
+        public DateTime LastLogin { get; set; }
 
         protected override MapObjectType GetObjectType()
         {

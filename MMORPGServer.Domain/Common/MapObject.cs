@@ -6,8 +6,8 @@ namespace MMORPGServer.Domain.Common
 {
     public abstract partial class MapObject
     {
-        public uint IndexID { get; set; }
-        public uint ObjectId { get; set; }
+        public int IndexID { get; set; }
+        public int Id { get; set; }
         private Map _map;
 
         public Map Map
@@ -20,7 +20,7 @@ namespace MMORPGServer.Domain.Common
             }
         }
 
-        public ushort MapId { get; private set; }
+        public short MapId { get; set; }
         public bool IsActive { get; set; }
         public MapObjectType ObjectType { get; set; }
         public Position Position { get; set; }

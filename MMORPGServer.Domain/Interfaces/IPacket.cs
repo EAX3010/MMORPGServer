@@ -6,14 +6,14 @@ namespace MMORPGServer.Domain.Interfaces
     {
         ReadOnlySpan<byte> Data { get; }
         bool IsComplete { get; }
-        ushort Length { get; }
+        short Length { get; }
         int Position { get; }
         int RemainingBytes { get; }
         GamePackets Type { get; }
 
         T DeserializeProto<T>();
         void FinalizePacket(GamePackets Type);
-        void FinalizePacket(ushort Type);
+        void FinalizePacket(short Type);
         ReadOnlyMemory<byte> GetFinalizedMemory();
         IPacketReader GetReader();
         IPacketWriter GetWriter();

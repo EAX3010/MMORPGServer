@@ -5,9 +5,9 @@ namespace MMORPGServer.Domain.Interfaces
 {
     public interface IPlayerManager
     {
-        ConcurrentDictionary<uint, Player> GetPlayers();
-        ValueTask<Player?> GetPlayerAsync(uint playerId);
+        ConcurrentDictionary<int, Player> GetPlayers();
+        ValueTask<Player?> GetPlayerAsync(int playerId);
         ValueTask AddPlayerAsync(Player player);
-        ValueTask RemovePlayerAsync(uint playerId);
+        ValueTask RemovePlayerAsync(int playerId);
     }
 }

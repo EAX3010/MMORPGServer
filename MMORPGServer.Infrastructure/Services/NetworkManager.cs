@@ -8,7 +8,7 @@ namespace MMORPGServer.Infrastructure.Services
     public sealed class NetworkManager : INetworkManager
     {
         private readonly ILogger<NetworkManager> _logger;
-        private readonly ConcurrentDictionary<uint, IGameClient> _clients = new();
+        private readonly ConcurrentDictionary<int, IGameClient> _clients = new();
         private long _totalPacketsSent = 0;
         private long _totalBytesSent = 0;
 
@@ -17,7 +17,7 @@ namespace MMORPGServer.Infrastructure.Services
             _logger = logger;
         }
 
-        public IReadOnlyDictionary<uint, IGameClient> ConnectedClients => _clients;
+        public IReadOnlyDictionary<int, IGameClient> ConnectedClients => _clients;
         public int ConnectionCount => _clients.Count;
 
         public void AddClient(IGameClient client)
@@ -40,7 +40,7 @@ namespace MMORPGServer.Infrastructure.Services
             }
         }
 
-        public void RemoveClient(uint clientId)
+        public void RemoveClient(int clientId)
         {
             if (_clients.TryRemove(clientId, out IGameClient client))
             {
@@ -64,13 +64,13 @@ namespace MMORPGServer.Infrastructure.Services
             }
         }
 
-        public IGameClient GetClient(uint clientId)
+        public IGameClient GetClient(int clientId)
         {
             _clients.TryGetValue(clientId, out IGameClient client);
             return client;
         }
 
-        public async ValueTask BroadcastAsync(ReadOnlyMemory<byte> packetData, uint excludeClientId = 0)
+        public async ValueTask BroadcastAsync(ReadOnlyMemory<byte> packetData, int excludeClientId = 0)
         {
             List<ValueTask> tasks = new List<ValueTask>();
             int clientCount = 0;

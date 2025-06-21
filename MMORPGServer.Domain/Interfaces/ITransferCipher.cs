@@ -2,7 +2,7 @@
 {
     public interface ITransferCipher
     {
-        uint[] Decrypt(uint[] input);
-        uint[] Encrypt(uint[] input);
+        int[] Decrypt(int[] input);
+        int[] Encrypt(int[] input);
     }
 }
