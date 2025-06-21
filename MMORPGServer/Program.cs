@@ -20,37 +20,15 @@ namespace MMORPGServer
 
         public static async Task Main(string[] args)
         {
-            // Configure Serilog first
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
-                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-                .MinimumLevel.Override("System", LogEventLevel.Warning)
-                .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
-                .Enrich.FromLogContext()
-                .Enrich.WithThreadId()
-                .Enrich.WithProcessId()
-                .Enrich.WithEnvironmentName()
-                .WriteTo.Console(
-                    outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}",
-                    theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Literate)
-                .WriteTo.File(
-                    path: "logs/server-.log",
-                    rollingInterval: RollingInterval.Day,
-                    retainedFileCountLimit: 7,
-                    outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
-                .CreateLogger();
 
-            // Global exception handler for unhandled exceptions
-            AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) =>
-            {
-                Log.Fatal(eventArgs.ExceptionObject as Exception, "Unhandled exception occurred");
-            };
             try
             {
+                ConfigLogger();
                 DisplayStartupBanner();
 
+
                 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
-                builder.Services.AddInfrastructure(builder.Configuration);
+                _ = builder.Services.AddInfrastructure(builder.Configuration);
 
                 // Use Serilog as the logging provider
                 _ = builder.Services.AddSerilog();
@@ -81,12 +59,12 @@ namespace MMORPGServer
                 _ = builder.Services.AddSingleton<MapVisualizer>();
 
                 IHost host = builder.Build();
+
+                using IServiceScope scope = host.Services.CreateScope();
+                await GameSystems.InitializeAsync(scope);
+
+
                 Log.Information("MMORPG Server starting up...");
-
-                // Initialize maps
-                var mapRepository = host.Services.GetRequiredService<IMapRepository>();
-                await mapRepository.InitializeMapsAsync();
-
                 await host.RunAsync();
 
             }
@@ -104,35 +82,76 @@ namespace MMORPGServer
 
         private static void DisplayStartupBanner()
         {
-            Console.Clear();
-            Console.ForegroundColor = ConsoleColor.Cyan;
+            try
+            {
+                // Check if we're running in a console environment
+                if (!Console.IsOutputRedirected && Environment.UserInteractive)
+                {
+                    Console.Clear();
+                }
 
-            Console.WriteLine(@"
+                Console.ForegroundColor = ConsoleColor.Cyan;
+
+                Console.WriteLine(@"
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                              MMORPG SERVER v1.0                              ║
 ║                          High-Performance Game Server                        ║
 ╚══════════════════════════════════════════════════════════════════════════════╝");
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($".NET {Environment.Version} | Built with C# 13");
-            Console.WriteLine($"Platform: {Environment.OSVersion}");
-            Console.WriteLine($"Memory: {GC.GetTotalMemory(false) / 1024 / 1024} MB");
-            Console.WriteLine($"Processors: {Environment.ProcessorCount}");
-            Console.WriteLine($"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($".NET {Environment.Version} | Built with C# 13");
+                Console.WriteLine($"Platform: {Environment.OSVersion}");
+                Console.WriteLine($"Memory: {GC.GetTotalMemory(false) / 1024 / 1024} MB");
+                Console.WriteLine($"Processors: {Environment.ProcessorCount}");
+                Console.WriteLine($"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
 
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("\nGame Features:");
-            Console.WriteLine("   • Secure Diffie-Hellman Key Exchange");
-            Console.WriteLine("   • CAST5 Encryption");
-            Console.WriteLine("   • Rate Limiting & Flood Protection");
-            Console.WriteLine("   • High-Performance Networking");
-            Console.WriteLine("   • Real-time Game Loop");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("\nGame Features:");
+                Console.WriteLine("   • Secure Diffie-Hellman Key Exchange");
+                Console.WriteLine("   • CAST5 Encryption");
+                Console.WriteLine("   • Rate Limiting & Flood Protection");
+                Console.WriteLine("   • High-Performance Networking");
+                Console.WriteLine("   • Real-time Game Loop");
 
-            Console.WriteLine("\n" + new string('═', 80));
-            Console.ResetColor();
-            Console.WriteLine();
+                Console.WriteLine("\n" + new string('═', 80));
+                Console.ResetColor();
+                Console.WriteLine();
+            }
+            catch (Exception)
+            {
+                // Ignore console errors during design-time
+                Console.WriteLine("MMORPG Server v1.0 - Starting...");
+            }
         }
 
+        private static void ConfigLogger()
+        {
+            Log.Logger = new LoggerConfiguration()
+               .MinimumLevel.Information()
+               .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+               .MinimumLevel.Override("System", LogEventLevel.Warning)
+               .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+               .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Information)
+               .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Error)
+               .Enrich.FromLogContext()
+               .Enrich.WithThreadId()
+               .Enrich.WithProcessId()
+               .Enrich.WithEnvironmentName()
+               .WriteTo.Console(
+                   outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}",
+                   theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Literate)
+               .WriteTo.File(
+                   path: "logs/server-.log",
+                   rollingInterval: RollingInterval.Day,
+                   retainedFileCountLimit: 7,
+                   outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}")
+               .CreateLogger();
 
+            // Global exception handler for unhandled exceptions
+            AppDomain.CurrentDomain.UnhandledException += (sender, eventArgs) =>
+            {
+                Log.Fatal(eventArgs.ExceptionObject as Exception, "Unhandled exception occurred");
+            };
+        }
     }
 }

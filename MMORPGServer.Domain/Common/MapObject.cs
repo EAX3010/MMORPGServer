@@ -1,7 +1,8 @@
-﻿using MMORPGServer.Domain.Enums;
+﻿using MMORPGServer.Domain.Entities;
+using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.ValueObjects;
 
-namespace MMORPGServer.Domain.Entities
+namespace MMORPGServer.Domain.Common
 {
     public abstract partial class MapObject
     {

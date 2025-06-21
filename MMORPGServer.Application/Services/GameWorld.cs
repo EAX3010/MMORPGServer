@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using MMORPGServer.Domain.Common;
 using MMORPGServer.Domain.Entities;
 using MMORPGServer.Domain.Interfaces;
 using MMORPGServer.Domain.ValueObjects;

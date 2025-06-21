@@ -1,3 +1,4 @@
+using MMORPGServer.Domain.Common;
 using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.ValueObjects;
 

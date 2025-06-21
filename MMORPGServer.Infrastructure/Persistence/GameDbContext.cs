@@ -1,122 +1,107 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MMORPGServer.Infrastructure.Persistence.Entities;
+using MMORPGServer.Application.Common.Interfaces;
+using MMORPGServer.Domain.Common;
+using MMORPGServer.Domain.Persistence;
+using MMORPGServer.Infrastructure.Persistence.Interceptors;
+using System.Linq.Expressions;
+using System.Reflection;
 
-namespace MMORPGServer.Infrastructure.Persistence
+/// <summary>
+/// Entity Framework Core database context for the MMORPG game.
+/// Manages database connections and entity configurations.
+/// </summary>
+public sealed class GameDbContext : DbContext, IApplicationDbContext
 {
-    public class GameDbContext : DbContext
+    private readonly AuditableEntitySaveChangesInterceptor _auditableEntitySaveChangesInterceptor;
+
+    /// <summary>
+    /// Initializes a new instance of the GameDbContext.
+    /// </summary>
+    /// <param name="options">Database context options</param>
+    /// <param name="auditableEntitySaveChangesInterceptor">Interceptor for handling audit fields</param>
+    public GameDbContext(
+        DbContextOptions<GameDbContext> options,
+        AuditableEntitySaveChangesInterceptor auditableEntitySaveChangesInterceptor)
+        : base(options)
     {
-        public GameDbContext(DbContextOptions<GameDbContext> options) : base(options)
-        {
-        }
+        _auditableEntitySaveChangesInterceptor = auditableEntitySaveChangesInterceptor;
+    }
 
-        // DbSets
-        public DbSet<PlayerEntity> Players { get; set; }
+    /// <summary>
+    /// DbSet for Player entities.
+    /// </summary>
+    public DbSet<PlayerEntity> Players => Set<PlayerEntity>();
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
+    /// <summary>
+    /// Configures the model creating conventions and relationships.
+    /// </summary>
+    /// <param name="modelBuilder">The model builder instance</param>
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Apply all entity configurations from the current assembly
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-            // Configure base DatabaseObject properties for all entities
-            ConfigureDatabaseObject(modelBuilder);
+        // Apply global query filters (e.g., soft delete)
+        ApplyGlobalFilters(modelBuilder);
 
-            // Configure specific entities
-            ConfigurePlayerEntity(modelBuilder);
-        }
+        base.OnModelCreating(modelBuilder);
+    }
 
-        private void ConfigureDatabaseObject(ModelBuilder modelBuilder)
-        {
-            // Apply to all entities that inherit from DatabaseObject
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-            {
-                if (typeof(DatabaseObject).IsAssignableFrom(entityType.ClrType))
-                {
-                    // Configure common properties
-                    modelBuilder.Entity(entityType.ClrType)
-                        .Property(nameof(DatabaseObject.CreatedAt))
-                        .HasDefaultValueSql("NOW()");
+    /// <summary>
+    /// Configures database-specific options.
+    /// </summary>
+    /// <param name="optionsBuilder">The options builder instance</param>
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        // Add the audit interceptor to automatically handle timestamps
+        optionsBuilder.AddInterceptors(_auditableEntitySaveChangesInterceptor);
 
-                    modelBuilder.Entity(entityType.ClrType)
-                        .Property(nameof(DatabaseObject.UpdatedAt))
-                        .HasDefaultValueSql("NOW()");
-
-                    modelBuilder.Entity(entityType.ClrType)
-                        .Property(nameof(DatabaseObject.Version))
-                        .HasDefaultValue(1)
-                        .IsConcurrencyToken(); // Enable optimistic concurrency
-
-                    modelBuilder.Entity(entityType.ClrType)
-                        .Property(nameof(DatabaseObject.IsDeleted))
-                        .HasDefaultValue(false);
-
-                    // Add index on IsDeleted for performance
-                    modelBuilder.Entity(entityType.ClrType)
-                        .HasIndex(nameof(DatabaseObject.IsDeleted));
-                }
-            }
-        }
-
-        private void ConfigurePlayerEntity(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<PlayerEntity>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-
-                entity.Property(e => e.Name)
-                    .HasMaxLength(50)
-                    .IsRequired();
-
-                entity.HasIndex(e => e.Name)
-                    .IsUnique();
-
-                entity.Property(e => e.Level)
-                    .HasDefaultValue(1);
-
-                entity.Property(e => e.Experience)
-                    .HasDefaultValue(0);
-
-                entity.Property(e => e.Gold)
-                    .HasDefaultValue(0);
-
-                entity.Property(e => e.MapId)
-                    .HasDefaultValue(1001);
-
-                // Indexes for common queries
-                entity.HasIndex(e => e.MapId);
-                entity.HasIndex(e => e.Level);
-                entity.HasIndex(e => e.LastLogin);
-            });
-        }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            // Enable sensitive data logging in development
 #if DEBUG
-            optionsBuilder.EnableSensitiveDataLogging();
-            optionsBuilder.EnableDetailedErrors();
+        // Enable detailed logging in debug mode for troubleshooting
+        // optionsBuilder.EnableSensitiveDataLogging();
+        // optionsBuilder.EnableDetailedErrors();
 #endif
-        }
+    }
 
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Applies global query filters to all entities.
+    /// Currently applies soft delete filter to exclude deleted entities.
+    /// </summary>
+    /// <param name="modelBuilder">The model builder instance</param>
+    private void ApplyGlobalFilters(ModelBuilder modelBuilder)
+    {
+        // Apply soft delete filter to all entities implementing ISoftDeletable
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            // Automatically update UpdatedAt timestamp
-            foreach (var entry in ChangeTracker.Entries<DatabaseObject>())
+            if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
             {
-                switch (entry.State)
-                {
-                    case EntityState.Added:
-                        entry.Entity.CreatedAt = DateTime.UtcNow;
-                        entry.Entity.UpdatedAt = DateTime.UtcNow;
-                        entry.Entity.Version = 1;
-                        break;
-
-                    case EntityState.Modified:
-                        entry.Entity.UpdatedAt = DateTime.UtcNow;
-                        entry.Entity.Version++;
-                        break;
-                }
+                // Create and apply the filter expression: e => !e.IsDeleted
+                modelBuilder.Entity(entityType.ClrType)
+                    .HasQueryFilter(CreateSoftDeleteFilter(entityType.ClrType));
             }
-
-            return await base.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Creates a lambda expression for filtering soft deleted entities.
+    /// </summary>
+    /// <param name="entityType">The entity type to create the filter for</param>
+    /// <returns>Lambda expression that filters out soft deleted entities</returns>
+    private static LambdaExpression CreateSoftDeleteFilter(Type entityType)
+    {
+        // Create parameter: e
+        var parameter = Expression.Parameter(entityType, "e");
+
+        // Create property access: e.IsDeleted
+        var property = Expression.Property(parameter, nameof(ISoftDeletable.IsDeleted));
+
+        // Create constant: false
+        var constant = Expression.Constant(false);
+
+        // Create equality check: e.IsDeleted == false
+        var body = Expression.Equal(property, constant);
+
+        // Create lambda: e => e.IsDeleted == false
+        return Expression.Lambda(body, parameter);
     }
 }
