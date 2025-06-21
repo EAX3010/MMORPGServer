@@ -1,6 +1,6 @@
 namespace MMORPGServer.Domain.Enums
 {
-    public enum ChatType : uint
+    public enum ChatType : int
     {
         Talk = 2000,
         Whisper = 2001,

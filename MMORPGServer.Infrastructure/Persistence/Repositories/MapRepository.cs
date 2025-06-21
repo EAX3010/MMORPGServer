@@ -108,12 +108,12 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
                     {
                         for (int x = 0; x < width; x++)
                         {
-                            CellType CellFlag = (CellType)reader.ReadUInt16();
+                            CellType CellFlag = (CellType)reader.ReadInt16();
                             if (CellFlag == CellType.None)
                             {
                                 CellFlag = CellType.Open;
                             }
-                            short FloorType = (short)(reader.ReadUInt16());
+                            short FloorType = (short)(reader.ReadInt16());
                             if (!IsValidCellType((int)CellFlag))
                             {
                                 _logger.LogError("Invalid cell type flags: {CellFlag}", CellFlag);
@@ -122,7 +122,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
                             map[x, y] = new Cell(CellFlag, cellHeight, FloorType);
 
                         }
-                        reader.ReadUInt32(); // Skip padding
+                        reader.ReadInt32(); // Skip padding
                     }
 
                     // Load portals

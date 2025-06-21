@@ -22,7 +22,7 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
            .Debug("CMsgLoginGame simple response")
            .BuildAndFinalize();
         }
-        public ReadOnlyMemory<byte> CreateTalkPacket(string from, string to, string suffix, string message, ChatType chatType, uint mesh)
+        public ReadOnlyMemory<byte> CreateTalkPacket(string from, string to, string suffix, string message, ChatType chatType, int mesh)
         {
             TalkProto talkPacket = new TalkProto
             {
@@ -45,11 +45,11 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
             {
                 Id = player.Id,
                 Name = "Hero",
-                Level = (uint)player.Level,
-                Strength = (uint)player.Strength,
-                Agility = (uint)player.Agility,
-                Vitality = (uint)player.Vitality,
-                Spirit = (uint)player.Spirit,
+                Level = player.Level,
+                Strength = player.Strength,
+                Agility = player.Agility,
+                Vitality = player.Vitality,
+                Spirit = player.Spirit,
                 // Map other fields as needed, set defaults for missing ones
                 Mesh = 0,
                 Hair = 0,
@@ -63,7 +63,7 @@ namespace MMORPGServer.Infrastructure.Networking.Packets
                 HeavenBlessing = 0,
                 Atributes = 0,
                 HitPoints = player.CurrentHealth,
-                Mana = (uint)player.MaxMana,
+                Mana = player.MaxMana,
                 PKPoints = 0,
                 FullClass = 0,
                 FirstFullClass = 0,

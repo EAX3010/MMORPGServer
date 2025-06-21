@@ -124,7 +124,7 @@ namespace MMORPGServer.Application.Services
 
     public abstract class GameAction
     {
-        public uint PlayerId { get; set; }
+        public int PlayerId { get; set; }
     }
 
     public class PlayerMoveAction : GameAction
@@ -134,13 +134,13 @@ namespace MMORPGServer.Application.Services
 
     public class PlayerAttackAction : GameAction
     {
-        public uint TargetId { get; set; }
+        public int TargetId { get; set; }
     }
 
     public class PlayerCastAction : GameAction
     {
         public short SkillId { get; set; }
-        public uint? TargetId { get; set; }
+        public int? TargetId { get; set; }
         public Position? TargetPosition { get; set; }
     }
 }
