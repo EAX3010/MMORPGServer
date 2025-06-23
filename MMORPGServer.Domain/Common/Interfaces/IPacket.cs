@@ -1,6 +1,6 @@
-﻿using MMORPGServer.Domain.Enums;
+﻿using MMORPGServer.Domain.Common.Enums;
 
-namespace MMORPGServer.Domain.Interfaces
+namespace MMORPGServer.Domain.Common.Interfaces
 {
     public interface IPacket
     {

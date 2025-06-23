@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MMORPGServer.Domain;
-using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.Common.Interfaces;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

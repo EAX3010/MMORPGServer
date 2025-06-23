@@ -1,5 +1,5 @@
+using MMORPGServer.Domain.Common.Enums;
 using MMORPGServer.Domain.Common.Interfaces;
-using MMORPGServer.Domain.Enums;
 using MMORPGServer.Domain.ValueObjects;
 using System.Collections.Concurrent;
 

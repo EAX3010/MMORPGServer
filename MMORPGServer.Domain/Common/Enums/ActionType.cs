@@ -1,4 +1,4 @@
-namespace MMORPGServer.Domain.Enums
+namespace MMORPGServer.Domain.Common.Enums
 {
     /// <summary>
     /// Defines all possible action types that can be performed in the game.

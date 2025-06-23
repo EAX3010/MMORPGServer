@@ -1,4 +1,4 @@
-namespace MMORPGServer.Domain.Enums
+namespace MMORPGServer.Domain.Common.Enums
 {
     public enum ClientState
     {

@@ -1,4 +1,4 @@
-﻿using MMORPGServer.Domain.Interfaces;
+﻿using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Infrastructure.Networking.Packets;
 using System.Security.Cryptography;
 using System.Text;

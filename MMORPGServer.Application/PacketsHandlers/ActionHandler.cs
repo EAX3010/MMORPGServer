@@ -1,6 +1,6 @@
 ﻿using MMORPGServer.Application.Interfaces;
-using MMORPGServer.Domain.Enums;
-using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.Common.Enums;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Domain.PacketsProto;
 
 namespace MMORPGServer.Application.PacketsHandlers

@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Infrastructure.Persistence.Common
+﻿namespace MMORPGServer.Infrastructure.Persistence.Common.Interfaces
 {
     /// <summary>
     /// Interface for database initialization operations.

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MMORPGServer.Domain.Common.Interfaces;
-using MMORPGServer.Domain.Persistence;
+using MMORPGServer.Infrastructure.Persistence.Common.Interfaces;
 using MMORPGServer.Infrastructure.Persistence.Interceptors;
+using MMORPGServer.Infrastructure.Persistence.Models;
 using System.Linq.Expressions;
 using System.Reflection;
 

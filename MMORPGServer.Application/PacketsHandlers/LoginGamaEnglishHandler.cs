@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Logging;
 using MMORPGServer.Application.Interfaces;
 using MMORPGServer.Application.Services;
-using MMORPGServer.Domain.Enums;
-using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.Common.Enums;
+using MMORPGServer.Domain.Common.Interfaces;
 
 namespace MMORPGServer.Application.PacketsHandlers
 {
@@ -14,7 +14,7 @@ namespace MMORPGServer.Application.PacketsHandlers
         private readonly ILogger<LoginGamaEnglishHandler> _logger;
         private readonly IPacketFactory _packetFactory;
         private readonly ITransferCipher _transferCipher;
-        private readonly PlayerService _playerManager;
+        private readonly PlayerManager _playerManager;
         private readonly GameWorld _gameWorld;
 
         public LoginGamaEnglishHandler(ILogger<LoginGamaEnglishHandler> logger, IPacketFactory packetFactory, ITransferCipher transferCipher, PlayerManager playerManager, GameWorld gameWorld)
@@ -57,7 +57,7 @@ namespace MMORPGServer.Application.PacketsHandlers
             }
             _logger.LogInformation("LoginGamaEnglish decrypted UID: {uid}, State: {state}", data.Id, data.State);
             client.Player = new Domain.Entities.Player(client.ClientId, data.Id);
-            await _playerManager.AddPlayerAsync(client.Player);
+            await _playerManager.CreatePlayerAsync(client.Player);
             await _gameWorld.SpawnPlayerAsync(client.Player, 1002);
             await client.SendPacketAsync(_packetFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
             await client.SendPacketAsync(_packetFactory.CreateHeroInfoPacket(client.Player));

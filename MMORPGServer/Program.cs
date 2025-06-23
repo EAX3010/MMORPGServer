@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MMORPGServer.Application.Database;
 using MMORPGServer.Application.Interfaces;
 using MMORPGServer.Application.Services;
-using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Infrastructure.Extensions;
 using MMORPGServer.Infrastructure.Networking.Packets;
 using MMORPGServer.Infrastructure.Networking.Security;
@@ -42,7 +43,7 @@ namespace MMORPGServer
                 _ = builder.Services.AddTransient<TQCast5Cryptographer>();
 
                 // Configure Business services
-                _ = builder.Services.AddSingleton<PlayerService>();
+                _ = builder.Services.AddSingleton<PlayerDatabase>();
                 _ = builder.Services.AddSingleton<IMapRepository, MapRepository>();
                 _ = builder.Services.AddSingleton<GameWorld>();
 

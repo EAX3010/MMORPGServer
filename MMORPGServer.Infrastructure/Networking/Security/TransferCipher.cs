@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.Common.Interfaces;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;

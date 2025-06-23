@@ -2,11 +2,10 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MMORPGServer.Application.Common.Interfaces;
-using MMORPGServer.Application.Common.Interfaces.Repositories;
-using MMORPGServer.Domain.Enums;
-using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.Common.Enums;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Infrastructure.Persistence;
-using MMORPGServer.Infrastructure.Persistence.Common;
+using MMORPGServer.Infrastructure.Persistence.Common.Interfaces;
 using MMORPGServer.Infrastructure.Persistence.Interceptors;
 using MMORPGServer.Infrastructure.Persistence.Repositories;
 using MMORPGServer.Infrastructure.Persistence.UnitOfWork;

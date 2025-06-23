@@ -1,4 +1,4 @@
-﻿using MMORPGServer.Domain.Enums;
+﻿using MMORPGServer.Domain.Common.Enums;
 using ProtoBuf;
 
 namespace MMORPGServer.Domain.PacketsProto

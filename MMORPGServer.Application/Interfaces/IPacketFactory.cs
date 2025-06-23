@@ -1,5 +1,5 @@
-﻿using MMORPGServer.Domain.Entities;
-using MMORPGServer.Domain.Enums;
+﻿using MMORPGServer.Domain.Common.Enums;
+using MMORPGServer.Domain.Entities;
 using MMORPGServer.Domain.PacketsProto;
 
 namespace MMORPGServer.Application.Interfaces

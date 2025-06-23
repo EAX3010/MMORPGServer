@@ -1,17 +1,41 @@
+using MMORPGServer.Domain.Common.Enums;
 using MMORPGServer.Domain.Common.Interfaces;
-using MMORPGServer.Domain.Enums;
-using MMORPGServer.Domain.ValueObjects;
 
 namespace MMORPGServer.Domain.Entities
 {
     public class Player : MapObject
     {
-        public Player(int connectionId, int id)
+        public Player(int id)
         {
-            Name = "New Player";
-            ConnectionId = connectionId;
             Id = id;
-            Position = new Position(300, 300);
+        }
+        public static Player Create(int connectionId, int id, string name, int level, long Experience,
+        short mapId, short x, short y, long gold, int conquerPoints, int boundConquerPoints)
+        {
+            return new Player(id)
+            {
+                Id = id,
+                ConnectionId = connectionId,
+                Name = name,
+                Level = level,
+                Experience = Experience,
+                MapId = mapId,
+                Position = new ValueObjects.Position(x, y),
+                Gold = gold,
+                ConquerPoints = conquerPoints,
+                BoundConquerPoints = boundConquerPoints,
+                MaxHealth = 100,
+                MaxMana = 100,
+                CurrentHealth = 100,
+                CurrentMana = 100,
+                Agility = 10,
+                Spirit = 10,
+                Vitality = 10,
+                Strength = 10,
+                LastLogin = DateTime.UtcNow,
+                IsDirty = true,
+            };
+
         }
         public int ConnectionId { get; set; }
         public string Name { get; set; } = default!;
@@ -36,12 +60,16 @@ namespace MMORPGServer.Domain.Entities
         public short Spirit { get; set; } = 0;
 
         public bool IsDirty { get; set; }
-        public DateTime LastSaveTime { get; set; }
         public DateTime LastLogin { get; set; }
 
         protected override MapObjectType GetObjectType()
         {
             return MapObjectType.Player;
+        }
+
+        public void MarkAsSaved()
+        {
+            IsDirty = true;
         }
     }
 

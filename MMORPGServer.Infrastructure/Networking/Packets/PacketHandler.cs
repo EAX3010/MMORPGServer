@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Domain.Enums;
-using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.Common.Enums;
+using MMORPGServer.Domain.Common.Interfaces;
 using System.Reflection;
 
 public sealed class PacketHandler : IPacketHandler

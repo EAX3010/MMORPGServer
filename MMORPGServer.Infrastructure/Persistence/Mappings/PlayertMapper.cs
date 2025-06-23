@@ -1,8 +1,8 @@
 ﻿using MMORPGServer.Domain.Entities;
-using MMORPGServer.Domain.Persistence;
 using MMORPGServer.Domain.ValueObjects;
+using MMORPGServer.Infrastructure.Persistence.Models;
 
-namespace MMORPGServer.Application.Mappings
+namespace MMORPGServer.Infrastructure.Persistence.Mappings
 {
     /// <summary>
     /// Maps between Player (runtime) and PlayerEntity (database) models.
@@ -13,9 +13,9 @@ namespace MMORPGServer.Application.Mappings
         /// Creates a new runtime Player from a database PlayerEntity.
         /// Used when player logs in.
         /// </summary>
-        public static Player ToGameObject(this PlayerEntity entity, int connectionId)
+        public static Player ToGameObject(this PlayerEntity entity)
         {
-            var player = new Player(connectionId, entity.Id)
+            var player = new Player(entity.Id)
             {
                 // Basic info
                 Name = entity.Name,

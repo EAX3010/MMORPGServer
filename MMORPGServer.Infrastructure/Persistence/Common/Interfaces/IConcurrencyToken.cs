@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Domain.Common.Interfaces
+﻿namespace MMORPGServer.Infrastructure.Persistence.Common.Interfaces
 {
     /// <summary>
     /// Interface for entities that support optimistic concurrency control.

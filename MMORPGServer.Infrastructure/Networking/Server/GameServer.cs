@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MMORPGServer.Domain;
-using MMORPGServer.Domain.Interfaces;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Domain.ValueObjects;
 using MMORPGServer.Infrastructure.Networking.Clients;
 using MMORPGServer.Infrastructure.Networking.Security;

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
+using MMORPGServer.Domain.Common.Enums;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Domain.Entities;
-using MMORPGServer.Domain.Enums;
-using MMORPGServer.Domain.Interfaces;
 using MMORPGServer.Domain.ValueObjects;
 using MMORPGServer.Infrastructure.Networking.Packets;
 using MMORPGServer.Infrastructure.Networking.Security;

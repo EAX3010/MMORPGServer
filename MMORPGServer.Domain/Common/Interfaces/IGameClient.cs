@@ -1,6 +1,6 @@
 ﻿using MMORPGServer.Domain.Entities;
 
-namespace MMORPGServer.Domain.Interfaces
+namespace MMORPGServer.Domain.Common.Interfaces
 {
     public interface IGameClient : IDisposable
     {

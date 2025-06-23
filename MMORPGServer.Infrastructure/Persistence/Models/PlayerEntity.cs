@@ -1,6 +1,6 @@
-﻿using MMORPGServer.Domain.Common.Interfaces;
+﻿using MMORPGServer.Infrastructure.Persistence.Common.Interfaces;
 
-namespace MMORPGServer.Domain.Persistence
+namespace MMORPGServer.Infrastructure.Persistence.Models
 {
     public class PlayerEntity : BaseEntity
     {
@@ -33,21 +33,6 @@ namespace MMORPGServer.Domain.Persistence
         // Player-specific timestamps
         public DateTime? LastLogin { get; set; }
         public DateTime? LastLogout { get; set; }
-        public static PlayerEntity Create(int id, string name, int level, long Experience,
-           short mapId, short x, short y, long gold)
-        {
-            return new PlayerEntity
-            {
-                Id = id,
-                Name = name,
-                Level = level,
-                Experience = Experience,
-                MapId = mapId,
-                X = x,
-                Y = y,
-                Gold = gold
-            };
 
-        }
     }
 }

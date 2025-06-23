@@ -2,8 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Domain.Persistence;
-using MMORPGServer.Infrastructure.Persistence.Common;
+using MMORPGServer.Infrastructure.Persistence.Common.Interfaces;
+using MMORPGServer.Infrastructure.Persistence.Models;
 
 namespace MMORPGServer.Infrastructure.Persistence
 {
@@ -107,7 +107,7 @@ namespace MMORPGServer.Infrastructure.Persistence
             {
                   PlayerEntity.Create(1000000, "Admin", 140, 0, 1002, 300, 300, 20000),
                   PlayerEntity.Create(1000001, "محمد خالد", 140, 0, 1002, 300, 300, 20000),
-                };
+            };
 
             context.Players.AddRange(testPlayers);
             await context.SaveChangesAsync(cancellationToken);

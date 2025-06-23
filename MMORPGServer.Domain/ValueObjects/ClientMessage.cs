@@ -1,4 +1,4 @@
-﻿using MMORPGServer.Domain.Interfaces;
+﻿using MMORPGServer.Domain.Common.Interfaces;
 
 namespace MMORPGServer.Domain.ValueObjects
 {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using MMORPGServer.Domain.Common.Interfaces;
+using MMORPGServer.Infrastructure.Persistence.Common.Interfaces;
 
 namespace MMORPGServer.Infrastructure.Persistence.Interceptors
 {
