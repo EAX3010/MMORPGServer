@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Application.Common.Interfaces;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Domain.Entities;
 using MMORPGServer.Infrastructure.Persistence.Mappings;
 
@@ -10,12 +10,12 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
     /// Repository implementation for Player entities.
     /// Provides game-specific query methods and optimizations.
     /// </summary>
-    public sealed class PlayerRepository : IPlayerRepository
+    public sealed class SqlPlayerRepository : IPlayerRepository
     {
         private readonly GameDbContext _context;
-        private readonly ILogger<PlayerRepository> _logger;
+        private readonly ILogger<SqlPlayerRepository> _logger;
 
-        public PlayerRepository(GameDbContext context, ILogger<PlayerRepository> logger)
+        public SqlPlayerRepository(GameDbContext context, ILogger<SqlPlayerRepository> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

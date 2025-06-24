@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Application.Interfaces;
 using MMORPGServer.Application.Services;
 using MMORPGServer.Domain.Common.Enums;
 using MMORPGServer.Domain.Common.Interfaces;

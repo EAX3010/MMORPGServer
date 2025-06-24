@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Domain;
+using MMORPGServer.Domain.Common.Constants;
 using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Domain.ValueObjects;
 using MMORPGServer.Infrastructure.Networking.Clients;
@@ -50,14 +50,14 @@ namespace MMORPGServer.Infrastructure.Networking.Server
             _serverStartTime = DateTime.UtcNow;
             _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-            _logger.LogInformation("Binding to port {Port}...", GameConstants.DEFAULT_PORT);
+            _logger.LogInformation("Binding to port {Port}...", ServerConstants.DEFAULT_PORT);
 
-            _tcpListener = new TcpListener(IPAddress.Any, GameConstants.DEFAULT_PORT);
+            _tcpListener = new TcpListener(IPAddress.Any, ServerConstants.DEFAULT_PORT);
             _tcpListener.Start();
 
             _logger.LogInformation("TCP Listener started successfully");
-            _logger.LogInformation("Server accepting connections on 0.0.0.0:{Port}", GameConstants.DEFAULT_PORT);
-            _logger.LogInformation("Maximum clients: {MaxClients}", GameConstants.MAX_CLIENTS);
+            _logger.LogInformation("Server accepting connections on 0.0.0.0:{Port}", ServerConstants.DEFAULT_PORT);
+            _logger.LogInformation("Maximum clients: {MaxClients}", ServerConstants.MAX_CLIENTS);
 
             _acceptTask = AcceptClientsAsync(_cancellationTokenSource.Token);
             _messageProcessingTask = ProcessMessagesAsync(_cancellationTokenSource.Token);
@@ -81,10 +81,10 @@ namespace MMORPGServer.Infrastructure.Networking.Server
                     string clientEndpoint = tcpClient.Client.RemoteEndPoint?.ToString() ?? "Unknown";
 
                     // Check if we're at capacity
-                    if (_networkManager.ConnectionCount >= GameConstants.MAX_CLIENTS)
+                    if (_networkManager.ConnectionCount >= ServerConstants.MAX_CLIENTS)
                     {
                         _logger.LogWarning("Connection rejected from {ClientEndpoint} - Server at capacity ({Current}/{Max})",
-                            clientEndpoint, _networkManager.ConnectionCount, GameConstants.MAX_CLIENTS);
+                            clientEndpoint, _networkManager.ConnectionCount, ServerConstants.MAX_CLIENTS);
                         tcpClient.Close();
                         continue;
                     }
@@ -108,7 +108,7 @@ namespace MMORPGServer.Infrastructure.Networking.Server
                     }, cancellationToken);
 
                     _logger.LogInformation("Player #{ClientId} connected from {ClientEndpoint} (Total: {CurrentConnections}/{MaxConnections})",
-                        clientId, clientEndpoint, _networkManager.ConnectionCount, GameConstants.MAX_CLIENTS);
+                        clientId, clientEndpoint, _networkManager.ConnectionCount, ServerConstants.MAX_CLIENTS);
 
                     // Log milestone connections
                     if (_totalConnectionsAccepted % 100 == 0)

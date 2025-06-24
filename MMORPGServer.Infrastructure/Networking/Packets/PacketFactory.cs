@@ -1,5 +1,5 @@
-using MMORPGServer.Application.Interfaces;
 using MMORPGServer.Domain.Common.Enums;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Domain.Entities;
 using MMORPGServer.Domain.PacketsProto;
 using ProtoBuf;

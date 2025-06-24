@@ -1,6 +1,6 @@
-﻿namespace MMORPGServer.Domain
+﻿namespace MMORPGServer.Domain.Common.Constants
 {
-    public static class GameConstants
+    public static class ServerConstants
     {
         public const int DEFAULT_PORT = 10033;
         public const int GAME_TICK_RATE = 100;

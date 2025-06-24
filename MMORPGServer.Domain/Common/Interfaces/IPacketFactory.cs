@@ -2,7 +2,7 @@
 using MMORPGServer.Domain.Entities;
 using MMORPGServer.Domain.PacketsProto;
 
-namespace MMORPGServer.Application.Interfaces
+namespace MMORPGServer.Domain.Common.Interfaces
 {
     public interface IPacketFactory
     {

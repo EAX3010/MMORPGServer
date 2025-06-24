@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using MMORPGServer.Application.Common.Interfaces;
 using MMORPGServer.Domain.Common.Enums;
 using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Infrastructure.Persistence;
@@ -63,7 +62,7 @@ namespace MMORPGServer.Infrastructure.Extensions
                 // options.UseLazyLoadingProxies();
             });
 
-            services.AddScoped<IPlayerRepository, PlayerRepository>();
+            services.AddScoped<IPlayerRepository, SqlPlayerRepository>();
             AddPacketHandlers(services);
             return services;
         }

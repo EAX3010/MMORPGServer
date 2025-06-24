@@ -1,6 +1,6 @@
 ﻿using MMORPGServer.Domain.Entities;
 
-namespace MMORPGServer.Application.Common.Interfaces
+namespace MMORPGServer.Domain.Common.Interfaces
 {
     public interface IPlayerRepository
     {

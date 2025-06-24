@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MMORPGServer.Application.Interfaces;
 using MMORPGServer.Application.Services;
 using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Infrastructure.Extensions;
@@ -29,35 +28,31 @@ namespace MMORPGServer
 
                 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
                 _ = builder.Services.AddInfrastructure(builder.Configuration);
-
-                // Use Serilog as the logging provider
                 _ = builder.Services.AddSerilog();
 
                 // Configure Network services
-                _ = builder.Services.AddSingleton<IGameServer, GameServer>();
-                _ = builder.Services.AddSingleton<INetworkManager, NetworkManager>();
-                _ = builder.Services.AddSingleton<PlayerManager>();
-                // Configure Security services
-                _ = builder.Services.AddTransient<DiffieHellmanKeyExchange>();
-                _ = builder.Services.AddTransient<TQCast5Cryptographer>();
 
-                // Configure Business services
+                _ = builder.Services.AddSingleton<INetworkManager, NetworkManager>();
                 _ = builder.Services.AddSingleton<IMapRepository, MapRepository>();
+                _ = builder.Services.AddSingleton<PlayerManager>();
                 _ = builder.Services.AddSingleton<GameWorld>();
 
-                // Configure Background services
-                _ = builder.Services.AddHostedService<GameServerHostedService>();
-                _ = builder.Services.AddHostedService<GameLoopService>();
-                _ = builder.Services.AddTransient<IPacketFactory, PacketFactory>();
 
-                _ = builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
+
+                _ = builder.Services.AddTransient<DiffieHellmanKeyExchange>();
+                _ = builder.Services.AddTransient<TQCast5Cryptographer>();
                 _ = builder.Services.AddSingleton<ITransferCipher, TransferCipher>(service =>
                 {
                     return new TransferCipher(builder.Configuration);
                 });
+                _ = builder.Services.AddTransient<IPacketFactory, PacketFactory>();
+                _ = builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
 
                 _ = builder.Services.AddSingleton<MapVisualizer>();
 
+                _ = builder.Services.AddHostedService<GameServerHostedService>();
+                _ = builder.Services.AddSingleton<IGameServer, GameServer>();
+                _ = builder.Services.AddHostedService<GameLoopService>();
                 IHost host = builder.Build();
 
                 using IServiceScope scope = host.Services.CreateScope();

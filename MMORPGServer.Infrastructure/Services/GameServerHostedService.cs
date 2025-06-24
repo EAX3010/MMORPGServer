@@ -1,10 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Domain;
 using MMORPGServer.Domain.Common.Interfaces;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MMORPGServer.Infrastructure.Services
 {
@@ -21,33 +17,13 @@ namespace MMORPGServer.Infrastructure.Services
 
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Initializing MMORPG Server components...");
-
             try
             {
-                _logger.LogInformation("Setting up security systems...");
-                await Task.Delay(500, cancellationToken); // Simulate initialization
-                _logger.LogInformation("Security systems online");
-
-                _logger.LogInformation("Configuring network layer...");
-                await Task.Delay(300, cancellationToken);
-                _logger.LogInformation("Network layer configured");
-
-                _logger.LogInformation("Loading game systems...");
-                await Task.Delay(400, cancellationToken);
-                _logger.LogInformation("Game systems loaded");
-
                 _logger.LogInformation("Starting game server...");
                 await _gameServer.StartAsync(cancellationToken);
-                _logger.LogInformation("Game server started successfully on port {Port}", GameConstants.DEFAULT_PORT);
-
-                _logger.LogInformation("Server is ready to accept connections!");
-                _logger.LogInformation("Maximum concurrent clients: {MaxClients}", GameConstants.MAX_CLIENTS);
-                _logger.LogInformation("Game tick rate: {TickRate} Hz", GameConstants.GAME_TICK_RATE);
-
                 await base.StartAsync(cancellationToken);
 
-                _logger.LogInformation("MMORPG Server fully operational!");
+                _logger.LogInformation("Game server fully operational!");
             }
             catch (Exception ex)
             {

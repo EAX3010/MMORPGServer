@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using MMORPGServer.Application.Common.Interfaces;
+using MMORPGServer.Domain.Common.Interfaces;
 using MMORPGServer.Domain.Entities;
 using System.Collections.Concurrent;
 
