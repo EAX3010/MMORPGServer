@@ -15,7 +15,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Mappings
         /// </summary>
         public static Player ToGameObject(this PlayerEntity entity)
         {
-            var player = new Player(entity.Id)
+            var player = new Player(entity.Id, 0)
             {
                 // Basic info
                 Name = entity.Name,
@@ -41,7 +41,6 @@ namespace MMORPGServer.Infrastructure.Persistence.Mappings
 
                 // Set clean state
 
-                LastSaveTime = DateTime.UtcNow,
                 LastLogin = DateTime.UtcNow,
                 IsDirty = false
             };

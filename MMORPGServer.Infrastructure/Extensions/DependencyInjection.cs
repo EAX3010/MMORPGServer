@@ -8,7 +8,6 @@ using MMORPGServer.Infrastructure.Persistence;
 using MMORPGServer.Infrastructure.Persistence.Common.Interfaces;
 using MMORPGServer.Infrastructure.Persistence.Interceptors;
 using MMORPGServer.Infrastructure.Persistence.Repositories;
-using MMORPGServer.Infrastructure.Persistence.UnitOfWork;
 using System.Reflection;
 
 namespace MMORPGServer.Infrastructure.Extensions
@@ -65,7 +64,6 @@ namespace MMORPGServer.Infrastructure.Extensions
             });
 
             services.AddScoped<IPlayerRepository, PlayerRepository>();
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
             AddPacketHandlers(services);
             return services;
         }

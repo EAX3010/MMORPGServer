@@ -5,17 +5,17 @@ namespace MMORPGServer.Domain.Entities
 {
     public class Player : MapObject
     {
-        public Player(int id)
+        public Player(int id, int connectionId)
         {
             Id = id;
+            ConnectionId = connectionId;
+
         }
         public static Player Create(int connectionId, int id, string name, int level, long Experience,
         short mapId, short x, short y, long gold, int conquerPoints, int boundConquerPoints)
         {
-            return new Player(id)
+            return new Player(id, connectionId)
             {
-                Id = id,
-                ConnectionId = connectionId,
                 Name = name,
                 Level = level,
                 Experience = Experience,

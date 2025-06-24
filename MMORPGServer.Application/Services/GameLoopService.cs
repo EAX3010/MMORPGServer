@@ -67,7 +67,7 @@ namespace MMORPGServer.Application.Services
         {
             try
             {
-                _gameWorld.Update(deltaTime);
+                _gameWorld.UpdateAsync(deltaTime);
             }
             catch (Exception ex)
             {

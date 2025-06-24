@@ -27,7 +27,7 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
         /// <param name="id">The player's unique identifier</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>The player if found, otherwise null</returns>
-        public async Task<Player?> GetByIdAsync(uint id, CancellationToken cancellationToken = default)
+        public async Task<Player?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             if (id == 0)
             {
@@ -62,6 +62,44 @@ namespace MMORPGServer.Infrastructure.Persistence.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving player with ID: {PlayerId}", id);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Checks if a player exists by their unique identifier.
+        /// </summary>
+        /// <param name="id">The player's unique identifier</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>True if the player exists, false otherwise</returns>
+        public async Task<bool> ExistsAsync(int id, CancellationToken cancellationToken = default)
+        {
+            if (id == 0)
+            {
+                _logger.LogDebug("Player existence check failed: invalid ID {PlayerId}", id);
+                return false;
+            }
+
+            try
+            {
+                _logger.LogDebug("Checking if player exists with ID: {PlayerId}", id);
+
+                var exists = await _context.Players
+                    .AsNoTracking()
+                    .AnyAsync(p => p.Id == id, cancellationToken);
+
+                _logger.LogDebug("Player existence check result for ID {PlayerId}: {Exists}", id, exists);
+
+                return exists;
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Player existence check cancelled for ID: {PlayerId}", id);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking player existence for ID: {PlayerId}", id);
                 throw;
             }
         }

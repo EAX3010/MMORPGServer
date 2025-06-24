@@ -385,7 +385,7 @@ namespace MMORPGServer.Infrastructure.Networking.Security
         public TransferCipher(IConfiguration configuration)
         {
             Key = Encoding.ASCII.GetBytes(configuration["TransferCipher:Key"]);
-            Salt = Encoding.ASCII.GetBytes(configuration["TransferCipher:Key"]);
+            Salt = Encoding.ASCII.GetBytes(configuration["TransferCipher:Salt"]);
             TigerHashAlgorithm tigerHash = new TigerHashAlgorithm();
             tigerHash.Hash(Encoding.ASCII.GetBytes(configuration["TransferCipher:IP"]));
             tigerHash.Hash(Key);
@@ -417,27 +417,27 @@ namespace MMORPGServer.Infrastructure.Networking.Security
             _rivest = new RivestCipher5();
             _rivest.GenerateKeys(password.GetBytes(16));
         }
-        public unsafe int[] Encrypt(int[] input)
+        public unsafe uint[] Encrypt(uint[] input)
         {
             byte[] buffer = new byte[8];
             fixed (byte* ptr = buffer)
             {
-                *(int*)ptr = input[0];
-                *(int*)(ptr + 4) = input[1];
+                *(uint*)ptr = input[0];
+                *(uint*)(ptr + 4) = input[1];
             }
             _rivest.Encrypt(buffer);
-            return new int[2] { BitConverter.ToInt32(buffer, 0), BitConverter.ToInt32(buffer, 4) };
+            return new uint[2] { BitConverter.ToUInt32(buffer, 0), BitConverter.ToUInt32(buffer, 4) };
         }
-        public int[] Decrypt(int[] input)
+        public uint[] Decrypt(uint[] input)
         {
             byte[] buffer = new byte[8];
             fixed (byte* ptr = buffer)
             {
-                *(int*)(ptr + 0) = input[0];
-                *(int*)(ptr + 4) = input[1];
+                *(uint*)(ptr + 0) = input[0];
+                *(uint*)(ptr + 4) = input[1];
             }
             _rivest.Decrypt(buffer);
-            return new int[2] { BitConverter.ToInt32(buffer, 0), BitConverter.ToInt32(buffer, 4) };
+            return new uint[2] { BitConverter.ToUInt32(buffer, 0), BitConverter.ToUInt32(buffer, 4) };
         }
     }
 }

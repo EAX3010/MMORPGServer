@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MMORPGServer.Application.Database;
 using MMORPGServer.Application.Interfaces;
 using MMORPGServer.Application.Services;
 using MMORPGServer.Domain.Common.Interfaces;
@@ -37,13 +36,12 @@ namespace MMORPGServer
                 // Configure Network services
                 _ = builder.Services.AddSingleton<IGameServer, GameServer>();
                 _ = builder.Services.AddSingleton<INetworkManager, NetworkManager>();
-
+                _ = builder.Services.AddSingleton<PlayerManager>();
                 // Configure Security services
                 _ = builder.Services.AddTransient<DiffieHellmanKeyExchange>();
                 _ = builder.Services.AddTransient<TQCast5Cryptographer>();
 
                 // Configure Business services
-                _ = builder.Services.AddSingleton<PlayerDatabase>();
                 _ = builder.Services.AddSingleton<IMapRepository, MapRepository>();
                 _ = builder.Services.AddSingleton<GameWorld>();
 
@@ -57,6 +55,7 @@ namespace MMORPGServer
                 {
                     return new TransferCipher(builder.Configuration);
                 });
+
                 _ = builder.Services.AddSingleton<MapVisualizer>();
 
                 IHost host = builder.Build();

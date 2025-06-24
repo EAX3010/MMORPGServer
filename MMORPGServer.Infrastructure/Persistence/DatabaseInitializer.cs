@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MMORPGServer.Infrastructure.Persistence.Common.Interfaces;
-using MMORPGServer.Infrastructure.Persistence.Models;
 
 namespace MMORPGServer.Infrastructure.Persistence
 {
@@ -99,19 +98,7 @@ namespace MMORPGServer.Infrastructure.Persistence
 
             _logger.LogInformation("Seeding initial database data...");
 
-            // Create admin player with special privileges
-            var adminPlayer = PlayerEntity.Create(100000, "Admin", 140, 0, 1002, 300, 300, 20000);
-
-            // Add test players for development environment
-            var testPlayers = new[]
-            {
-                  PlayerEntity.Create(1000000, "Admin", 140, 0, 1002, 300, 300, 20000),
-                  PlayerEntity.Create(1000001, "محمد خالد", 140, 0, 1002, 300, 300, 20000),
-            };
-
-            context.Players.AddRange(testPlayers);
             await context.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Database seeded with admin and {Count} test players", testPlayers.Length);
 
         }
     }

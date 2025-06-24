@@ -16,7 +16,6 @@ namespace MMORPGServer.Application.PacketsHandlers
         private readonly ITransferCipher _transferCipher;
         private readonly PlayerManager _playerManager;
         private readonly GameWorld _gameWorld;
-
         public LoginGamaEnglishHandler(ILogger<LoginGamaEnglishHandler> logger, IPacketFactory packetFactory, ITransferCipher transferCipher, PlayerManager playerManager, GameWorld gameWorld)
         {
             _logger = logger;
@@ -44,9 +43,9 @@ namespace MMORPGServer.Application.PacketsHandlers
             ArgumentNullException.ThrowIfNull(packet);
 
 
-            int[] outputDecrypted = _transferCipher.Decrypt([packet.ReadInt32(), packet.ReadInt32()]);
+            uint[] outputDecrypted = _transferCipher.Decrypt([(uint)packet.ReadInt32(), (uint)packet.ReadInt32()]);
 
-            LoginGamaEnglishData data = new(outputDecrypted[0], outputDecrypted[1]);
+            LoginGamaEnglishData data = new((int)outputDecrypted[0], (int)outputDecrypted[1]);
 
             FluentValidation.Results.ValidationResult validationResult = await ValidateAsync(data);
             if (!validationResult.IsValid)
@@ -56,11 +55,17 @@ namespace MMORPGServer.Application.PacketsHandlers
                 return;
             }
             _logger.LogInformation("LoginGamaEnglish decrypted UID: {uid}, State: {state}", data.Id, data.State);
-            client.Player = new Domain.Entities.Player(client.ClientId, data.Id);
-            await _playerManager.CreatePlayerAsync(client.Player);
-            await _gameWorld.SpawnPlayerAsync(client.Player, 1002);
-            await client.SendPacketAsync(_packetFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
-            await client.SendPacketAsync(_packetFactory.CreateHeroInfoPacket(client.Player));
+            client.Player = await _playerManager.LoadPlayerAsync(data.Id, client.ClientId);
+            if (client.Player != null)
+            {
+                await _gameWorld.SpawnPlayerAsync(client.Player, 1002);
+                await client.SendPacketAsync(_packetFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
+                await client.SendPacketAsync(_packetFactory.CreateHeroInfoPacket(client.Player));
+            }
+            else
+            {
+                await client.SendPacketAsync(_packetFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "NEW_ROLE", ChatType.Dialog, 0));
+            }
         }
     }
 
