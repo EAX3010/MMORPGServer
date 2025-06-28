@@ -9,12 +9,12 @@ namespace MMORPGServer.Application.Services
     public class GameLoopService : BackgroundService
     {
         private readonly ILogger<GameLoopService> _logger;
-        private readonly GameWorld _gameWorld;
+        private readonly IGameWorld _gameWorld;
         private readonly Channel<GameAction> _actionChannel;
         private const float TARGET_FPS = 60.0f;
         private const float TARGET_FRAME_TIME = 1.0f / TARGET_FPS;
 
-        public GameLoopService(ILogger<GameLoopService> logger, GameWorld gameWorld)
+        public GameLoopService(ILogger<GameLoopService> logger, IGameWorld gameWorld)
         {
             _logger = logger;
             _gameWorld = gameWorld;

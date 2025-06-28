@@ -16,56 +16,65 @@ namespace MMORPGServer
 {
     public static class Program
     {
-
         public static async Task Main(string[] args)
         {
-
             try
             {
                 ConfigLogger();
                 DisplayStartupBanner();
-
 
                 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
                 _ = builder.Services.AddInfrastructure(builder.Configuration);
                 _ = builder.Services.AddSerilog();
 
                 // Configure Network services
-
                 _ = builder.Services.AddSingleton<INetworkManager, NetworkManager>();
                 _ = builder.Services.AddSingleton<IMapRepository, MapRepository>();
+                _ = builder.Services.AddSingleton<IGameServer, GameServer>();
                 _ = builder.Services.AddSingleton<PlayerManager>();
-                _ = builder.Services.AddSingleton<GameWorld>();
+                _ = builder.Services.AddSingleton<IGameWorld, GameWorld>();
+                _ = builder.Services.AddTransient<IPacketFactory, PacketFactory>();
+                _ = builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
 
-
-
+                // Configure cryptography services
                 _ = builder.Services.AddTransient<DiffieHellmanKeyExchange>();
                 _ = builder.Services.AddTransient<TQCast5Cryptographer>();
                 _ = builder.Services.AddSingleton<ITransferCipher, TransferCipher>(service =>
                 {
                     return new TransferCipher(builder.Configuration);
                 });
-                _ = builder.Services.AddTransient<IPacketFactory, PacketFactory>();
-                _ = builder.Services.AddPacketHandlers(ServiceLifetime.Singleton);
 
+                // Add utilities and visualization
                 _ = builder.Services.AddSingleton<MapVisualizer>();
 
+                // Add hosted services (background services)
                 _ = builder.Services.AddHostedService<GameServerHostedService>();
-                _ = builder.Services.AddSingleton<IGameServer, GameServer>();
                 _ = builder.Services.AddHostedService<GameLoopService>();
+
+                // Build the host
                 IHost host = builder.Build();
 
+                // Initialize game systems
                 using IServiceScope scope = host.Services.CreateScope();
                 await GameSystems.InitializeAsync(scope);
 
-
                 Log.Information("MMORPG Server starting up...");
-                await host.RunAsync();
 
+                // Handle Ctrl+C gracefully for console applications
+                Console.CancelKeyPress += (sender, e) =>
+                {
+                    e.Cancel = true;
+                    Log.Information("Shutdown requested by user (Ctrl+C)");
+                    host.Services.GetRequiredService<IHostApplicationLifetime>().StopApplication();
+                };
+
+                // Run the host (this blocks until shutdown)
+                await host.RunAsync();
             }
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Application terminated unexpectedly");
+                Environment.ExitCode = 1;
                 throw;
             }
             finally
@@ -107,6 +116,11 @@ namespace MMORPGServer
                 Console.WriteLine("   • Rate Limiting & Flood Protection");
                 Console.WriteLine("   • High-Performance Networking");
                 Console.WriteLine("   • Real-time Game Loop");
+
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine("\nControls:");
+                Console.WriteLine("   • Press Ctrl+C to stop the server");
+                Console.WriteLine("   • Server will run until manually stopped");
 
                 Console.WriteLine("\n" + new string('═', 80));
                 Console.ResetColor();

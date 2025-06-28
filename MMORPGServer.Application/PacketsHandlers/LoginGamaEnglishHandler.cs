@@ -14,8 +14,8 @@ namespace MMORPGServer.Application.PacketsHandlers
         private readonly IPacketFactory _packetFactory;
         private readonly ITransferCipher _transferCipher;
         private readonly PlayerManager _playerManager;
-        private readonly GameWorld _gameWorld;
-        public LoginGamaEnglishHandler(ILogger<LoginGamaEnglishHandler> logger, IPacketFactory packetFactory, ITransferCipher transferCipher, PlayerManager playerManager, GameWorld gameWorld)
+        private readonly IGameWorld _gameWorld;
+        public LoginGamaEnglishHandler(ILogger<LoginGamaEnglishHandler> logger, IPacketFactory packetFactory, ITransferCipher transferCipher, PlayerManager playerManager, IGameWorld gameWorld)
         {
             _logger = logger;
 

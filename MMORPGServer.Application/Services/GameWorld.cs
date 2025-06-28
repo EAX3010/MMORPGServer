@@ -9,7 +9,7 @@ namespace MMORPGServer.Application.Services
     /// <summary>
     /// Corrected GameWorld - uses PlayerManager (memory) for real-time operations.
     /// </summary>
-    public class GameWorld
+    public class GameWorld : IGameWorld
     {
         private readonly ILogger<GameWorld> _logger;
         private readonly IMapRepository _mapRepository;

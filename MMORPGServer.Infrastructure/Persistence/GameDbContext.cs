@@ -11,7 +11,6 @@ using System.Reflection;
 /// </summary>
 public sealed class GameDbContext : DbContext
 {
-    private readonly AuditableEntitySaveChangesInterceptor _auditableEntitySaveChangesInterceptor;
 
     /// <summary>
     /// Initializes a new instance of the GameDbContext.
@@ -23,7 +22,6 @@ public sealed class GameDbContext : DbContext
         AuditableEntitySaveChangesInterceptor auditableEntitySaveChangesInterceptor)
         : base(options)
     {
-        _auditableEntitySaveChangesInterceptor = auditableEntitySaveChangesInterceptor;
     }
 
     /// <summary>
@@ -53,7 +51,6 @@ public sealed class GameDbContext : DbContext
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         // Add the audit interceptor to automatically handle timestamps
-        optionsBuilder.AddInterceptors(_auditableEntitySaveChangesInterceptor);
 
 #if DEBUG
         // Enable detailed logging in debug mode for troubleshooting

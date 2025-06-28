@@ -25,10 +25,10 @@ namespace MMORPGServer.Infrastructure.Extensions
             IConfiguration configuration)
         {
             // Register interceptors
-            services.AddScoped<AuditableEntitySaveChangesInterceptor>();
+            services.AddSingleton<AuditableEntitySaveChangesInterceptor>();
 
             // Register database initializer
-            services.AddScoped<IDatabaseInitializer, DatabaseInitializer>();
+            services.AddSingleton<IDatabaseInitializer, DatabaseInitializer>();
 
             // Configure Entity Framework Core with SQL Server
             var connectionString = configuration.GetConnectionString("DefaultConnection")
@@ -60,10 +60,9 @@ namespace MMORPGServer.Infrastructure.Extensions
 
                 // Optional: Enable lazy loading (requires proxies package)
                 // options.UseLazyLoadingProxies();
-            });
+            }, ServiceLifetime.Singleton);
 
-            services.AddScoped<IPlayerRepository, SqlPlayerRepository>();
-            AddPacketHandlers(services);
+            services.AddSingleton<IPlayerRepository, SqlPlayerRepository>();
             return services;
         }
         public static IServiceCollection AddPacketHandlers(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped)
