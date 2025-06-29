@@ -8,7 +8,6 @@
 
     <ItemGroup>
         <!-- Project References -->
-        <ProjectReference Include="..\MMORPGServer.Application\MMORPGServer.Application.csproj" />
         <ProjectReference Include="..\MMORPGServer.Domain\MMORPGServer.Domain.csproj" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
         <!-- NuGet Packages -->

@@ -1,14 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using MMORPGServer.Application.Services;
-using MMORPGServer.Domain.Common.Interfaces;
-using MMORPGServer.Infrastructure.Extensions;
-using MMORPGServer.Infrastructure.Networking.Packets;
-using MMORPGServer.Infrastructure.Networking.Security;
-using MMORPGServer.Infrastructure.Networking.Server;
-using MMORPGServer.Infrastructure.Persistence;
-using MMORPGServer.Infrastructure.Persistence.Repositories;
-using MMORPGServer.Infrastructure.Services;
+using MMORPGServer.Common.Interfaces;
+using MMORPGServer.Extensions;
+using MMORPGServer.Networking.Packets;
+using MMORPGServer.Networking.Security;
+using MMORPGServer.Networking.Server;
+using MMORPGServer.Persistence;
+using MMORPGServer.Persistence.Repositories;
+using MMORPGServer.Services;
 using Serilog;
 using Serilog.Events;
 

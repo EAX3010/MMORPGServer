@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using MMORPGServer.Domain.Common.Interfaces;
-using MMORPGServer.Infrastructure.Persistence.Common.Interfaces;
+using MMORPGServer.Common.Interfaces;
+using MMORPGServer.Persistence.Common.Interfaces;
 using Serilog;
 
 namespace MMORPGServer

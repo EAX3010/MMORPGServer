@@ -7,12 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer", "MMORPGServe
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Domain", "MMORPGServer.Domain\MMORPGServer.Domain.csproj", "{0830BD86-8213-4E62-A3F6-D1ED738B941C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Application", "MMORPGServer.Application\MMORPGServer.Application.csproj", "{7D19A918-0FF3-4B38-9917-1241E6DB8F44}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMORPGServer.Infrastructure", "MMORPGServer.Infrastructure\MMORPGServer.Infrastructure.csproj", "{D4D50777-28AB-44AF-86E4-6817EE3E787D}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,24 +17,9 @@ Global
 		{9C03D26F-DE70-9D6A-4335-41A22D70F6E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C03D26F-DE70-9D6A-4335-41A22D70F6E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C03D26F-DE70-9D6A-4335-41A22D70F6E8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0830BD86-8213-4E62-A3F6-D1ED738B941C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0830BD86-8213-4E62-A3F6-D1ED738B941C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0830BD86-8213-4E62-A3F6-D1ED738B941C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0830BD86-8213-4E62-A3F6-D1ED738B941C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7D19A918-0FF3-4B38-9917-1241E6DB8F44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7D19A918-0FF3-4B38-9917-1241E6DB8F44}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7D19A918-0FF3-4B38-9917-1241E6DB8F44}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7D19A918-0FF3-4B38-9917-1241E6DB8F44}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D4D50777-28AB-44AF-86E4-6817EE3E787D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D4D50777-28AB-44AF-86E4-6817EE3E787D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D4D50777-28AB-44AF-86E4-6817EE3E787D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D4D50777-28AB-44AF-86E4-6817EE3E787D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{0830BD86-8213-4E62-A3F6-D1ED738B941C} = {8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3DB127A5-14C5-4E7E-89EA-009F517045FB}
