@@ -1,7 +1,7 @@
 using MMORPGServer.Common.Enums;
 using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Entities;
-using MMORPGServer.PacketsProto;
+using MMORPGServer.Networking.Packets.PacketsProto;
 using ProtoBuf;
 
 namespace MMORPGServer.Networking.Packets

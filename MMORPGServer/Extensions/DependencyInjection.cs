@@ -3,10 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MMORPGServer.Common.Enums;
 using MMORPGServer.Common.Interfaces;
-using MMORPGServer.Persistence;
-using MMORPGServer.Persistence.Common.Interfaces;
-using MMORPGServer.Persistence.Interceptors;
-using MMORPGServer.Persistence.Repositories;
+using MMORPGServer.Infrastructure.Database.Interceptors;
 using System.Reflection;
 
 namespace MMORPGServer.Extensions
@@ -28,7 +25,6 @@ namespace MMORPGServer.Extensions
             services.AddSingleton<AuditableEntitySaveChangesInterceptor>();
 
             // Register database initializer
-            services.AddSingleton<IDatabaseInitializer, DatabaseInitializer>();
 
             // Configure Entity Framework Core with SQL Server
             var connectionString = configuration.GetConnectionString("DefaultConnection")
@@ -62,7 +58,6 @@ namespace MMORPGServer.Extensions
                 // options.UseLazyLoadingProxies();
             }, ServiceLifetime.Singleton);
 
-            services.AddSingleton<IPlayerRepository, SqlPlayerRepository>();
             return services;
         }
         public static IServiceCollection AddPacketHandlers(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Scoped)

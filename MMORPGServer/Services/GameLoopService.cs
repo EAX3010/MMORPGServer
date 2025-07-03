@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Common.ValueObjects;
 using System.Threading.Channels;
 

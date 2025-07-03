@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Entities;
+using MMORPGServer.Infrastructure.Database.Repositories;
 using System.Collections.Concurrent;
 
 namespace MMORPGServer.Services
@@ -12,9 +12,9 @@ namespace MMORPGServer.Services
     public class PlayerManager
     {
         private readonly ConcurrentDictionary<int, Player> _players = new();
-        private readonly IPlayerRepository _playerRepository; // Domain interface
+        private readonly SqlPlayerRepository _playerRepository; // Domain interface
         private readonly ILogger<PlayerManager> _logger;
-        public PlayerManager(ILogger<PlayerManager> logger, IPlayerRepository playerRepository)
+        public PlayerManager(ILogger<PlayerManager> logger, SqlPlayerRepository playerRepository)
         {
             _playerRepository = playerRepository;
             _logger = logger;

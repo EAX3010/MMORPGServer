@@ -2,6 +2,7 @@
 using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Common.ValueObjects;
 using MMORPGServer.Entities;
+using MMORPGServer.Infrastructure.Database.Ini;
 
 namespace MMORPGServer.Services
 {
@@ -12,16 +13,13 @@ namespace MMORPGServer.Services
     public class GameWorld : IGameWorld
     {
         private readonly ILogger<GameWorld> _logger;
-        private readonly IMapRepository _mapRepository;
         private readonly PlayerManager _playerManager; // Memory-based manager
 
         public GameWorld(
             ILogger<GameWorld> logger,
-            IMapRepository mapRepository,
             PlayerManager playerManager)
         {
             _logger = logger;
-            _mapRepository = mapRepository;
             _playerManager = playerManager;
         }
 
@@ -29,7 +27,7 @@ namespace MMORPGServer.Services
         {
             try
             {
-                var map = await _mapRepository.GetMapAsync(mapId);
+                var map = await MapRepository.Instance.GetMapAsync(mapId);
                 if (map == null)
                 {
                     _logger.LogError("Map {MapId} not found", mapId);
@@ -95,7 +93,7 @@ namespace MMORPGServer.Services
 
         public async Task UpdateAsync(float deltaTime)
         {
-            var maps = await _mapRepository.GetAllMapsAsync();
+            var maps = await MapRepository.Instance.GetAllMapsAsync();
             foreach (var map in maps)
             {
                 map.Update(deltaTime);
