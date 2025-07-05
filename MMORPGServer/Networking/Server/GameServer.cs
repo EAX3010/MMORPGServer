@@ -1,48 +1,42 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using MMORPGServer.Common.Constants;
-using MMORPGServer.Common.Interfaces;
-using MMORPGServer.Common.ValueObjects;
+﻿using MMORPGServer.Common.ValueObjects;
 using MMORPGServer.Networking.Clients;
+using MMORPGServer.Networking.Packets;
 using MMORPGServer.Networking.Security;
+using MMORPGServer.Services;
+using Serilog;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Channels;
 
 namespace MMORPGServer.Networking.Server
 {
-    public sealed class GameServer : IGameServer, IDisposable
+    public sealed class GameServer : IDisposable
     {
-        private readonly ILogger<GameServer> _logger;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly INetworkManager _networkManager;
-        private readonly IPacketHandler _packetHandler;
+        private readonly NetworkManager _networkManager;
+        private readonly PacketHandler _packetHandler;
 
         private readonly ChannelWriter<ClientMessage> _messageWriter;
         private readonly ChannelReader<ClientMessage> _messageReader;
 
-        private TcpListener _tcpListener;
-        private CancellationTokenSource _cancellationTokenSource;
-        private Task _acceptTask;
-        private Task _messageProcessingTask;
+        private TcpListener? _tcpListener;
+        private CancellationTokenSource? _cancellationTokenSource;
+        private Task? _acceptTask;
+        private Task? _messageProcessingTask;
         private int _nextClientId = 1;
         private long _totalConnectionsAccepted = 0;
         private long _totalMessagesProcessed = 0;
         private DateTime _serverStartTime;
 
-        public GameServer(
-            ILogger<GameServer> logger,
-            IServiceProvider serviceProvider,
-            INetworkManager networkManager,
-            IPacketHandler packetHandler)
+        public GameServer(NetworkManager networkManager, PacketHandler packetHandler)
         {
-            _logger = logger;
-            _serviceProvider = serviceProvider;
-            _networkManager = networkManager;
-            _packetHandler = packetHandler;
-            Channel<ClientMessage> channel = Channel.CreateUnbounded<ClientMessage>();
+            _networkManager = networkManager ?? throw new ArgumentNullException(nameof(networkManager));
+            _packetHandler = packetHandler ?? throw new ArgumentNullException(nameof(packetHandler));
+
+            var channel = Channel.CreateUnbounded<ClientMessage>();
             _messageWriter = channel.Writer;
             _messageReader = channel.Reader;
+
+            Log.Debug("GameServer initialized");
         }
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -50,121 +44,161 @@ namespace MMORPGServer.Networking.Server
             _serverStartTime = DateTime.UtcNow;
             _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-            _logger.LogInformation("Binding to port {Port}...", ServerConstants.DEFAULT_PORT);
+            // Get port from configuration
+            int port = GameServerConfig.ServerPort;
 
-            _tcpListener = new TcpListener(IPAddress.Any, ServerConstants.DEFAULT_PORT);
+            Log.Information("Binding to port {Port}...", port);
+
+            _tcpListener = new TcpListener(IPAddress.Any, port);
             _tcpListener.Start();
 
-            _logger.LogInformation("TCP Listener started successfully");
-            _logger.LogInformation("Server accepting connections on 0.0.0.0:{Port}", ServerConstants.DEFAULT_PORT);
-            _logger.LogInformation("Maximum clients: {MaxClients}", ServerConstants.MAX_CLIENTS);
+            Log.Information("TCP Listener started successfully");
+            Log.Information("Server accepting connections on 0.0.0.0:{Port}", port);
+            Log.Information("Maximum clients: {MaxClients}", GameServerConfig.MaxPlayers);
 
             _acceptTask = AcceptClientsAsync(_cancellationTokenSource.Token);
             _messageProcessingTask = ProcessMessagesAsync(_cancellationTokenSource.Token);
 
-            _logger.LogInformation("Game server is now online and ready!");
+            Log.Information("Game server is now online and ready!");
             await Task.CompletedTask;
         }
 
         private async Task AcceptClientsAsync(CancellationToken cancellationToken)
         {
-            _logger.LogDebug("Client acceptance loop started");
+            Log.Debug("Client acceptance loop started");
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    TcpClient tcpClient = await _tcpListener!.AcceptTcpClientAsync();
+                    if (_tcpListener == null) break;
+
+                    TcpClient tcpClient = await _tcpListener.AcceptTcpClientAsync();
                     int clientId = Interlocked.Increment(ref _nextClientId);
                     Interlocked.Increment(ref _totalConnectionsAccepted);
 
                     string clientEndpoint = tcpClient.Client.RemoteEndPoint?.ToString() ?? "Unknown";
 
                     // Check if we're at capacity
-                    if (_networkManager.ConnectionCount >= ServerConstants.MAX_CLIENTS)
+                    int maxClients = GameServerConfig.MaxPlayers;
+                    if (_networkManager.ConnectionCount >= maxClients)
                     {
-                        _logger.LogWarning("Connection rejected from {ClientEndpoint} - Server at capacity ({Current}/{Max})",
-                            clientEndpoint, _networkManager.ConnectionCount, ServerConstants.MAX_CLIENTS);
+                        Log.Warning("Connection rejected from {ClientEndpoint} - Server at capacity ({Current}/{Max})",
+                            clientEndpoint, _networkManager.ConnectionCount, maxClients);
                         tcpClient.Close();
                         continue;
                     }
 
-                    DiffieHellmanKeyExchange dhKeyExchange = _serviceProvider.GetRequiredService<DiffieHellmanKeyExchange>();
-                    TQCast5Cryptographer cryptographer = _serviceProvider.GetRequiredService<TQCast5Cryptographer>();
+                    // Create cryptographic services directly
+                    var dhKeyExchange = new DiffieHellmanKeyExchange();
+                    var cryptographer = new TQCast5Cryptographer();
 
-                    GameClient gameClient = new GameClient(
+                    // Create GameClient directly
+                    var gameClient = new GameClient(
                         clientId,
                         tcpClient,
                         dhKeyExchange,
                         cryptographer,
-                        _messageWriter,
-                        _serviceProvider.GetRequiredService<ILogger<GameClient>>()
+                        _messageWriter
                     );
 
                     _networkManager.AddClient(gameClient);
+
+                    // Start client processing in background
                     _ = Task.Run(async () =>
                     {
-                        await gameClient.StartAsync(cancellationToken);
+                        try
+                        {
+                            await gameClient.StartAsync(cancellationToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, "Error in client {ClientId} processing", clientId);
+                        }
+                        finally
+                        {
+                            // Ensure client is removed when done
+                            RemoveClient(clientId);
+                        }
                     }, cancellationToken);
 
-                    _logger.LogInformation("Player #{ClientId} connected from {ClientEndpoint} (Total: {CurrentConnections}/{MaxConnections})",
-                        clientId, clientEndpoint, _networkManager.ConnectionCount, ServerConstants.MAX_CLIENTS);
+                    Log.Information("Player #{ClientId} connected from {ClientEndpoint} (Total: {CurrentConnections}/{MaxConnections})",
+                        clientId, clientEndpoint, _networkManager.ConnectionCount, maxClients);
 
                     // Log milestone connections
                     if (_totalConnectionsAccepted % 100 == 0)
                     {
-                        _logger.LogInformation("Milestone reached: {TotalConnections} total connections accepted since server start",
+                        Log.Information("Milestone reached: {TotalConnections} total connections accepted since server start",
                             _totalConnectionsAccepted);
                     }
                 }
                 catch (ObjectDisposedException)
                 {
-                    _logger.LogDebug("TCP Listener disposed, stopping client acceptance");
+                    Log.Debug("TCP Listener disposed, stopping client acceptance");
+                    break;
+                }
+                catch (SocketException ex) when (ex.SocketErrorCode == SocketError.Interrupted)
+                {
+                    Log.Debug("TCP Listener interrupted, stopping client acceptance");
                     break;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error accepting client connection");
+                    Log.Error(ex, "Error accepting client connection");
                     await Task.Delay(1000, cancellationToken); // Brief delay to prevent rapid error loops
                 }
             }
 
-            _logger.LogDebug("Client acceptance loop stopped");
+            Log.Debug("Client acceptance loop stopped");
         }
 
         private async Task ProcessMessagesAsync(CancellationToken cancellationToken)
         {
-            _logger.LogDebug("Message processing loop started");
+            Log.Debug("Message processing loop started");
 
-            await foreach (ClientMessage message in _messageReader.ReadAllAsync(cancellationToken))
+            try
             {
-                try
+                await foreach (ClientMessage message in _messageReader.ReadAllAsync(cancellationToken))
                 {
-                    message.Packet.Seek(4);
-                    await _packetHandler.HandlePacketAsync(message.Client, message.Packet);
-                    Interlocked.Increment(ref _totalMessagesProcessed);
-
-                    // Log message processing milestones
-                    if (_totalMessagesProcessed % 10000 == 0)
+                    try
                     {
-                        _logger.LogDebug("Processed {TotalMessages} total messages", _totalMessagesProcessed);
-                    }
+                        // Reset packet position for processing
+                        message.Packet.Seek(4);
 
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error processing message from client {ClientId} (Type: {PacketType})",
-                       message.Client.ClientId, message.Packet.Type);
+                        // Process the packet
+                        await _packetHandler.HandlePacketAsync(message.Client, message.Packet);
+
+                        Interlocked.Increment(ref _totalMessagesProcessed);
+
+                        // Log message processing milestones
+                        if (_totalMessagesProcessed % 10000 == 0)
+                        {
+                            Log.Debug("Processed {TotalMessages} total messages", _totalMessagesProcessed);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Error processing message from client {ClientId} (Type: {PacketType})",
+                           message.Client.ClientId, message.Packet.Type);
+                    }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                Log.Debug("Message processing cancelled");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Unexpected error in message processing loop");
+            }
 
-            _logger.LogDebug("Message processing loop stopped");
+            Log.Debug("Message processing loop stopped");
         }
 
         public void RemoveClient(int clientId)
         {
             _networkManager.RemoveClient(clientId);
-            _logger.LogInformation("Player #{ClientId} disconnected (Remaining: {CurrentConnections})",
+            Log.Information("Player #{ClientId} disconnected (Remaining: {CurrentConnections})",
                 clientId, _networkManager.ConnectionCount);
         }
 
@@ -173,7 +207,7 @@ namespace MMORPGServer.Networking.Server
             int connectedClients = _networkManager.ConnectionCount;
             if (connectedClients > 0)
             {
-                _logger.LogDebug("Broadcasting packet to {ClientCount} clients", connectedClients);
+                Log.Debug("Broadcasting packet to {ClientCount} clients", connectedClients);
                 await _networkManager.BroadcastAsync(packetData, excludeClientId);
             }
         }
@@ -182,34 +216,68 @@ namespace MMORPGServer.Networking.Server
         {
             TimeSpan uptime = DateTime.UtcNow - _serverStartTime;
 
-            _logger.LogWarning("Initiating server shutdown...");
-            _logger.LogInformation("Final Statistics:");
-            _logger.LogInformation("   Total Uptime: {Uptime}", uptime.ToString(@"dd\.hh\:mm\:ss"));
-            _logger.LogInformation("   Total Connections: {TotalConnections}", _totalConnectionsAccepted);
-            _logger.LogInformation("   Messages Processed: {TotalMessages}", _totalMessagesProcessed);
-            _logger.LogInformation("   Active Connections: {ActiveConnections}", _networkManager.ConnectionCount);
+            Log.Warning("Initiating server shutdown...");
+            Log.Information("Final Statistics:");
+            Log.Information("   Total Uptime: {Uptime}", uptime.ToString(@"dd\.hh\:mm\:ss"));
+            Log.Information("   Total Connections: {TotalConnections}", _totalConnectionsAccepted);
+            Log.Information("   Messages Processed: {TotalMessages}", _totalMessagesProcessed);
+            Log.Information("   Active Connections: {ActiveConnections}", _networkManager.ConnectionCount);
 
+            // Cancel all operations
             _cancellationTokenSource?.Cancel();
             _messageWriter.Complete();
 
-            _logger.LogInformation("Stopping TCP listener...");
+            Log.Information("Stopping TCP listener...");
             _tcpListener?.Stop();
 
-            List<Task> tasks = new List<Task>();
-            if (_acceptTask is not null) tasks.Add(_acceptTask);
-            if (_messageProcessingTask is not null) tasks.Add(_messageProcessingTask);
+            // Wait for background tasks
+            var tasks = new List<Task>();
+            if (_acceptTask != null) tasks.Add(_acceptTask);
+            if (_messageProcessingTask != null) tasks.Add(_messageProcessingTask);
 
-            _logger.LogInformation("Waiting for background tasks to complete...");
-            await Task.WhenAll(tasks);
+            if (tasks.Count > 0)
+            {
+                Log.Information("Waiting for background tasks to complete...");
+                try
+                {
+                    await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+                }
+                catch (TimeoutException)
+                {
+                    Log.Warning("Some background tasks did not complete within timeout");
+                }
+            }
 
-            _logger.LogInformation("Server shutdown sequence completed");
+            // Disconnect all clients
+            Log.Information("Disconnecting all clients...");
+            await _networkManager.DisconnectAllAsync();
+
+            Log.Information("Server shutdown sequence completed");
         }
 
         public void Dispose()
         {
-            _cancellationTokenSource?.Cancel();
-            _tcpListener?.Stop();
-            _cancellationTokenSource?.Dispose();
+            try
+            {
+                _cancellationTokenSource?.Cancel();
+                _tcpListener?.Stop();
+                _messageWriter.Complete();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error during GameServer disposal");
+            }
+            finally
+            {
+                _cancellationTokenSource?.Dispose();
+            }
         }
+
+        // Public properties for monitoring
+        public long TotalConnectionsAccepted => _totalConnectionsAccepted;
+        public long TotalMessagesProcessed => _totalMessagesProcessed;
+        public int CurrentConnections => _networkManager.ConnectionCount;
+        public TimeSpan Uptime => DateTime.UtcNow - _serverStartTime;
+        public bool IsRunning => _tcpListener != null && _cancellationTokenSource?.Token.IsCancellationRequested == false;
     }
 }

@@ -1,7 +1,9 @@
-﻿namespace MMORPGServer.Common.Interfaces
+﻿using MMORPGServer.Networking.Clients;
+
+namespace MMORPGServer.Common.Interfaces
 {
     public interface IPacketHandler
     {
-        ValueTask HandlePacketAsync(IGameClient client, IPacket packet);
+        ValueTask HandlePacketAsync(GameClient client, IPacket packet);
     }
 }

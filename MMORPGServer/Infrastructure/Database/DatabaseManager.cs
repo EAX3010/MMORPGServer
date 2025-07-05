@@ -35,7 +35,7 @@ namespace MMORPGServer.Infrastructure.Database
 
                 // Test database connection
                 Log.Information("Testing database connection...");
-                await _dbContext.Database.CanConnectAsync();
+                _ = await _dbContext.Database.CanConnectAsync();
                 Log.Information("Database connection successful");
 
                 // Check if database exists, create if it doesn't

@@ -1,5 +1,7 @@
 ﻿using MMORPGServer.Common.Enums;
 using MMORPGServer.Common.Interfaces;
+using MMORPGServer.Networking.Clients;
+using MMORPGServer.Networking.Packets.Attributes;
 using MMORPGServer.Networking.Packets.PacketsProto;
 
 namespace MMORPGServer.Networking.Packets.PacketsHandlers
@@ -7,10 +9,10 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
     /// <summary>
     /// Handles action-related packets in the game protocol.
     /// </summary>
-    public sealed class ActionHandler(IPacketFactory PacketFactory) : IPacketProcessor<GamePackets>
+    public sealed class ActionHandler
     {
-        public GamePackets PacketType => GamePackets.CMsgAction;
-        public async ValueTask HandleAsync(IGameClient client, IPacket packet)
+        [PacketHandler(GamePackets.CMsgAction)]
+        public static async ValueTask HandleAsync(GameClient client, IPacket packet)
         {
             if (client.ClientId is 0)
             {
@@ -27,12 +29,13 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
                 // Log the error and handle it appropriately
                 Console.WriteLine($"Error processing action packet: {ex.Message}");
             }
+            await Task.CompletedTask;
         }
 
         /// <summary>
         /// Processes different types of actions.
         /// </summary>
-        private async ValueTask ProcessActionAsync(IGameClient client, ActionProto action)
+        private static async ValueTask ProcessActionAsync(GameClient client, ActionProto action)
         {
             switch (action.Type)
             {
@@ -50,7 +53,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         /// <summary>
         /// Handles the set location action.
         /// </summary>
-        private async ValueTask HandleSetLocationAsync(IGameClient client, ActionProto action)
+        private static async ValueTask HandleSetLocationAsync(GameClient client, ActionProto action)
         {
             await client.SendPacketAsync(PacketFactory.CreateActionPacket(new ActionProto
             {

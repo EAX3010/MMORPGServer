@@ -197,7 +197,7 @@ namespace MMORPGServer.Infrastructure.Database.Repositories
 
                 var query = _context.Players
                     .AsNoTracking()
-                    .Where(p => string.Equals(p.Name.ToLower(), name.ToLower(), StringComparison.CurrentCulture) == false);
+                    .Where(p => p.Name.ToLower() == name.ToLower());
 
 
                 var isAvailable = !await query.AnyAsync(cancellationToken);

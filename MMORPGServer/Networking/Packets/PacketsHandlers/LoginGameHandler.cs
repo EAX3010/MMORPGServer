@@ -1,15 +1,15 @@
-﻿using Microsoft.Extensions.Logging;
-using MMORPGServer.Common.Enums;
+﻿using MMORPGServer.Common.Enums;
 using MMORPGServer.Common.Interfaces;
-
+using MMORPGServer.Networking.Clients;
+using MMORPGServer.Networking.Packets.Attributes;
+using Serilog;
 namespace MMORPGServer.Networking.Packets.PacketsHandlers
 {
-    public sealed class LoginGameHandler(
-        ILogger<LoginGameHandler> logger, IPacketFactory packetFactory) : IPacketProcessor<GamePackets>
+    public sealed class LoginGameHandler
     {
-        public GamePackets PacketType => GamePackets.CMsgLoginGame;
+        [PacketHandler(GamePackets.CMsgLoginGame)]
 
-        public async ValueTask HandleAsync(IGameClient client, IPacket packet)
+        public static async ValueTask HandleAsync(GameClient client, IPacket packet)
         {
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(packet);
@@ -20,15 +20,15 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error handling CMsgLoginGame packet");
+                Log.Error(ex, "Error handling CMsgLoginGame packet");
             }
         }
-        private async ValueTask Handle(IGameClient client)
+        private static async ValueTask Handle(GameClient client)
         {
 
-            await client.SendPacketAsync(packetFactory.CreateLoginGamaEnglish());
+            await client.SendPacketAsync(PacketFactory.CreateLoginGamaEnglish());
 
-            logger.LogInformation("CMsgLoginGame response sent to client.");
+            Log.Information("CMsgLoginGame response sent to client.");
         }
 
     }

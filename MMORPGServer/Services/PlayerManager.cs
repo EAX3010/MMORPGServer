@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
-using MMORPGServer.Entities;
-using MMORPGServer.Infrastructure.Database.Repositories;
+﻿using MMORPGServer.Entities;
+using MMORPGServer.Infrastructure.Repositories;
+using Serilog;
 using System.Collections.Concurrent;
 
 namespace MMORPGServer.Services
@@ -12,23 +12,16 @@ namespace MMORPGServer.Services
     public class PlayerManager
     {
         private readonly ConcurrentDictionary<int, Player> _players = new();
-        private readonly SqlPlayerRepository _playerRepository; // Domain interface
-        private readonly ILogger<PlayerManager> _logger;
-        public PlayerManager(ILogger<PlayerManager> logger, SqlPlayerRepository playerRepository)
-        {
-            _playerRepository = playerRepository;
-            _logger = logger;
-        }
         public async Task<Player?> CreatePlayerAsync(Player player)
         {
             try
             {
 
-                var success = await _playerRepository.UpsertPlayerAsync(player);
+                var success = await RepositoryManager.PlayerRepository.UpsertPlayerAsync(player);
 
                 if (success)
                 {
-                    _logger.LogInformation("Created player {Name} (ID: {PlayerId})", player.Name, player.Id);
+                    Log.Information("Created player {Name} (ID: {PlayerId})", player.Name, player.Id);
                     return player;
                 }
 
@@ -36,7 +29,7 @@ namespace MMORPGServer.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to create player {Name}", player.Name);
+                Log.Error(ex, "Failed to create player {Name}", player.Name);
                 return null;
             }
         }
@@ -46,23 +39,23 @@ namespace MMORPGServer.Services
             try
             {
                 // Repository returns Domain Player, handles database mapping internally
-                var player = await _playerRepository.GetByIdAsync(playerId);
+                var player = await RepositoryManager.PlayerRepository.GetByIdAsync(playerId);
 
                 if (player != null)
                 {
                     player.ConnectionId = connectionId;
-                    _logger.LogInformation("Loaded player {Name} (ID: {PlayerId})", player.Name, playerId);
+                    Log.Information("Loaded player {Name} (ID: {PlayerId})", player.Name, playerId);
                 }
                 else
                 {
-                    _logger.LogWarning("Player {PlayerId} not found", playerId);
+                    Log.Warning("Player {PlayerId} not found", playerId);
                 }
 
                 return player;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to load player {PlayerId}", playerId);
+                Log.Error(ex, "Failed to load player {PlayerId}", playerId);
                 return null;
             }
         }
@@ -76,7 +69,7 @@ namespace MMORPGServer.Services
         {
             if (_players.TryAdd(player.Id, player))
             {
-                _logger.LogDebug("Added player {Name} to memory", player.Name);
+                Log.Debug("Added player {Name} to memory", player.Name);
             }
             return ValueTask.CompletedTask;
         }
@@ -85,7 +78,7 @@ namespace MMORPGServer.Services
         {
             if (_players.TryRemove(playerId, out var player))
             {
-                _logger.LogDebug("Removed player {Name} from memory", player.Name);
+                Log.Debug("Removed player {Name} from memory", player.Name);
             }
             return ValueTask.CompletedTask;
         }

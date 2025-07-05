@@ -1,20 +1,19 @@
 using MMORPGServer.Common.Enums;
-using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Entities;
 using MMORPGServer.Networking.Packets.PacketsProto;
 using ProtoBuf;
 
 namespace MMORPGServer.Networking.Packets
 {
-    public class PacketFactory : IPacketFactory
+    public class PacketFactory
     {
-        private ReadOnlyMemory<byte> CreateProtoPacket(GamePackets packetType, byte[] protoData)
+        private static ReadOnlyMemory<byte> CreateProtoPacket(GamePackets packetType, byte[] protoData)
         {
             return new Packet(packetType).GetWriter()
                .Seek(4).WriteBytes(protoData)
                .BuildAndFinalize();
         }
-        public ReadOnlyMemory<byte> CreateLoginGamaEnglish()
+        public static ReadOnlyMemory<byte> CreateLoginGamaEnglish()
         {
             return new Packet(GamePackets.LoginGamaEnglish).GetWriter()
            .WriteUInt32(10002)
@@ -22,7 +21,7 @@ namespace MMORPGServer.Networking.Packets
            .Debug("CMsgLoginGame simple response")
            .BuildAndFinalize();
         }
-        public ReadOnlyMemory<byte> CreateTalkPacket(string from, string to, string suffix, string message, ChatType chatType, int mesh)
+        public static ReadOnlyMemory<byte> CreateTalkPacket(string from, string to, string suffix, string message, ChatType chatType, int mesh)
         {
             TalkProto talkPacket = new TalkProto
             {
@@ -39,7 +38,7 @@ namespace MMORPGServer.Networking.Packets
             // Use the new PacketBuilder to construct the final packet for sending
             return CreateProtoPacket(GamePackets.CMsgTalk, payload);
         }
-        public ReadOnlyMemory<byte> CreateHeroInfoPacket(Player player)
+        public static ReadOnlyMemory<byte> CreateHeroInfoPacket(Player player)
         {
             HeroInfoProto proto = new HeroInfoProto
             {
@@ -102,7 +101,7 @@ namespace MMORPGServer.Networking.Packets
             byte[] payload = memoryStream.ToArray();
             return CreateProtoPacket(GamePackets.CMsgUserInfo, payload);
         }
-        public ReadOnlyMemory<byte> CreateActionPacket(ActionProto proto)
+        public static ReadOnlyMemory<byte> CreateActionPacket(ActionProto proto)
         {
             using MemoryStream memoryStream = new MemoryStream();
             Serializer.Serialize(memoryStream, proto);

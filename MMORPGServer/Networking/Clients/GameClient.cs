@@ -1,10 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
-using MMORPGServer.Common.Enums;
-using MMORPGServer.Common.Interfaces;
+﻿using MMORPGServer.Common.Enums;
 using MMORPGServer.Common.ValueObjects;
 using MMORPGServer.Entities;
 using MMORPGServer.Networking.Packets;
 using MMORPGServer.Networking.Security;
+using Serilog;
 using System.Buffers;
 using System.Diagnostics;
 using System.Net.Sockets;
@@ -15,7 +14,7 @@ using System.Threading.RateLimiting;
 namespace MMORPGServer.Networking.Clients
 {
 
-    public sealed class GameClient : IGameClient
+    public sealed class GameClient
     {
         #region Constants
         private const int MAX_PACKET_SIZE = 1024;
@@ -50,7 +49,6 @@ namespace MMORPGServer.Networking.Clients
         #region Private Fields
         private readonly TcpClient _tcpClient;
         private readonly Socket _socket;
-        private readonly ILogger<GameClient> _logger;
         private readonly DiffieHellmanKeyExchange _dhKeyExchange;
         private readonly TQCast5Cryptographer _cryptographer;
         private readonly ChannelWriter<ClientMessage> _messageWriter;
@@ -100,8 +98,7 @@ namespace MMORPGServer.Networking.Clients
             TcpClient tcpClient,
             DiffieHellmanKeyExchange dhKeyExchange,
             TQCast5Cryptographer cryptographer,
-            ChannelWriter<ClientMessage> messageWriter,
-            ILogger<GameClient> logger)
+            ChannelWriter<ClientMessage> messageWriter)
         {
             ClientId = clientId;
             _tcpClient = tcpClient ?? throw new ArgumentNullException(nameof(tcpClient));
@@ -109,7 +106,6 @@ namespace MMORPGServer.Networking.Clients
             _dhKeyExchange = dhKeyExchange ?? throw new ArgumentNullException(nameof(dhKeyExchange));
             _cryptographer = cryptographer ?? throw new ArgumentNullException(nameof(cryptographer));
             _messageWriter = messageWriter ?? throw new ArgumentNullException(nameof(messageWriter));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             IPAddress = tcpClient.Client.RemoteEndPoint?.ToString();
             ConnectedAt = DateTime.UtcNow;
@@ -165,7 +161,7 @@ namespace MMORPGServer.Networking.Clients
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to configure socket options for client {ClientId}", ClientId);
+                Log.Warning(ex, "Failed to configure socket options for client {ClientId}", ClientId);
             }
         }
         #endregion
@@ -190,11 +186,11 @@ namespace MMORPGServer.Networking.Clients
             }
             catch (OperationCanceledException)
             {
-                _logger.LogDebug("Client {ClientId} operation cancelled", ClientId);
+                Log.Debug("Client {ClientId} operation cancelled", ClientId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Critical error in client {ClientId}", ClientId);
+                Log.Error(ex, "Critical error in client {ClientId}", ClientId);
             }
             finally
             {
@@ -209,7 +205,7 @@ namespace MMORPGServer.Networking.Clients
 
             if (packetData.Length > MAX_PACKET_SIZE)
             {
-                _logger.LogError("Attempted to send packet larger than MAX_PACKET_SIZE ({PacketLength} > {MaxPacketSize})",
+                Log.Error("Attempted to send packet larger than MAX_PACKET_SIZE ({PacketLength} > {MaxPacketSize})",
                     packetData.Length, MAX_PACKET_SIZE);
                 return;
             }
@@ -220,7 +216,7 @@ namespace MMORPGServer.Networking.Clients
                 using RateLimitLease lease = await _byteRateLimiter.AcquireAsync(packetData.Length, _cancellationTokenSource.Token);
                 if (!lease.IsAcquired)
                 {
-                    _logger.LogWarning("Client {ClientId} exceeded outgoing byte rate limit", ClientId);
+                    Log.Warning("Client {ClientId} exceeded outgoing byte rate limit", ClientId);
                     return;
                 }
 
@@ -233,7 +229,7 @@ namespace MMORPGServer.Networking.Clients
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to queue packet for client {ClientId}", ClientId);
+                Log.Error(ex, "Failed to queue packet for client {ClientId}", ClientId);
             }
         }
 
@@ -248,7 +244,7 @@ namespace MMORPGServer.Networking.Clients
                 State = ClientState.Disconnected;
                 _connectionTimer.Stop();
 
-                _logger.LogInformation("Disconnecting client {ClientId}: {Reason} (Duration: {Duration}, Packets R/S: {Received}/{Sent}, Bytes R/S: {BytesReceived}/{BytesSent})",
+                Log.Information("Disconnecting client {ClientId}: {Reason} (Duration: {Duration}, Packets R/S: {Received}/{Sent}, Bytes R/S: {BytesReceived}/{BytesSent})",
                     ClientId, reason, _connectionTimer.Elapsed, _packetsReceived, _packetsSent, _bytesReceived, _bytesSent);
 
                 _cancellationTokenSource.Cancel();
@@ -315,7 +311,7 @@ namespace MMORPGServer.Networking.Clients
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send DH key exchange for client {ClientId}", ClientId);
+                Log.Error(ex, "Failed to send DH key exchange for client {ClientId}", ClientId);
                 throw;
             }
         }
@@ -336,12 +332,12 @@ namespace MMORPGServer.Networking.Clients
                 }
                 catch (Exception ex) when (!ShouldDisconnectOnError(ex))
                 {
-                    _logger.LogDebug("Non-fatal send error for client {ClientId}: {Error}", ClientId, ex.Message);
+                    Log.Debug("Non-fatal send error for client {ClientId}: {Error}", ClientId, ex.Message);
                     continue;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Fatal send error for client {ClientId}", ClientId);
+                    Log.Error(ex, "Fatal send error for client {ClientId}", ClientId);
                     await DisconnectAsync($"Send error: {ex.GetType().Name}");
                     break;
                 }
@@ -366,7 +362,7 @@ namespace MMORPGServer.Networking.Clients
                     if (retryCount >= maxRetries)
                         throw;
 
-                    _logger.LogDebug("Socket would block on send for client {ClientId}, retry {Retry}/{MaxRetries}",
+                    Log.Debug("Socket would block on send for client {ClientId}, retry {Retry}/{MaxRetries}",
                         ClientId, retryCount, maxRetries);
 
                     await Task.Delay(WOULD_BLOCK_RETRY_DELAY * retryCount, cancellationToken);
@@ -405,7 +401,7 @@ namespace MMORPGServer.Networking.Clients
                     int bytesRead = await ReceiveDataWithRetryAsync(cancellationToken);
                     if (bytesRead == 0)
                     {
-                        _logger.LogDebug("Client {ClientId} closed connection gracefully", ClientId);
+                        Log.Debug("Client {ClientId} closed connection gracefully", ClientId);
                         break;
                     }
 
@@ -417,7 +413,7 @@ namespace MMORPGServer.Networking.Clients
                     using RateLimitLease lease = await _byteRateLimiter.AcquireAsync(bytesRead, cancellationToken);
                     if (!lease.IsAcquired)
                     {
-                        _logger.LogWarning("Client {ClientId} exceeded incoming byte rate limit", ClientId);
+                        Log.Warning("Client {ClientId} exceeded incoming byte rate limit", ClientId);
                         await DisconnectAsync("Byte rate limit exceeded");
                         break;
                     }
@@ -428,7 +424,7 @@ namespace MMORPGServer.Networking.Clients
                 catch (Exception ex) when (!ShouldDisconnectOnError(ex))
                 {
                     IncrementErrorCount();
-                    _logger.LogDebug("Non-fatal receive error for client {ClientId}: {Error}", ClientId, ex.Message);
+                    Log.Debug("Non-fatal receive error for client {ClientId}: {Error}", ClientId, ex.Message);
 
                     if (_consecutiveErrors >= MAX_CONSECUTIVE_ERRORS)
                     {
@@ -441,7 +437,7 @@ namespace MMORPGServer.Networking.Clients
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Fatal receive error for client {ClientId}", ClientId);
+                    Log.Error(ex, "Fatal receive error for client {ClientId}", ClientId);
                     await DisconnectAsync($"Receive error: {ex.GetType().Name}");
                     break;
                 }
@@ -499,7 +495,7 @@ namespace MMORPGServer.Networking.Clients
             // Check flood detection
             if (IsFlooding())
             {
-                _logger.LogWarning("Client {ClientId} is flooding, disconnecting", ClientId);
+                Log.Warning("Client {ClientId} is flooding, disconnecting", ClientId);
                 DisconnectAsync("Flood detected").GetAwaiter().GetResult();
                 return false;
             }
@@ -518,7 +514,7 @@ namespace MMORPGServer.Networking.Clients
             return TryProcessSimplePacket(buffer, out consumedLength, () =>
             {
                 UpdateStateAsync(ClientState.DhKeyExchange).GetAwaiter().GetResult();
-                _logger.LogDebug("Client {ClientId} processed dummy packet, transitioning to DH key exchange", ClientId);
+                Log.Debug("Client {ClientId} processed dummy packet, transitioning to DH key exchange", ClientId);
             });
         }
 
@@ -527,7 +523,7 @@ namespace MMORPGServer.Networking.Clients
             // Check handshake timeout
             if (DateTime.UtcNow - _handshakeStartTime > HANDSHAKE_TIMEOUT)
             {
-                _logger.LogWarning("Client {ClientId} handshake timeout", ClientId);
+                Log.Warning("Client {ClientId} handshake timeout", ClientId);
                 DisconnectAsync("Handshake timeout").GetAwaiter().GetResult();
                 consumedLength = 0;
                 return false;
@@ -614,7 +610,7 @@ namespace MMORPGServer.Networking.Clients
             using RateLimitLease lease = _packetRateLimiter.AcquireAsync(1).GetAwaiter().GetResult();
             if (!lease.IsAcquired)
             {
-                _logger.LogWarning("Client {ClientId} exceeded packet rate limit", ClientId);
+                Log.Warning("Client {ClientId} exceeded packet rate limit", ClientId);
                 _decryptedBufferOffset = 0;
                 DisconnectAsync("Packet rate limit exceeded").GetAwaiter().GetResult();
                 return;
@@ -643,7 +639,7 @@ namespace MMORPGServer.Networking.Clients
 
                 if (!_messageWriter.TryWrite(new ClientMessage(this, packet)))
                 {
-                    _logger.LogWarning("Failed to queue packet from client {ClientId} - message queue full", ClientId);
+                    Log.Warning("Failed to queue packet from client {ClientId} - message queue full", ClientId);
                 }
                 else
                 {
@@ -653,7 +649,7 @@ namespace MMORPGServer.Networking.Clients
             }
             else
             {
-                _logger.LogWarning("Failed to queue packet from client {ClientId} - message not complete", ClientId);
+                Log.Warning("Failed to queue packet from client {ClientId} - message not complete", ClientId);
             }
         }
 
@@ -661,14 +657,14 @@ namespace MMORPGServer.Networking.Clients
         {
             if (packetLength < MIN_PACKET_SIZE)
             {
-                _logger.LogWarning("Client {ClientId} sent packet too small ({PacketType}: {PacketLength} < {MinSize})",
+                Log.Warning("Client {ClientId} sent packet too small ({PacketType}: {PacketLength} < {MinSize})",
                     ClientId, packetType, packetLength, MIN_PACKET_SIZE);
                 return false;
             }
 
             if (packetLength > MAX_PACKET_SIZE)
             {
-                _logger.LogWarning("Client {ClientId} sent oversized packet ({PacketType}: {PacketLength} > {MaxSize})",
+                Log.Warning("Client {ClientId} sent oversized packet ({PacketType}: {PacketLength} > {MaxSize})",
                     ClientId, packetType, packetLength, MAX_PACKET_SIZE);
                 return false;
             }
@@ -695,7 +691,7 @@ namespace MMORPGServer.Networking.Clients
                     }
                     else
                     {
-                        _logger.LogWarning("Client {ClientId} sent invalid DH key packet", ClientId);
+                        Log.Warning("Client {ClientId} sent invalid DH key packet", ClientId);
                         DisconnectAsync("Invalid DH key").GetAwaiter().GetResult();
                     }
                 }
@@ -706,7 +702,7 @@ namespace MMORPGServer.Networking.Clients
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing DH key packet for client {ClientId}", ClientId);
+                Log.Error(ex, "Error processing DH key packet for client {ClientId}", ClientId);
                 DisconnectAsync("DH key processing error").GetAwaiter().GetResult();
             }
         }
@@ -719,7 +715,7 @@ namespace MMORPGServer.Networking.Clients
             _cryptographer.Reset();
 
             UpdateStateAsync(ClientState.Connected).GetAwaiter().GetResult();
-            _logger.LogInformation("DH key exchange completed successfully for client {ClientId}", ClientId);
+            Log.Information("DH key exchange completed successfully for client {ClientId}", ClientId);
         }
         #endregion
 
@@ -735,7 +731,7 @@ namespace MMORPGServer.Networking.Clients
                     // Check idle timeout
                     if (DateTime.UtcNow - LastActivityTime > IDLE_TIMEOUT)
                     {
-                        _logger.LogInformation("Client {ClientId} idle timeout", ClientId);
+                        Log.Information("Client {ClientId} idle timeout", ClientId);
                         await DisconnectAsync("Idle timeout");
                         break;
                     }
@@ -744,7 +740,7 @@ namespace MMORPGServer.Networking.Clients
                     if (State != ClientState.Connected &&
                         DateTime.UtcNow - _handshakeStartTime > HANDSHAKE_TIMEOUT)
                     {
-                        _logger.LogWarning("Client {ClientId} handshake timeout", ClientId);
+                        Log.Warning("Client {ClientId} handshake timeout", ClientId);
                         await DisconnectAsync("Handshake timeout");
                         break;
                     }
@@ -758,7 +754,7 @@ namespace MMORPGServer.Networking.Clients
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error in connection health monitor for client {ClientId}", ClientId);
+                    Log.Error(ex, "Error in connection health monitor for client {ClientId}", ClientId);
                 }
             }
         }
@@ -819,7 +815,7 @@ namespace MMORPGServer.Networking.Clients
                 // Security check: too many different packet types might indicate fuzzing
                 if (_recentPacketTypes.Count > 50)
                 {
-                    _logger.LogWarning("Client {ClientId} sending too many different packet types ({Count})",
+                    Log.Warning("Client {ClientId} sending too many different packet types ({Count})",
                         ClientId, _recentPacketTypes.Count);
                 }
             }

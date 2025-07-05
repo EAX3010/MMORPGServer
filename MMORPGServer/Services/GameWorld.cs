@@ -1,26 +1,16 @@
-﻿using Microsoft.Extensions.Logging;
-using MMORPGServer.Common.Interfaces;
-using MMORPGServer.Common.ValueObjects;
-using MMORPGServer.Entities;
+﻿using MMORPGServer.Entities;
 using MMORPGServer.Infrastructure.Database.Ini;
+using Serilog;
 
 namespace MMORPGServer.Services
 {
 
-    /// <summary>
-    /// Corrected GameWorld - uses PlayerManager (memory) for real-time operations.
-    /// </summary>
-    public class GameWorld : IGameWorld
-    {
-        private readonly ILogger<GameWorld> _logger;
-        private readonly PlayerManager _playerManager; // Memory-based manager
 
-        public GameWorld(
-            ILogger<GameWorld> logger,
-            PlayerManager playerManager)
+    public class GameWorld
+    {
+        public GameWorld()
         {
-            _logger = logger;
-            _playerManager = playerManager;
+            Log.Information("GameWorld initialized successfully");
         }
 
         public async Task<Player?> SpawnPlayerAsync(Player player, short mapId)
@@ -30,14 +20,14 @@ namespace MMORPGServer.Services
                 var map = await MapRepository.Instance.GetMapAsync(mapId);
                 if (map == null)
                 {
-                    _logger.LogError("Map {MapId} not found", mapId);
+                    Log.Error("Map {MapId} not found", mapId);
                     return null;
                 }
 
                 var spawnPoint = await map.GetValidSpawnPointAsync();
                 if (!spawnPoint.HasValue)
                 {
-                    _logger.LogError("Could not find valid spawn point on map {MapId}", mapId);
+                    Log.Error("Could not find valid spawn point on map {MapId}", mapId);
                     return null;
                 }
 
@@ -49,55 +39,23 @@ namespace MMORPGServer.Services
                 // Add to map
                 if (!map.AddEntity(player))
                 {
-                    _logger.LogError("Failed to add player to map {MapId}", mapId);
+                    Log.Error("Failed to add player to map {MapId}", mapId);
                     return null;
                 }
 
-                // Add to memory manager
-                await _playerManager.AddPlayerAsync(player);
 
-                _logger.LogInformation("Spawned player {Name} on map {MapId} at {Position}",
+                Log.Information("Spawned player {Name} on map {MapId} at {Position}",
                     player.Name, mapId, spawnPoint.Value);
 
                 return player;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to spawn player on map {MapId}", mapId);
+                Log.Error(ex, "Failed to spawn player on map {MapId}", mapId);
                 return null;
             }
         }
 
-        public async Task<bool> MovePlayerAsync(int playerId, Position newPosition)
-        {
-            var player = await _playerManager.GetPlayerAsync(playerId);
-            if (player?.Map == null)
-            {
-                _logger.LogWarning("Player {PlayerId} or map not found for move", playerId);
-                return false;
-            }
 
-            return player.Map.TryMoveEntity(player, newPosition);
-        }
-
-        public async Task<IEnumerable<MapObject>> GetEntitiesInRangeAsync(int playerId, float range)
-        {
-            var player = await _playerManager.GetPlayerAsync(playerId);
-            if (player?.Map == null)
-            {
-                return Enumerable.Empty<MapObject>();
-            }
-
-            return player.Map.GetEntitiesInRange(player.Position, range);
-        }
-
-        public async Task UpdateAsync(float deltaTime)
-        {
-            var maps = await MapRepository.Instance.GetAllMapsAsync();
-            foreach (var map in maps)
-            {
-                map.Update(deltaTime);
-            }
-        }
     }
 }

@@ -147,7 +147,7 @@ public static class GameServerConfig
     public static string TransferCipherKey => Configuration.GetValue("TransferCipher:Key", "");
     public static string TransferCipherSalt => Configuration.GetValue("TransferCipher:Salt", "");
 
-    public static int ServerPort => Configuration.GetValue("Server:Port", 7777);
+    public static int ServerPort => Configuration.GetValue("Server:Port", 10033);
     public static int MaxPlayers => Configuration.GetValue("Server:MaxPlayers", 1000);
     public static int TickRate => Configuration.GetValue("Server:TickRate", 60);
     public static string ServerName => Configuration.GetValue("Server:Name", "MMORPG Server");
