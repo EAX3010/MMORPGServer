@@ -6,7 +6,7 @@ using Serilog;
 using Serilog.Events;
 using System.Globalization;
 
-class Program
+partial class Program
 {
     public static async Task Main(string[] args)
     {

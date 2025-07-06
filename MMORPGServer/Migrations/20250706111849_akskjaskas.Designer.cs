@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace MMORPGServer.Infrastructure.Migrations
+namespace MMORPGServer.Migrations
 {
     [DbContext(typeof(GameDbContext))]
-    [Migration("20250628144424_asdasdasd")]
-    partial class asdasdasd
+    [Migration("20250706111849_akskjaskas")]
+    partial class akskjaskas
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,11 +20,11 @@ namespace MMORPGServer.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "9.0.6")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("MMORPGServer.Infrastructure.Persistence.Models.PlayerEntity", b =>
+            modelBuilder.Entity("MMORPGServer.Infrastructure.Database.Models.PlayerEntity", b =>
                 {
                     b.Property<int>("Id")
                         .HasColumnType("int");
@@ -39,9 +39,7 @@ namespace MMORPGServer.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("CurrentHealth")
                         .HasColumnType("int");
@@ -50,7 +48,7 @@ namespace MMORPGServer.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<long>("Experience")
                         .ValueGeneratedOnAdd()
@@ -65,19 +63,17 @@ namespace MMORPGServer.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
+                        .HasColumnType("tinyint(1)")
                         .HasDefaultValue(false);
 
                     b.Property<DateTime?>("LastLogin")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("LastLogout")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime>("LastModifiedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("Level")
                         .ValueGeneratedOnAdd()
@@ -96,14 +92,12 @@ namespace MMORPGServer.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)")
-                        .UseCollation("LATIN1_GENERAL_100_CI_AS_SC_UTF8");
+                        .HasColumnType("varchar(15)");
 
-                    b.Property<byte[]>("RowVersion")
+                    b.Property<DateTime>("RowVersion")
                         .IsConcurrencyToken()
-                        .IsRequired()
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
+                        .HasColumnType("timestamp(6)");
 
                     b.Property<short>("Spirit")
                         .HasColumnType("smallint");
@@ -123,14 +117,11 @@ namespace MMORPGServer.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IsDeleted")
-                        .HasDatabaseName("IX_Players_IsDeleted");
-
-                    b.HasIndex("LastLogin")
-                        .HasDatabaseName("IX_Players_LastLogin");
+                        .HasDatabaseName("idx_players_is_deleted");
 
                     b.HasIndex("Name")
                         .IsUnique()
-                        .HasDatabaseName("IX_Players_Name");
+                        .HasDatabaseName("idx_players_name");
 
                     b.ToTable("Players", (string)null);
                 });

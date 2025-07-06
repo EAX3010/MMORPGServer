@@ -3,20 +3,24 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace MMORPGServer.Infrastructure.Migrations
+namespace MMORPGServer.Migrations
 {
     /// <inheritdoc />
-    public partial class inital : Migration
+    public partial class akskjaskas : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AlterDatabase()
+                .Annotation("MySql:CharSet", "utf8mb4");
+
             migrationBuilder.CreateTable(
                 name: "Players",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: false, collation: "Arabic_CI_AS"),
+                    Name = table.Column<string>(type: "varchar(15)", maxLength: 15, nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
                     Level = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
                     Experience = table.Column<long>(type: "bigint", nullable: false, defaultValue: 0L),
                     MapId = table.Column<short>(type: "smallint", nullable: false),
@@ -33,31 +37,27 @@ namespace MMORPGServer.Infrastructure.Migrations
                     Agility = table.Column<short>(type: "smallint", nullable: false),
                     Vitality = table.Column<short>(type: "smallint", nullable: false),
                     Spirit = table.Column<short>(type: "smallint", nullable: false),
-                    LastLogin = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastLogout = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
-                    LastModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
+                    LastLogin = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    LastLogout = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    LastModifiedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    RowVersion = table.Column<DateTime>(type: "timestamp(6)", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Players", x => x.Id);
-                });
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Players_IsDeleted",
+                name: "idx_players_is_deleted",
                 table: "Players",
                 column: "IsDeleted");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Players_LastLogin",
-                table: "Players",
-                column: "LastLogin");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Players_Name",
+                name: "idx_players_name",
                 table: "Players",
                 column: "Name",
                 unique: true);

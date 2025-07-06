@@ -23,8 +23,7 @@ public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerEntity>
         // Name: Required, max 50 chars, case-insensitive, supports Arabic and English
         builder.Property(e => e.Name)
             .IsRequired()
-            .HasMaxLength(15)
-            .UseCollation("LATIN1_GENERAL_100_CI_AS_SC_UTF8"); // Case-insensitive collation supporting Arabic
+            .HasMaxLength(15); // Case-insensitive collation supporting Arabic
 
         // Level: Default value 1
         builder.Property(e => e.Level)
@@ -51,21 +50,19 @@ public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerEntity>
 
 
         // Last login: Required with default current UTC time
-        builder.Property(e => e.LastLogin);
+        _ = builder.Property(e => e.LastLogin);
 
         // Last logout: Optional (null when player is online)
-        builder.Property(e => e.LastLogout);
+        _ = builder.Property(e => e.LastLogout);
 
         // === Audit Fields ===
 
         // Created timestamp: Set by default to current UTC time
-        builder.Property(e => e.CreatedAt)
-            .IsRequired()
-            .HasDefaultValueSql("GETUTCDATE()");
+        _ = builder.Property(e => e.CreatedAt);
+
 
         // Modified timestamp: Optional (null until first modification)
-        builder.Property(e => e.LastModifiedAt).IsRequired()
-             .HasDefaultValueSql("GETUTCDATE()");
+        _ = builder.Property(e => e.LastModifiedAt);
 
         // === Soft Delete Fields ===
 
@@ -89,15 +86,11 @@ public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerEntity>
         // Unique index on player name
         builder.HasIndex(e => e.Name)
             .IsUnique()
-            .HasDatabaseName("IX_Players_Name");
-
-        // Index on last login for activity queries
-        builder.HasIndex(e => e.LastLogin)
-            .HasDatabaseName("IX_Players_LastLogin");
+            .HasDatabaseName("idx_players_name");
 
         // Index on soft delete flag
         builder.HasIndex(e => e.IsDeleted)
-            .HasDatabaseName("IX_Players_IsDeleted");
+            .HasDatabaseName("idx_players_is_deleted");
 
     }
 }

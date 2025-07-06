@@ -75,17 +75,17 @@ namespace MMORPGServer.Infrastructure.Database
 
         private static void ConfigureDbContext(DbContextOptionsBuilder<GameDbContext> options, string connectionString)
         {
-            options.UseSqlServer(connectionString, sqlServerOptions =>
+            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mysqlOptions =>
             {
-                sqlServerOptions.EnableRetryOnFailure(
+                // MySQL-specific configuration
+                mysqlOptions.EnableRetryOnFailure(
                     maxRetryCount: 3,
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorNumbersToAdd: null);
 
-                sqlServerOptions.CommandTimeout(30);
-                sqlServerOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
-            });
+                mysqlOptions.CommandTimeout(30);
 
+            });
             if (_auditInterceptor != null)
             {
                 options.AddInterceptors(_auditInterceptor);
