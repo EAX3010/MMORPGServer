@@ -1,4 +1,4 @@
-﻿using MMORPGServer.Infrastructure.Database.Ini;
+﻿using MMORPGServer.Infrastructure.Repositories;
 using MMORPGServer.Networking.Packets;
 using MMORPGServer.Networking.Security;
 using MMORPGServer.Networking.Server;
@@ -134,7 +134,7 @@ namespace MMORPGServer.Services
             Log.Information("=== Game Systems Status ===");
             Log.Information("Server Running: {IsRunning}", _gameServer?.IsRunning ?? false);
             Log.Information("Connected Players: {PlayerCount}", _networkManager?.ConnectionCount ?? 0);
-            Log.Information("Maps Loaded: {MapCount}", MapRepository.Instance.GetMapCount());
+            Log.Information("Maps Loaded: {MapCount}", RepositoryManager.MapRepository.GetMapCount());
 
             if (_networkManager != null)
             {

@@ -7,29 +7,26 @@ namespace MMORPGServer.Infrastructure.Repositories
 {
     public static class RepositoryManager
     {
-        private static SqlPlayerRepository? _playerRepository;
-        // Add other repositories as needed
-        // private static IItemRepository? _itemRepository;
-        // private static IGuildRepository? _guildRepository;
-        public static MapRepository MapRepository => MapRepository.Instance;
-        public static SqlPlayerRepository PlayerRepository => _playerRepository ??
-            throw new InvalidOperationException("Repositories not initialized. Call Initialize() first.");
+        public static MapRepository MapRepository;
+        public static SqlPlayerRepository PlayerRepository;
 
         public async static void Initialize()
         {
             Log.Information("Initializing repositories...");
 
-            var dbContext = DatabaseManager.DbContext;
+            var dbContext = DbContextFactory.DbContext;
 
-            _playerRepository = new SqlPlayerRepository(dbContext);
-            await MapRepository.Instance.InitializeMapsAsync();
+            PlayerRepository = new SqlPlayerRepository(dbContext);
+            MapRepository = new MapRepository();
+            await MapRepository.InitializeMapsAsync();
+
 
             Log.Information("Repositories initialized successfully");
         }
 
         public static T CreateRepository<T>() where T : class
         {
-            var dbContext = DatabaseManager.CreateDbContext();
+            var dbContext = DbContextFactory.CreateDbContext();
 
             if (typeof(T) == typeof(SqlPlayerRepository))
                 return (T)(object)new SqlPlayerRepository(dbContext);

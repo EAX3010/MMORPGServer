@@ -9,15 +9,12 @@ namespace MMORPGServer.Infrastructure.Database.Ini
 {
     public class MapRepository
     {
-        private static MapRepository? _instance;
-        private static readonly object _lock = new object();
-
         private readonly ConcurrentDictionary<short, Map> _maps;
         private readonly MapVisualizer _mapVisualizer;
         private readonly string _basePath;
         private bool _isInitialized;
 
-        private MapRepository()
+        public MapRepository()
         {
             _maps = new ConcurrentDictionary<short, Map>();
             _mapVisualizer = new MapVisualizer();
@@ -25,23 +22,7 @@ namespace MMORPGServer.Infrastructure.Database.Ini
             _isInitialized = false;
         }
 
-        public static MapRepository Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    lock (_lock)
-                    {
-                        if (_instance == null)
-                        {
-                            _instance = new MapRepository();
-                        }
-                    }
-                }
-                return _instance;
-            }
-        }
+
 
         public async Task<Map?> GetMapAsync(short mapId)
         {
@@ -251,12 +232,9 @@ namespace MMORPGServer.Infrastructure.Database.Ini
         // Reset method for testing or reinitialization
         public void Reset()
         {
-            lock (_lock)
-            {
-                _maps.Clear();
-                _isInitialized = false;
-                Log.Information("Map repository reset");
-            }
+            _maps.Clear();
+            _isInitialized = false;
+            Log.Information("Map repository reset");
         }
 
         // Get map count

@@ -1,12 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Logging;
 using MMORPGServer.Infrastructure.Database.Interceptors;
 using Serilog;
 
 namespace MMORPGServer.Infrastructure.Database
 {
-    public static class DatabaseManager
+    public class DbContextFactory : IDesignTimeDbContextFactory<GameDbContext>
     {
+        public GameDbContext CreateDbContext(string[] args)
+        {
+            GameServerConfig.Initialize();
+            return DbContextFactory.CreateDbContext();
+        }
         private static GameDbContext? _dbContext;
         private static AuditableEntitySaveChangesInterceptor? _auditInterceptor;
 
@@ -22,16 +28,8 @@ namespace MMORPGServer.Infrastructure.Database
                 // Create interceptors
                 _auditInterceptor = new AuditableEntitySaveChangesInterceptor();
 
-                // Get connection string
-                var connectionString = GameServerConfig.GetConnectionString();
-                Log.Information("Database connection: {Server}",
-                    connectionString.Split(';').FirstOrDefault(x => x.StartsWith("Server="))?.Split('=')[1] ?? "Unknown");
 
-                // Create DbContext with options
-                var optionsBuilder = new DbContextOptionsBuilder<GameDbContext>();
-                ConfigureDbContext(optionsBuilder, connectionString);
-
-                _dbContext = new GameDbContext(optionsBuilder.Options);
+                _dbContext = CreateDbContext();
 
                 // Test database connection
                 Log.Information("Testing database connection...");

@@ -25,7 +25,7 @@ partial class Program
             Log.Information("Configuration loaded successfully");
 
             // Initialize Database and repositories
-            await DatabaseManager.InitializeAsync();
+            await DbContextFactory.InitializeAsync();
             RepositoryManager.Initialize();
 
             // Initialize packet handler registry (auto-discovery)

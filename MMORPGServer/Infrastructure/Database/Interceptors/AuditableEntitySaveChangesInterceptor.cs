@@ -47,15 +47,17 @@ namespace MMORPGServer.Infrastructure.Database.Interceptors
             {
                 switch (entry.State)
                 {
-                    case EntityState.Modified:
-                        // Modified entity: Update modification timestamp
+                    case EntityState.Added:
+                        entry.Entity.CreatedAt = currentTime;
                         entry.Entity.LastModifiedAt = currentTime;
-                        // Ensure CreatedAt is never modified
+                        break;
+
+                    case EntityState.Modified:
+                        entry.Entity.LastModifiedAt = currentTime;
                         entry.Property(e => e.CreatedAt).IsModified = false;
                         break;
 
                     case EntityState.Deleted:
-                        // Check if entity supports soft delete
                         if (entry.Entity is ISoftDeletable softDeletable)
                         {
                             // Convert hard delete to soft delete
@@ -64,7 +66,6 @@ namespace MMORPGServer.Infrastructure.Database.Interceptors
                             softDeletable.DeletedAt = currentTime;
                             entry.Entity.LastModifiedAt = currentTime;
                         }
-                        // If not soft deletable, proceed with hard delete
                         break;
                 }
             }

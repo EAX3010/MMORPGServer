@@ -1,5 +1,5 @@
 ﻿using MMORPGServer.Entities;
-using MMORPGServer.Infrastructure.Database.Ini;
+using MMORPGServer.Infrastructure.Repositories;
 using Serilog;
 
 namespace MMORPGServer.Services
@@ -17,7 +17,7 @@ namespace MMORPGServer.Services
         {
             try
             {
-                var map = await MapRepository.Instance.GetMapAsync(mapId);
+                var map = await RepositoryManager.MapRepository.GetMapAsync(mapId);
                 if (map == null)
                 {
                     Log.Error("Map {MapId} not found", mapId);
