@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using MMORPGServer.Infrastructure.Database.Models;
+using MMORPGServer.Database.Models;
 
 public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerEntity>
 {

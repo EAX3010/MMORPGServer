@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Infrastructure.Database.Common.Interfaces
+﻿namespace MMORPGServer.Database.Common.Interfaces
 {
     /// <summary>
     /// Interface for entities that support soft delete functionality.

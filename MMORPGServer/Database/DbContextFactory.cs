@@ -1,20 +1,20 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
-using MMORPGServer.Infrastructure.Database.Interceptors;
+using MMORPGServer.Database.Interceptors;
 using Serilog;
 
-namespace MMORPGServer.Infrastructure.Database
+namespace MMORPGServer.Database
 {
     public class DbContextFactory : IDesignTimeDbContextFactory<GameDbContext>
     {
         public GameDbContext CreateDbContext(string[] args)
         {
             GameServerConfig.Initialize();
-            return DbContextFactory.CreateDbContext();
+            return CreateDbContext([new AuditableEntitySaveChangesInterceptor()]);
         }
         private static GameDbContext? _dbContext;
-        private static AuditableEntitySaveChangesInterceptor? _auditInterceptor;
 
         public static GameDbContext DbContext => _dbContext ??
             throw new InvalidOperationException("Database not initialized. Call InitializeAsync() first.");
@@ -25,11 +25,8 @@ namespace MMORPGServer.Infrastructure.Database
 
             try
             {
-                // Create interceptors
-                _auditInterceptor = new AuditableEntitySaveChangesInterceptor();
 
-
-                _dbContext = CreateDbContext();
+                _dbContext = CreateDbContext([new AuditableEntitySaveChangesInterceptor()]);
 
                 // Test database connection
                 Log.Information("Testing database connection...");
@@ -41,12 +38,12 @@ namespace MMORPGServer.Infrastructure.Database
                 if (!databaseExists)
                 {
                     Log.Information("Database does not exist, creating...");
-                    await _dbContext.Database.EnsureCreatedAsync();
+                    _ = await _dbContext.Database.EnsureCreatedAsync();
                     Log.Information("Database created successfully");
                 }
 
                 // Apply any pending migrations
-                var pendingMigrations = await _dbContext.Database.GetPendingMigrationsAsync();
+                IEnumerable<string> pendingMigrations = await _dbContext.Database.GetPendingMigrationsAsync();
                 if (pendingMigrations.Any())
                 {
                     Log.Information("Applying {Count} pending migrations...", pendingMigrations.Count());
@@ -63,15 +60,15 @@ namespace MMORPGServer.Infrastructure.Database
             }
         }
 
-        public static GameDbContext CreateDbContext()
+        public static GameDbContext CreateDbContext(IInterceptor[] interceptor)
         {
             var connectionString = GameServerConfig.GetConnectionString();
             var optionsBuilder = new DbContextOptionsBuilder<GameDbContext>();
-            ConfigureDbContext(optionsBuilder, connectionString);
+            ConfigureDbContext(optionsBuilder, connectionString, interceptor);
             return new GameDbContext(optionsBuilder.Options);
         }
 
-        private static void ConfigureDbContext(DbContextOptionsBuilder<GameDbContext> options, string connectionString)
+        private static void ConfigureDbContext(DbContextOptionsBuilder<GameDbContext> options, string connectionString, IInterceptor[] interceptor)
         {
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), mysqlOptions =>
             {
@@ -84,9 +81,9 @@ namespace MMORPGServer.Infrastructure.Database
                 mysqlOptions.CommandTimeout(30);
 
             });
-            if (_auditInterceptor != null)
+            if (interceptor != null)
             {
-                options.AddInterceptors(_auditInterceptor);
+                options.AddInterceptors(interceptor);
             }
 
             options.UseLoggerFactory(LoggerFactory.Create(builder =>
@@ -103,14 +100,11 @@ namespace MMORPGServer.Infrastructure.Database
         public static async Task DisposeAsync()
         {
             Log.Information("Disposing database...");
-
             if (_dbContext != null)
             {
                 await _dbContext.DisposeAsync();
                 _dbContext = null;
             }
-
-            _auditInterceptor = null;
             Log.Information("Database disposed");
         }
     }

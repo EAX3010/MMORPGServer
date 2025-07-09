@@ -1,6 +1,6 @@
-﻿using MMORPGServer.Infrastructure.Database.Common.Interfaces;
+﻿using MMORPGServer.Database.Common.Interfaces;
 
-namespace MMORPGServer.Infrastructure.Database.Models
+namespace MMORPGServer.Database.Models
 {
     public class PlayerEntity : BaseEntity
     {

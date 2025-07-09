@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MMORPGServer.Database.Mappings;
 using MMORPGServer.Entities;
-using MMORPGServer.Infrastructure.Database.Mappings;
 using Serilog;
 
-namespace MMORPGServer.Infrastructure.Database.Repositories
+namespace MMORPGServer.Database.Repositories
 {
     /// <summary>
     /// Repository implementation for Player entities.

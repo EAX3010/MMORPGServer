@@ -1,8 +1,8 @@
 ﻿using MMORPGServer.Common.ValueObjects;
+using MMORPGServer.Database.Models;
 using MMORPGServer.Entities;
-using MMORPGServer.Infrastructure.Database.Models;
 
-namespace MMORPGServer.Infrastructure.Database.Mappings
+namespace MMORPGServer.Database.Mappings
 {
     /// <summary>
     /// Maps between Player (runtime) and PlayerEntity (database) models.

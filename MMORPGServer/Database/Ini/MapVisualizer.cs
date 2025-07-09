@@ -5,7 +5,7 @@ using Serilog;
 using System.Drawing;
 using System.Drawing.Imaging;
 
-namespace MMORPGServer.Infrastructure.Database.Ini
+namespace MMORPGServer.Database.Ini
 {
     public class MapVisualizer
     {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using MMORPGServer.Infrastructure.Database.Common.Interfaces;
-using MMORPGServer.Infrastructure.Database.Models;
+using MMORPGServer.Database.Common.Interfaces;
+using MMORPGServer.Database.Models;
 using System.Linq.Expressions;
 using System.Reflection;
 

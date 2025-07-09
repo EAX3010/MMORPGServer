@@ -5,7 +5,7 @@ using Serilog;
 using System.Collections.Concurrent;
 using System.Text;
 
-namespace MMORPGServer.Infrastructure.Database.Ini
+namespace MMORPGServer.Database.Ini
 {
     public class MapRepository
     {

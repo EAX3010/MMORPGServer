@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using MMORPGServer.Infrastructure.Database.Common.Interfaces;
+using MMORPGServer.Database.Common.Interfaces;
 
-namespace MMORPGServer.Infrastructure.Database.Interceptors
+namespace MMORPGServer.Database.Interceptors
 {
     /// <summary>
     /// Interceptor that automatically manages audit timestamps for entities.
