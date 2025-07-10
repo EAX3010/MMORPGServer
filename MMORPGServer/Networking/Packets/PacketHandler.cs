@@ -23,7 +23,7 @@ namespace MMORPGServer.Networking.Packets
             Log.Information("Registered middleware {MiddlewareType}", middleware.GetType().Name);
         }
 
-        public async ValueTask HandlePacketAsync(GameClient client, IPacket packet)
+        public async ValueTask HandlePacketAsync(GameClient client, Packet packet)
         {
             var handler = PacketHandlerRegistry.GetHandler(packet.Type);
             if (handler == null)
@@ -52,8 +52,8 @@ namespace MMORPGServer.Networking.Packets
             }
         }
 
-        private async ValueTask ExecuteWithMiddleware(GameClient client, IPacket packet,
-            Func<GameClient, IPacket, ValueTask> handler)
+        private async ValueTask ExecuteWithMiddleware(GameClient client, Packet packet,
+            Func<GameClient, Packet, ValueTask> handler)
         {
             // Build middleware pipeline
             Func<ValueTask> pipeline = () => handler(client, packet);

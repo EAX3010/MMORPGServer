@@ -1,9 +1,10 @@
 ﻿using MMORPGServer.Networking.Clients;
+using MMORPGServer.Networking.Packets;
 
 namespace MMORPGServer.Common.Interfaces
 {
     public interface IPacketMiddleware
     {
-        ValueTask<bool> InvokeAsync(GameClient client, IPacket packet, Func<ValueTask> next);
+        ValueTask<bool> InvokeAsync(GameClient client, Packet packet, Func<ValueTask> next);
     }
 }

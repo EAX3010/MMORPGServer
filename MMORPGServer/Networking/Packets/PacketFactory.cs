@@ -1,5 +1,6 @@
 using MMORPGServer.Common.Enums;
 using MMORPGServer.Entities;
+using MMORPGServer.Networking.Fluent;
 using MMORPGServer.Networking.Packets.PacketsProto;
 using ProtoBuf;
 
@@ -9,13 +10,13 @@ namespace MMORPGServer.Networking.Packets
     {
         private static ReadOnlyMemory<byte> CreateProtoPacket(GamePackets packetType, byte[] protoData)
         {
-            return new Packet(packetType).GetWriter()
+            return new FluentPacketWriter(packetType)
                .Seek(4).WriteBytes(protoData)
                .BuildAndFinalize();
         }
         public static ReadOnlyMemory<byte> CreateLoginGamaEnglish()
         {
-            return new Packet(GamePackets.LoginGamaEnglish).GetWriter()
+            return new FluentPacketWriter(GamePackets.LoginGamaEnglish)
            .WriteUInt32(10002)
            .WriteUInt32(0)
            .Debug("CMsgLoginGame simple response")

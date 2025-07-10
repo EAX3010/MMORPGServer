@@ -1,5 +1,4 @@
 ﻿using MMORPGServer.Common.Enums;
-using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Packets.Attributes;
 using MMORPGServer.Networking.Packets.PacketsProto;
@@ -12,7 +11,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
     public sealed class ActionHandler
     {
         [PacketHandler(GamePackets.CMsgAction)]
-        public static async ValueTask HandleAsync(GameClient client, IPacket packet)
+        public static async ValueTask HandleAsync(GameClient client, Packet packet)
         {
             if (client.ClientId is 0)
             {

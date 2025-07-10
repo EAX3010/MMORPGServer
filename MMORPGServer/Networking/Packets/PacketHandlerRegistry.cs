@@ -1,5 +1,4 @@
 ﻿using MMORPGServer.Common.Enums;
-using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Packets.Attributes;
 using Serilog;
@@ -9,7 +8,7 @@ namespace MMORPGServer.Networking.Packets
 {
     public static class PacketHandlerRegistry
     {
-        private static readonly Dictionary<GamePackets, Func<GameClient, IPacket, ValueTask>> _handlers = new();
+        private static readonly Dictionary<GamePackets, Func<GameClient, Packet, ValueTask>> _handlers = new();
         private static readonly Dictionary<GamePackets, string> _handlerNames = new();
         private static bool _isInitialized = false;
 
@@ -78,7 +77,7 @@ namespace MMORPGServer.Networking.Packets
             var parameters = method.GetParameters();
             if (parameters.Length != 2 ||
                 parameters[0].ParameterType != typeof(GameClient) ||
-                parameters[1].ParameterType != typeof(IPacket))
+                parameters[1].ParameterType != typeof(Packet))
             {
                 Log.Error("Handler {MethodName} for packet {PacketType} must have signature: " +
                          "static ValueTask HandleAsync(IGameClient client, IPacket packet)",
@@ -104,8 +103,8 @@ namespace MMORPGServer.Networking.Packets
             try
             {
                 // Create delegate from static method
-                var handlerDelegate = (Func<GameClient, IPacket, ValueTask>)
-                    Delegate.CreateDelegate(typeof(Func<GameClient, IPacket, ValueTask>), method);
+                var handlerDelegate = (Func<GameClient, Packet, ValueTask>)
+                    Delegate.CreateDelegate(typeof(Func<GameClient, Packet, ValueTask>), method);
 
                 _handlers[packetType] = handlerDelegate;
                 _handlerNames[packetType] = $"{method.DeclaringType?.Name}.{method.Name}";
@@ -123,7 +122,7 @@ namespace MMORPGServer.Networking.Packets
         /// <summary>
         /// Gets a handler delegate for the specified packet type
         /// </summary>
-        public static Func<GameClient, IPacket, ValueTask>? GetHandler(GamePackets packetType)
+        public static Func<GameClient, Packet, ValueTask>? GetHandler(GamePackets packetType)
         {
             _handlers.TryGetValue(packetType, out var handler);
             return handler;

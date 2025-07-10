@@ -54,8 +54,8 @@ public sealed class GameDbContext : DbContext
             if (typeof(ISoftDeletable).IsAssignableFrom(entityType.ClrType))
             {
                 // Create and apply the filter expression: e => !e.IsDeleted
-                modelBuilder.Entity(entityType.ClrType)
-                    .HasQueryFilter(CreateSoftDeleteFilter(entityType.ClrType));
+                _ = modelBuilder.Entity(entityType.ClrType)
+                            .HasQueryFilter(filter: CreateSoftDeleteFilter(entityType.ClrType));
             }
         }
     }

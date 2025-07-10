@@ -1,108 +1,116 @@
 ﻿using MMORPGServer.Common.Enums;
-using MMORPGServer.Common.Interfaces;
 using ProtoBuf;
 using System.Buffers;
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MMORPGServer.Networking.Packets
 {
     /// <summary>
-    /// Represents a network packet with unified reading and writing operations.
+    /// High-performance network packet with unified reading and writing operations.
     /// Uses a single position tracker since packets are either read from OR written to.
+    /// This class is internal and should only be used through FluentPacketReader and FluentPacketWriter.
     /// </summary>
-    public sealed class Packet : IDisposable, IPacket
+    public sealed class Packet : IDisposable
     {
         private const string CLIENT_SIGNATURE = "TQClient";
         private const string SERVER_SIGNATURE = "TQServer";
-        private const int SIGNATURE_SIZE = 8; // "TQClient" or "TQServer"
-        private const int HEADER_SIZE = 4;    // Packet Length (short) + Packet Type (short)
+        private const int SIGNATURE_SIZE = 8;
+        private const int HEADER_SIZE = 4;
 
-        internal readonly IMemoryOwner<byte> _memoryOwner;
+        internal readonly IMemoryOwner<byte>? _memoryOwner;
         internal Memory<byte> _buffer;
         private int _dataLength;
+        private bool _disposed;
 
         /// <summary>
         /// Gets a ReadOnlySpan of the packet's valid data.
         /// </summary>
-        public ReadOnlySpan<byte> Data => _buffer.Span[.._dataLength];
+        public ReadOnlySpan<byte> Data
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _buffer.Span[.._dataLength];
+        }
 
         /// <summary>
         /// Gets the total length of the packet as declared in its header (first 2 bytes).
-        /// This is the length WITHOUT the signature.
         /// </summary>
-        public short Length => _dataLength >= 2 ? BitConverter.ToInt16(_buffer.Span[..2]) : (short)0;
+        public short Length
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => _dataLength >= 2 ? BinaryPrimitives.ReadInt16LittleEndian(_buffer.Span) : (short)0;
+        }
 
         /// <summary>
         /// Gets the type of the packet as declared in its header (bytes 2-3).
         /// </summary>
-        public GamePackets Type => (GamePackets)(_dataLength >= 4 ? BitConverter.ToInt16(_buffer.Span[2..4]) : (short)0);
+        public GamePackets Type
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (GamePackets)(_dataLength >= 4 ? BinaryPrimitives.ReadInt16LittleEndian(_buffer.Span[2..]) : 0);
+        }
 
         /// <summary>
         /// Current position in the buffer (for reading or writing operations).
         /// </summary>
-        public int Position { get; private set; } = 0;
-        public IPacketReader GetReader()
-        {
-            return new Fluent.FluentPacketReader(this);
-        }
-
-        public IPacketWriter GetWriter()
-        {
-            return new Fluent.FluentPacketWriter(Type);
-        }
+        public int Position { get; set; }
 
         /// <summary>
         /// Checks if the packet appears to be complete with a valid signature.
         /// </summary>
         public bool IsComplete
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 short declaredLength = Length;
                 if (declaredLength == 0) return false;
 
-                // Total packet size = declared length + signature size
                 int totalPacketSize = declaredLength + SIGNATURE_SIZE;
-                if (totalPacketSize > _dataLength) return false;
-                if (declaredLength < HEADER_SIZE) return false;
+                if (totalPacketSize > _dataLength || declaredLength < HEADER_SIZE) return false;
 
-                // Check signature at the end of total packet
-                Span<byte> signatureSpan = _buffer.Span.Slice(totalPacketSize - SIGNATURE_SIZE, SIGNATURE_SIZE);
-                string signature = Encoding.ASCII.GetString(signatureSpan);
-                return signature == CLIENT_SIGNATURE || signature == SERVER_SIGNATURE;
+                // Use SequenceEqual for faster comparison
+                var signatureSpan = _buffer.Span.Slice(totalPacketSize - SIGNATURE_SIZE, SIGNATURE_SIZE);
+                return signatureSpan.SequenceEqual(Encoding.ASCII.GetBytes(CLIENT_SIGNATURE)) ||
+                       signatureSpan.SequenceEqual(Encoding.ASCII.GetBytes(SERVER_SIGNATURE));
             }
         }
 
         /// <summary>
         /// Constructor for incoming packets (data already exists).
-        /// Position starts after the header for reading payload data.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Packet(ReadOnlySpan<byte> data)
         {
             _memoryOwner = null;
             _buffer = data.ToArray();
             _dataLength = data.Length;
-            Position = HEADER_SIZE; // Start reading after header
-
+            Position = HEADER_SIZE;
         }
+
+        /// <summary>
+        /// Constructor for empty packet.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Packet()
         {
-            _memoryOwner = MemoryPool<byte>.Shared.Rent(Math.Max(1024, HEADER_SIZE + SIGNATURE_SIZE));
+            _memoryOwner = MemoryPool<byte>.Shared.Rent(1024);
             _buffer = _memoryOwner.Memory;
             _buffer.Span.Clear();
             _dataLength = HEADER_SIZE;
-            Position = HEADER_SIZE; // Start writing after header
-
+            Position = HEADER_SIZE;
         }
+
         /// <summary>
         /// Constructor for incoming packets from an array segment.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Packet(byte[] data, int offset, int length)
         {
             _memoryOwner = null;
-            byte[] packetData = new byte[length];
-            Array.Copy(data, offset, packetData, 0, length);
-            _buffer = packetData;
+            _buffer = new Memory<byte>(data, offset, length);
             _dataLength = length;
             Position = HEADER_SIZE;
         }
@@ -110,84 +118,88 @@ namespace MMORPGServer.Networking.Packets
         /// <summary>
         /// Constructor for incoming packets from a full array.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Packet(byte[] data)
         {
             _memoryOwner = null;
-            _buffer = (byte[])data.Clone();
+            _buffer = data;
             _dataLength = data.Length;
             Position = HEADER_SIZE;
         }
 
         /// <summary>
-        /// Constructor for outgoing packets. Creates buffer and writes header.
-        /// Position starts after the header for writing payload data.
+        /// Constructor for outgoing packets with type.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Packet(short type, bool isServerPacket = true, int capacity = 1024)
         {
-            _memoryOwner = MemoryPool<byte>.Shared.Rent(Math.Max(capacity, HEADER_SIZE + SIGNATURE_SIZE));
+            int actualCapacity = Math.Max(capacity, HEADER_SIZE + SIGNATURE_SIZE);
+            _memoryOwner = MemoryPool<byte>.Shared.Rent(actualCapacity);
             _buffer = _memoryOwner.Memory;
-            _buffer.Span.Clear();
 
-            // Write header: placeholder length (0) and packet type
-            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (short)0);
-            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], type);
+            ref byte spanRef = ref MemoryMarshal.GetReference(_buffer.Span);
+            BinaryPrimitives.WriteInt16LittleEndian(MemoryMarshal.CreateSpan(ref spanRef, 2), 0);
+            BinaryPrimitives.WriteInt16LittleEndian(MemoryMarshal.CreateSpan(ref Unsafe.Add(ref spanRef, 2), 2), type);
+
             _dataLength = HEADER_SIZE;
-            Position = HEADER_SIZE; // Start writing after header
+            Position = HEADER_SIZE;
         }
 
+        /// <summary>
+        /// Constructor for outgoing packets with GamePackets enum.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Packet(GamePackets type, bool isServerPacket = true, int capacity = 1024)
+            : this((short)type, isServerPacket, capacity)
         {
-            _memoryOwner = MemoryPool<byte>.Shared.Rent(Math.Max(capacity, HEADER_SIZE + SIGNATURE_SIZE));
-            _buffer = _memoryOwner.Memory;
-            _buffer.Span.Clear();
-
-            // Write header: placeholder length (0) and packet type
-            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (short)0);
-            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], (short)type);
-            _dataLength = HEADER_SIZE;
-            Position = HEADER_SIZE; // Start writing after header
         }
 
+        // --- Read Methods (Optimized with BinaryPrimitives) ---
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ushort ReadUInt16()
         {
             EnsureCanRead(2);
-            ushort value = BitConverter.ToUInt16(_buffer.Span[Position..]);
+            ushort value = BinaryPrimitives.ReadUInt16LittleEndian(_buffer.Span[Position..]);
             Position += 2;
             return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint ReadUInt32()
         {
             EnsureCanRead(4);
-            uint value = BitConverter.ToUInt32(_buffer.Span[Position..]);
+            uint value = BinaryPrimitives.ReadUInt32LittleEndian(_buffer.Span[Position..]);
             Position += 4;
             return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int ReadInt32()
         {
             EnsureCanRead(4);
-            int value = BitConverter.ToInt32(_buffer.Span[Position..]);
+            int value = BinaryPrimitives.ReadInt32LittleEndian(_buffer.Span[Position..]);
             Position += 4;
             return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ulong ReadUInt64()
         {
             EnsureCanRead(8);
-            ulong value = BitConverter.ToUInt64(_buffer.Span[Position..]);
+            ulong value = BinaryPrimitives.ReadUInt64LittleEndian(_buffer.Span[Position..]);
             Position += 8;
             return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte ReadByte()
         {
             EnsureCanRead(1);
-            byte value = _buffer.Span[Position];
-            Position++;
-            return value;
+            return _buffer.Span[Position++];
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReadBytes(Span<byte> destination)
         {
             EnsureCanRead(destination.Length);
@@ -206,7 +218,7 @@ namespace MMORPGServer.Networking.Packets
         public string ReadString(int length)
         {
             EnsureCanRead(length);
-            Span<byte> stringSpan = _buffer.Span.Slice(Position, length);
+            var stringSpan = _buffer.Span.Slice(Position, length);
             Position += length;
 
             int nullIndex = stringSpan.IndexOf((byte)0);
@@ -216,64 +228,71 @@ namespace MMORPGServer.Networking.Packets
             return Encoding.UTF8.GetString(stringSpan);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float ReadFloat()
         {
             EnsureCanRead(4);
-            float value = BitConverter.ToSingle(_buffer.Span[Position..]);
+            float value = BinaryPrimitives.ReadSingleLittleEndian(_buffer.Span[Position..]);
             Position += 4;
             return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double ReadDouble()
         {
             EnsureCanRead(8);
-            double value = BitConverter.ToDouble(_buffer.Span[Position..]);
+            double value = BinaryPrimitives.ReadDoubleLittleEndian(_buffer.Span[Position..]);
             Position += 8;
             return value;
         }
 
-        // --- Write Methods ---
+        // --- Write Methods (Optimized with BinaryPrimitives) ---
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteUInt16(ushort value)
         {
             EnsureCanWrite(2);
-            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            BinaryPrimitives.WriteUInt16LittleEndian(_buffer.Span[Position..], value);
             Position += 2;
             UpdateDataLength();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteUInt32(uint value)
         {
             EnsureCanWrite(4);
-            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            BinaryPrimitives.WriteUInt32LittleEndian(_buffer.Span[Position..], value);
             Position += 4;
             UpdateDataLength();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteInt32(int value)
         {
             EnsureCanWrite(4);
-            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            BinaryPrimitives.WriteInt32LittleEndian(_buffer.Span[Position..], value);
             Position += 4;
             UpdateDataLength();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteUInt64(ulong value)
         {
             EnsureCanWrite(8);
-            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            BinaryPrimitives.WriteUInt64LittleEndian(_buffer.Span[Position..], value);
             Position += 8;
             UpdateDataLength();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteByte(byte value)
         {
             EnsureCanWrite(1);
-            _buffer.Span[Position] = value;
-            Position++;
+            _buffer.Span[Position++] = value;
             UpdateDataLength();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteBytes(ReadOnlySpan<byte> data)
         {
             EnsureCanWrite(data.Length);
@@ -285,125 +304,101 @@ namespace MMORPGServer.Networking.Packets
         public void WriteString(string value, int maxLength)
         {
             EnsureCanWrite(maxLength);
-            ReadOnlySpan<char> valueSpan = value.AsSpan();
-            ReadOnlySpan<char> valueToEncode = valueSpan.Length > maxLength ? valueSpan[..maxLength] : valueSpan;
+            var destSpan = _buffer.Span.Slice(Position, maxLength);
 
-            int bytesWritten = Encoding.UTF8.GetBytes(valueToEncode, _buffer.Span.Slice(Position, maxLength));
+            int bytesWritten = Encoding.UTF8.GetBytes(value.AsSpan(), destSpan);
 
             if (bytesWritten < maxLength)
             {
-                _buffer.Span.Slice(Position + bytesWritten, maxLength - bytesWritten).Clear();
+                destSpan[bytesWritten..].Clear();
             }
+
             Position += maxLength;
             UpdateDataLength();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteFloat(float value)
         {
             EnsureCanWrite(4);
-            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            BinaryPrimitives.WriteSingleLittleEndian(_buffer.Span[Position..], value);
             Position += 4;
             UpdateDataLength();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteDouble(double value)
         {
             EnsureCanWrite(8);
-            BitConverter.TryWriteBytes(_buffer.Span[Position..], value);
+            BinaryPrimitives.WriteDoubleLittleEndian(_buffer.Span[Position..], value);
             Position += 8;
             UpdateDataLength();
         }
 
         // --- Position Management ---
 
-        /// <summary>
-        /// Sets the position to a specific location in the packet.
-        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Seek(int position)
         {
             if (position < 0)
-                throw new ArgumentOutOfRangeException(nameof(position), "Position cannot be negative.");
-
+                ThrowHelper.ThrowArgumentOutOfRange(nameof(position));
             Position = position;
         }
 
-        /// <summary>
-        /// Sets the position relative to the start of the payload (after header).
-        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SeekToPayload(int payloadOffset)
         {
             if (payloadOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(payloadOffset), "Payload offset cannot be negative.");
-
+                ThrowHelper.ThrowArgumentOutOfRange(nameof(payloadOffset));
             Position = HEADER_SIZE + payloadOffset;
         }
 
-        /// <summary>
-        /// Moves the position forward by the specified amount.
-        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Skip(int amount)
         {
             if (amount < 0)
-                throw new ArgumentOutOfRangeException(nameof(amount), "Amount cannot be negative.");
-
+                ThrowHelper.ThrowArgumentOutOfRange(nameof(amount));
             Position += amount;
         }
 
         // --- Finalization ---
 
-        /// <summary>
-        /// Finalizes an outgoing packet by appending the signature and updating the length header.
-        /// </summary>
-        public void FinalizePacket(GamePackets Type)
+        public void FinalizePacket(GamePackets type)
         {
             WriteSeal();
-            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (short)(_dataLength - SIGNATURE_SIZE));
-            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], (short)Type);
-
+            BinaryPrimitives.WriteInt16LittleEndian(_buffer.Span, (short)(_dataLength - SIGNATURE_SIZE));
+            BinaryPrimitives.WriteInt16LittleEndian(_buffer.Span[2..], (short)type);
         }
-        public void FinalizePacket(short Type)
+
+        public void FinalizePacket(short type)
         {
             WriteSeal();
-            _ = BitConverter.TryWriteBytes(_buffer.Span[0..2], (short)(_dataLength - SIGNATURE_SIZE));
-            _ = BitConverter.TryWriteBytes(_buffer.Span[2..4], Type);
-
+            BinaryPrimitives.WriteInt16LittleEndian(_buffer.Span, (short)(_dataLength - SIGNATURE_SIZE));
+            BinaryPrimitives.WriteInt16LittleEndian(_buffer.Span[2..], type);
         }
-        /// <summary>
-        /// Writes only the signature without updating the length header.
-        /// Used for special packet construction like DH key exchange.
-        /// </summary>
+
         public void WriteSeal()
         {
-            byte[] signatureBytes = Encoding.ASCII.GetBytes(SERVER_SIGNATURE);
+            var signatureBytes = Encoding.ASCII.GetBytes(SERVER_SIGNATURE);
             EnsureCanWrite(signatureBytes.Length);
-
             signatureBytes.CopyTo(_buffer.Span[Position..]);
             Position += signatureBytes.Length;
             UpdateDataLength();
         }
-        /// <summary>
-        /// Clears the packet contents and resets the position for reuse.
-        /// If it's an outgoing packet, you can optionally provide a new type.
-        /// </summary>
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reset()
         {
             _buffer.Span.Clear();
             Position = HEADER_SIZE;
             _dataLength = HEADER_SIZE;
         }
-        /// <summary>
-        /// Gets the finalized memory ready for transmission.
-        /// </summary>
-        public ReadOnlyMemory<byte> GetFinalizedMemory()
-        {
-            return _buffer[.._dataLength];
-        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ReadOnlyMemory<byte> GetFinalizedMemory() => _buffer[.._dataLength];
 
         // --- Special Methods ---
 
-        /// <summary>
-        /// Attempts to extract the Diffie-Hellman public key from this packet.
-        /// </summary>
         public bool TryExtractDHKey(out string dhKey)
         {
             dhKey = string.Empty;
@@ -411,157 +406,133 @@ namespace MMORPGServer.Networking.Packets
 
             try
             {
-                // Seek to position 11 to read the offset
                 Seek(11);
                 int offset = ReadInt32() + 4 + 11;
 
                 if (offset > 0 && offset < _dataLength)
                 {
-                    // Seek to the calculated offset where the key information is stored
                     Seek(offset);
-
-                    // Read the size of the key string
                     int keySize = ReadInt32();
 
                     if (keySize > 0 && keySize < _dataLength - offset)
                     {
-                        // Read the key itself
                         dhKey = ReadString(keySize);
                         return !string.IsNullOrEmpty(dhKey);
                     }
                 }
             }
-            catch (Exception) { /* Parsing error */ }
+            catch { }
             finally { Position = originalPosition; }
 
             return false;
-
         }
 
-        /// <summary>
-        /// Gets the number of remaining bytes available for reading.
-        /// </summary>
         public int RemainingBytes
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 int endOfData = _dataLength;
-                if (IsComplete)
-                    endOfData -= SIGNATURE_SIZE;
-
+                if (IsComplete) endOfData -= SIGNATURE_SIZE;
                 return Math.Max(0, endOfData - Position);
             }
         }
 
-        /// <summary>
-        /// Checks if this is a client packet based on its signature.
-        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsClientPacket()
         {
             if (!IsComplete) return false;
-            // Signature is at the end of the actual data, not at Length position
-            Span<byte> signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
-            string signature = Encoding.ASCII.GetString(signatureSpan);
-            return signature == CLIENT_SIGNATURE;
+            var signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
+            return signatureSpan.SequenceEqual(Encoding.ASCII.GetBytes(CLIENT_SIGNATURE));
         }
 
-        /// <summary>
-        /// Checks if this is a server packet based on its signature.
-        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsServerPacket()
         {
             if (!IsComplete) return false;
-            // Signature is at the end of the actual data, not at Length position
-            Span<byte> signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
-            string signature = Encoding.ASCII.GetString(signatureSpan);
-            return signature == SERVER_SIGNATURE;
+            var signatureSpan = _buffer.Span.Slice(_dataLength - SIGNATURE_SIZE, SIGNATURE_SIZE);
+            return signatureSpan.SequenceEqual(Encoding.ASCII.GetBytes(SERVER_SIGNATURE));
         }
 
         // --- Helper Methods ---
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureCanRead(int bytes)
         {
             if (Position + bytes > _dataLength)
-                throw new InvalidOperationException($"Cannot read {bytes} bytes. Position: {Position}, Available: {_dataLength - Position}");
+                ThrowHelper.ThrowInvalidOperation($"Cannot read {bytes} bytes. Position: {Position}, Available: {_dataLength - Position}");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnsureCanWrite(int bytes)
         {
             if (Position + bytes > _buffer.Length)
-                throw new InvalidOperationException($"Cannot write {bytes} bytes. Buffer overflow. Position: {Position}, Capacity: {_buffer.Length}");
+                ThrowHelper.ThrowInvalidOperation($"Cannot write {bytes} bytes. Buffer overflow. Position: {Position}, Capacity: {_buffer.Length}");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void UpdateDataLength()
         {
-            _dataLength = Math.Max(_dataLength, Position);
+            if (Position > _dataLength)
+                _dataLength = Position;
         }
 
         public void Dispose()
         {
-            _memoryOwner?.Dispose();
+            if (!_disposed)
+            {
+                _memoryOwner?.Dispose();
+                _disposed = true;
+            }
         }
 
-        /// <summary>
-        /// Deserializes a protobuf message from the packet's data.
-        /// </summary>
-        /// <typeparam name="T">The type of protobuf message to deserialize</typeparam>
-        /// <returns>The deserialized protobuf message</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the data cannot be read</exception>
+        // --- Protobuf Methods ---
+
         public T DeserializeProto<T>()
         {
             int originalPosition = Position;
             try
             {
-                // Calculate the actual data to read
-                int dataLength = Length;
-                dataLength = dataLength - 4;
+                int dataLength = Length - 4;
                 if (dataLength <= 0)
-                    throw new InvalidOperationException("No data available to deserialize");
+                    ThrowHelper.ThrowInvalidOperation("No data available to deserialize");
 
-                // Move to the start position
                 Seek(4);
+                var data = _buffer.Span.Slice(Position, dataLength);
 
-                // Read the data
-                byte[] data = ReadBytes(dataLength);
-
-                // Deserialize the protobuf message
-                using MemoryStream ms = new MemoryStream(data);
+                using var ms = new MemoryStream(dataLength);
+                ms.Write(data);
+                ms.Position = 0;
                 return Serializer.Deserialize<T>(ms);
             }
-            finally
-            {
-                // Restore the original position
-                Position = originalPosition;
-            }
+            finally { Position = originalPosition; }
         }
 
-        /// <summary>
-        /// Serializes a protobuf message into the packet.
-        /// </summary>
-        /// <typeparam name="T">The type of protobuf message to serialize</typeparam>
-        /// <param name="message">The protobuf message to serialize</param>
-        /// <exception cref="InvalidOperationException">Thrown if the data cannot be written</exception>
         public void SerializeProto<T>(T message)
         {
             int originalPosition = Position;
             try
             {
-                // Move to the start position
                 Seek(4);
-
-                // Serialize the protobuf message
-                using MemoryStream ms = new MemoryStream();
+                using var ms = new MemoryStream();
                 Serializer.Serialize(ms, message);
-                byte[] data = ms.ToArray();
-
-                // Write the data
+                var data = ms.GetBuffer().AsSpan(0, (int)ms.Length);
                 WriteBytes(data);
             }
-            finally
-            {
-                // Restore the original position
-                Position = originalPosition;
-            }
+            finally { Position = originalPosition; }
         }
     }
+
+    // Helper class for throwing exceptions without inlining
+    internal static class ThrowHelper
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowArgumentOutOfRange(string paramName)
+            => throw new ArgumentOutOfRangeException(paramName);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperation(string message)
+            => throw new InvalidOperationException(message);
+    }
 }
+

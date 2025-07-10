@@ -30,9 +30,6 @@ namespace MMORPGServer.Services
         public static GameServer GameServer => _gameServer ??
             throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
 
-        public static PacketHandler PacketHandler => _packetHandler ??
-            throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
-
         public static async Task InitializeAsync()
         {
             Log.Information("Initializing game systems...");

@@ -1,5 +1,4 @@
 ﻿using MMORPGServer.Common.Enums;
-using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Packets.Attributes;
 using Serilog;
@@ -9,7 +8,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
     {
         [PacketHandler(GamePackets.CMsgLoginGame)]
 
-        public static async ValueTask HandleAsync(GameClient client, IPacket packet)
+        public static async ValueTask HandleAsync(GameClient client, Packet packet)
         {
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(packet);

@@ -1,5 +1,4 @@
-﻿using MMORPGServer.Common.Interfaces;
-using MMORPGServer.Networking.Packets;
+﻿using MMORPGServer.Networking.Packets;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -205,7 +204,7 @@ namespace MMORPGServer.Networking.Security
             return (uint)(75 + pLength + gLength + publicKeyLength);
         }
 
-        private static void WritePacketHeader(IPacket packet, uint totalSize)
+        private static void WritePacketHeader(Packet packet, uint totalSize)
         {
             packet.Seek(11);
             packet.WriteUInt32(totalSize - 11);
@@ -219,7 +218,7 @@ namespace MMORPGServer.Networking.Security
             packet.Skip(8);
         }
 
-        private static void WritePacketData(IPacket packet, byte[] pBytes, byte[] gBytes, byte[] publicKeyBytes)
+        private static void WritePacketData(Packet packet, byte[] pBytes, byte[] gBytes, byte[] publicKeyBytes)
         {
             // Write P parameter
             packet.WriteUInt32((uint)pBytes.Length);

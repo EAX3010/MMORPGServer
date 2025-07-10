@@ -1,5 +1,4 @@
 ﻿using MMORPGServer.Common.Enums;
-using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Packets.Attributes;
 using MMORPGServer.Services;
@@ -11,7 +10,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
     public sealed class LoginGamaEnglishHandler
     {
         [PacketHandler(GamePackets.LoginGamaEnglish)]
-        public static async ValueTask HandleAsync(GameClient client, IPacket packet)
+        public static async ValueTask HandleAsync(GameClient client, Packet packet)
         {
             ArgumentNullException.ThrowIfNull(client);
             ArgumentNullException.ThrowIfNull(packet);
