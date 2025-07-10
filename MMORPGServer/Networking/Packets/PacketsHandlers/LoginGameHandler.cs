@@ -10,8 +10,6 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
 
         public static async ValueTask HandleAsync(GameClient client, Packet packet)
         {
-            ArgumentNullException.ThrowIfNull(client);
-            ArgumentNullException.ThrowIfNull(packet);
             try
             {
                 await Handle(client);

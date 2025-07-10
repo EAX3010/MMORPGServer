@@ -25,7 +25,7 @@ partial class Program
 
             // Initialize Database and repositories
             await DbContextFactory.InitializeAsync();
-            RepositoryManager.Initialize();
+            await RepositoryManager.Initialize();
 
             // Initialize packet handler registry (auto-discovery)
             PacketHandlerRegistry.Initialize();

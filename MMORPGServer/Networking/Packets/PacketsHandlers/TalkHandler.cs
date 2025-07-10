@@ -2,7 +2,6 @@
 using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Packets.Attributes;
 using MMORPGServer.Networking.Packets.PacketsProto;
-using ProtoBuf;
 using Serilog;
 
 namespace MMORPGServer.Networking.Packets.PacketsHandlers
@@ -16,7 +15,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         {
             // 1. Deserialize the packet payload from Protobuf
             // The new Packet class gives us a ReadOnlySpan of the data
-            TalkProto talkData = Serializer.Deserialize<TalkProto>(packet.Data);
+            TalkProto talkData = packet.DeserializeProto<TalkProto>();
             if (talkData?.Strings == null || talkData.Strings.Count < 4)
             {
                 Log.Warning("Received invalid TalkPacket from client {ClientId}", client.ClientId);

@@ -5,16 +5,16 @@ using Serilog;
 using System.Collections.Concurrent;
 using System.Text;
 
-namespace MMORPGServer.Database.Ini
+namespace MMORPGServer.Database.Readers
 {
-    public class MapRepository
+    public class DMapReader
     {
         private readonly ConcurrentDictionary<short, Map> _maps;
         private readonly MapVisualizer _mapVisualizer;
         private readonly string _basePath;
         private bool _isInitialized;
 
-        public MapRepository()
+        public DMapReader()
         {
             _maps = new ConcurrentDictionary<short, Map>();
             _mapVisualizer = new MapVisualizer();

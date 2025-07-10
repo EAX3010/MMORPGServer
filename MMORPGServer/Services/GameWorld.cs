@@ -17,7 +17,7 @@ namespace MMORPGServer.Services
         {
             try
             {
-                var map = await RepositoryManager.MapRepository.GetMapAsync(mapId);
+                var map = await RepositoryManager.DMapReader.GetMapAsync(mapId);
                 if (map == null)
                 {
                     Log.Error("Map {MapId} not found", mapId);

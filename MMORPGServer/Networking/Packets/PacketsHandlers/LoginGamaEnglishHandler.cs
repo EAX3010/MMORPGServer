@@ -12,9 +12,6 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         [PacketHandler(GamePackets.LoginGamaEnglish)]
         public static async ValueTask HandleAsync(GameClient client, Packet packet)
         {
-            ArgumentNullException.ThrowIfNull(client);
-            ArgumentNullException.ThrowIfNull(packet);
-
 
             uint[] outputDecrypted = GameSystemsManager.TransferCipher!.Decrypt([(uint)packet.ReadInt32(), (uint)packet.ReadInt32()]);
 

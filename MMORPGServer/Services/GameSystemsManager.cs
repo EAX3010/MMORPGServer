@@ -131,7 +131,7 @@ namespace MMORPGServer.Services
             Log.Information("=== Game Systems Status ===");
             Log.Information("Server Running: {IsRunning}", _gameServer?.IsRunning ?? false);
             Log.Information("Connected Players: {PlayerCount}", _networkManager?.ConnectionCount ?? 0);
-            Log.Information("Maps Loaded: {MapCount}", RepositoryManager.MapRepository.GetMapCount());
+            Log.Information("Maps Loaded: {MapCount}", RepositoryManager.DMapReader.GetMapCount());
 
             if (_networkManager != null)
             {

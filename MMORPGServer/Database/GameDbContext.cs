@@ -25,6 +25,7 @@ public sealed class GameDbContext : DbContext
     /// DbSet for Player entities.
     /// </summary>
     public DbSet<PlayerEntity> Players => Set<PlayerEntity>();
+    public DbSet<PointAllot> PointAllot { get; set; }
 
     /// <summary>
     /// Configures the model creating conventions and relationships.
@@ -32,10 +33,8 @@ public sealed class GameDbContext : DbContext
     /// <param name="modelBuilder">The model builder instance</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Apply all entity configurations from the current assembly
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-
-        // Apply global query filters (e.g., soft delete)
+        modelBuilder.Entity<PointAllot>().ToTable("cq_point_allot");
         ApplyGlobalFilters(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
