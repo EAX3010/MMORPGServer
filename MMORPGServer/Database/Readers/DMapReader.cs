@@ -9,156 +9,156 @@ namespace MMORPGServer.Database.Readers
 {
     public class DMapReader
     {
-        private readonly ConcurrentDictionary<short, Map> _maps;
-        private readonly MapVisualizer _mapVisualizer;
+        private readonly ConcurrentDictionary<short, DMap> _DMaps;
+        private readonly DMapVisualizer _DMapVisualizer;
         private readonly string _basePath;
         private bool _isInitialized;
 
         public DMapReader()
         {
-            _maps = new ConcurrentDictionary<short, Map>();
-            _mapVisualizer = new MapVisualizer();
+            _DMaps = new ConcurrentDictionary<short, DMap>();
+            _DMapVisualizer = new DMapVisualizer();
             _basePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Database");
             _isInitialized = false;
         }
 
 
 
-        public async Task<Map?> GetMapAsync(short mapId)
+        public async Task<DMap?> GetDMapAsync(short DMapId)
         {
             if (!_isInitialized)
             {
-                Log.Warning("Maps not initialized, call InitializeMapsAsync() first");
+                Log.Warning("DMaps not initialized, call InitializeDMapsAsync() first");
                 return null;
             }
 
-            _maps.TryGetValue(mapId, out Map? map);
-            return map;
+            _DMaps.TryGetValue(DMapId, out DMap? DMap);
+            return DMap;
         }
 
-        public async Task<IEnumerable<Map>> GetAllMapsAsync()
+        public async Task<IEnumerable<DMap>> GetAllDMapsAsync()
         {
             if (!_isInitialized)
             {
-                Log.Warning("Maps not initialized, returning empty collection");
-                return Enumerable.Empty<Map>();
+                Log.Warning("DMaps not initialized, returning empty collection");
+                return Enumerable.Empty<DMap>();
             }
 
-            return _maps.Values;
+            return _DMaps.Values;
         }
 
-        public async Task<bool> SaveMapAsync(Map map)
+        public async Task<bool> SaveDMapAsync(DMap DMap)
         {
-            if (map == null)
+            if (DMap == null)
             {
-                Log.Warning("Cannot save null map");
+                Log.Warning("Cannot save null DMap");
                 return false;
             }
 
-            var success = _maps.TryAdd(map.Id, map);
+            var success = _DMaps.TryAdd(DMap.Id, DMap);
             if (success)
             {
-                Log.Debug("Map {MapId} saved successfully", map.Id);
+                Log.Debug("DMap {DMapId} saved successfully", DMap.Id);
             }
             else
             {
-                Log.Warning("Map {MapId} already exists, cannot save", map.Id);
+                Log.Warning("DMap {DMapId} already exists, cannot save", DMap.Id);
             }
 
             return success;
         }
 
-        public async Task<bool> DeleteMapAsync(short mapId)
+        public async Task<bool> DeleteDMapAsync(short DMapId)
         {
-            var success = _maps.TryRemove(mapId, out _);
+            var success = _DMaps.TryRemove(DMapId, out _);
             if (success)
             {
-                Log.Information("Map {MapId} deleted successfully", mapId);
+                Log.Information("DMap {DMapId} deleted successfully", DMapId);
             }
             else
             {
-                Log.Warning("Map {MapId} not found for deletion", mapId);
+                Log.Warning("DMap {DMapId} not found for deletion", DMapId);
             }
 
             return success;
         }
 
-        public async Task InitializeMapsAsync()
+        public async Task InitializeDMapsAsync()
         {
             if (_isInitialized)
             {
-                Log.Information("Maps already initialized, skipping");
+                Log.Information("DMaps already initialized, skipping");
                 return;
             }
 
-            Log.Information("Initializing maps system...");
+            Log.Information("Initializing DMaps system...");
 
             try
             {
                 string applicationDataPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                string gameMapPath = Path.Combine(applicationDataPath, @"Database\ini\GameMap.dat");
+                string gameDMapPath = Path.Combine(applicationDataPath, @"Database\ini\GameMap.dat");
 
-                if (!File.Exists(gameMapPath))
+                if (!File.Exists(gameDMapPath))
                 {
-                    Log.Error("GameMap.dat not found at: {GameMapPath}", gameMapPath);
+                    Log.Error("GameDMap.dat not found at: {GameDMapPath}", gameDMapPath);
                     return;
                 }
 
-                // Ensure maps directory exists for visualization
-                string mapsDir = Path.Combine(AppContext.BaseDirectory, "maps");
-                if (!Directory.Exists(mapsDir))
+                // Ensure DMaps directory exists for visualization
+                string DMapsDir = Path.Combine(AppContext.BaseDirectory, "Maps");
+                if (!Directory.Exists(DMapsDir))
                 {
-                    Directory.CreateDirectory(mapsDir);
-                    Log.Information("Created maps directory: {MapsDir}", mapsDir);
+                    Directory.CreateDirectory(DMapsDir);
+                    Log.Information("Created DMaps directory: {DMapsDir}", DMapsDir);
                 }
 
-                using var reader = new BinaryReader(File.OpenRead(gameMapPath));
-                int mapCount = reader.ReadInt32();
-                int loadedMaps = 0;
+                using var reader = new BinaryReader(File.OpenRead(gameDMapPath));
+                int DMapCount = reader.ReadInt32();
+                int loadeDMaps = 0;
 
-                Log.Information("Found {MapCount} maps to load", mapCount);
+                Log.Information("Found {DMapCount} DMaps to load", DMapCount);
 
-                for (int i = 0; i < mapCount; i++)
+                for (int i = 0; i < DMapCount; i++)
                 {
                     try
                     {
-                        int mapId = reader.ReadInt32();
+                        int DMapId = reader.ReadInt32();
                         int fileLength = reader.ReadInt32();
-                        string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength)).Replace(".7z", ".dmap");
+                        string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength)).Replace(".7z", ".DMap");
                         _ = reader.ReadInt32(); // puzzleSize
 
-                        var map = await LoadMapDataAsync((short)mapId, fileName);
-                        if (map != null)
+                        var DMap = await LoaDMapDataAsync((short)DMapId, fileName);
+                        if (DMap != null)
                         {
-                            await SaveMapAsync(map);
-                            loadedMaps++;
+                            await SaveDMapAsync(DMap);
+                            loadeDMaps++;
                         }
                     }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "Error loading map at index {Index}", i);
+                        Log.Error(ex, "Error loading DMap at index {Index}", i);
                     }
                 }
 
                 _isInitialized = true;
-                Log.Information("Map initialization completed. Loaded {LoadedMaps}/{TotalMaps} maps successfully",
-                    loadedMaps, mapCount);
+                Log.Information("DMap initialization completed. Loaded {LoadeDMaps}/{TotalDMaps} DMaps successfully",
+                    loadeDMaps, DMapCount);
             }
             catch (Exception ex)
             {
-                Log.Fatal(ex, "Critical error during map initialization");
+                Log.Fatal(ex, "Critical error during DMap initialization");
                 throw;
             }
         }
 
-        private async Task<Map?> LoadMapDataAsync(short mapId, string fileName)
+        private async Task<DMap?> LoaDMapDataAsync(short DMapId, string fileName)
         {
             try
             {
                 string fullPath = Path.Combine(_basePath, fileName);
                 if (!File.Exists(fullPath))
                 {
-                    Log.Error("Map file not found: {FilePath}", fullPath);
+                    Log.Error("DMap file not found: {FilePath}", fullPath);
                     return null;
                 }
 
@@ -167,9 +167,9 @@ namespace MMORPGServer.Database.Readers
                 int width = reader.ReadInt32();
                 int height = reader.ReadInt32();
 
-                Log.Debug("Loading map {MapId} with dimensions {Width}x{Height}", mapId, width, height);
+                Log.Debug("Loading DMap {DMapId} with dimensions {Width}x{Height}", DMapId, width, height);
 
-                var map = new Map(mapId, width, height);
+                var DMap = new DMap(DMapId, width, height);
 
                 // Load cell data
                 for (int y = 0; y < height; y++)
@@ -187,35 +187,35 @@ namespace MMORPGServer.Database.Readers
 
                         if (!IsValidCellType((int)cellFlag))
                         {
-                            Log.Warning("Invalid cell type flags: {CellFlag} at {X},{Y} in map {MapId}",
-                                cellFlag, x, y, mapId);
+                            Log.Warning("Invalid cell type flags: {CellFlag} at {X},{Y} in DMap {DMapId}",
+                                cellFlag, x, y, DMapId);
                             cellFlag = CellType.Open; // Default to open for invalid cells
                         }
 
-                        map[x, y] = new Cell(cellFlag, cellHeight, floorType);
+                        DMap[x, y] = new Cell(cellFlag, cellHeight, floorType);
                     }
                     reader.ReadInt32(); // Skip padding
                 }
 
-                // Generate map visualization
+                // Generate DMap visualization
                 try
                 {
-                    string imagePath = Path.Combine(AppContext.BaseDirectory, "maps", $"{map.Id}.png");
-                    _mapVisualizer.GenerateMapImage(map, imagePath);
-                    Log.Debug("Generated map visualization: {ImagePath}", imagePath);
+                    string imagePath = Path.Combine(AppContext.BaseDirectory, "DMaps", $"{DMap.Id}.png");
+                    _DMapVisualizer.GenerateMapImage(DMap, imagePath);
+                    Log.Debug("Generated DMap visualization: {ImagePath}", imagePath);
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning(ex, "Failed to generate map visualization for map {MapId}", mapId);
-                    // Don't fail map loading if visualization fails
+                    Log.Warning(ex, "Failed to generate DMap visualization for DMap {DMapId}", DMapId);
+                    // Don't fail DMap loading if visualization fails
                 }
 
-                Log.Debug("Successfully loaded map {MapId} ({FileName})", map.Id, fileName);
-                return map;
+                Log.Debug("Successfully loaded DMap {DMapId} ({FileName})", DMap.Id, fileName);
+                return DMap;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error loading map data for map {MapId} from file {FileName}", mapId, fileName);
+                Log.Error(ex, "Error loading DMap data for DMap {DMapId} from file {FileName}", DMapId, fileName);
                 return null;
             }
         }
@@ -232,21 +232,21 @@ namespace MMORPGServer.Database.Readers
         // Reset method for testing or reinitialization
         public void Reset()
         {
-            _maps.Clear();
+            _DMaps.Clear();
             _isInitialized = false;
-            Log.Information("Map repository reset");
+            Log.Information("DMap repository reset");
         }
 
-        // Get map count
-        public int GetMapCount()
+        // Get DMap count
+        public int GetDMapCount()
         {
-            return _maps.Count;
+            return _DMaps.Count;
         }
 
-        // Check if a specific map exists
-        public bool MapExists(short mapId)
+        // Check if a specific DMap exists
+        public bool DMapExists(short DMapId)
         {
-            return _maps.ContainsKey(mapId);
+            return _DMaps.ContainsKey(DMapId);
         }
     }
 }

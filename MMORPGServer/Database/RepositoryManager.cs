@@ -8,7 +8,8 @@ namespace MMORPGServer.Database
     {
         public static DMapReader? DMapReader;
         public static SqlPlayerRepository? PlayerRepository;
-        public static CqPointAllotReader? PointAllotReader;
+        public static PointAllotReader? PointAllotReader;
+        public static MapDataReader? MapDataReader;
         public static async Task Initialize()
         {
             Log.Information("Initializing repositories...");
@@ -17,9 +18,12 @@ namespace MMORPGServer.Database
 
             PlayerRepository = new SqlPlayerRepository(dbContext);
             DMapReader = new DMapReader();
-            PointAllotReader = new CqPointAllotReader(dbContext);
+            PointAllotReader = new PointAllotReader(dbContext);
+            MapDataReader = new MapDataReader(dbContext);
             await PointAllotReader.LoadAllStatsAsync();
-            await DMapReader.InitializeMapsAsync();
+            await DMapReader.InitializeDMapsAsync();
+            await MapDataReader.LoadAllMapsAsync();
+
 
 
             Log.Information("Repositories initialized successfully");

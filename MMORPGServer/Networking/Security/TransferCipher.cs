@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Serilog;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -391,6 +392,8 @@ namespace MMORPGServer.Networking.Security
             PasswordDeriveBytes password = new PasswordDeriveBytes(tigerHash.Final(0x10), Salt);
             _rivest = new RivestCipher5();
             _rivest.GenerateKeys(password.GetBytes(16));
+
+            Log.Debug("TransferCipher initialized");
 
         }
 

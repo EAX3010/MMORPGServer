@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MMORPGServer.Database.Models
 {
-    public class PointAllot
+    public class PointAllotData
     {
         [Key]
         public int Id { get; set; }

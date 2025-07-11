@@ -7,11 +7,11 @@ using System.Drawing.Imaging;
 
 namespace MMORPGServer.Database.Readers
 {
-    public class MapVisualizer
+    public class DMapVisualizer
     {
         private readonly Dictionary<CellType, Color> _combinationColors;
 
-        public MapVisualizer()
+        public DMapVisualizer()
         {
             _combinationColors = GenerateAllCombinationColors();
 
@@ -122,7 +122,7 @@ namespace MMORPGServer.Database.Readers
         /// <param name="map">The map to visualize.</param>
         /// <param name="outputPath">The path where the PNG file will be saved.</param>
         /// <param name="forceRegenerate">If true, regenerates even if file exists</param>
-        public void GenerateMapImage(Map map, string outputPath, bool forceRegenerate = false)
+        public void GenerateMapImage(DMap map, string outputPath, bool forceRegenerate = false)
         {
             try
             {

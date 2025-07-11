@@ -1,5 +1,4 @@
-﻿using MMORPGServer.Database;
-using MMORPGServer.Entities;
+﻿using MMORPGServer.Entities;
 using Serilog;
 
 namespace MMORPGServer.Services
@@ -8,6 +7,7 @@ namespace MMORPGServer.Services
 
     public class GameWorld
     {
+        public Dictionary<int, Player> Maps;
         public GameWorld()
         {
             Log.Information("GameWorld initialized successfully");
@@ -17,37 +17,8 @@ namespace MMORPGServer.Services
         {
             try
             {
-                var map = await RepositoryManager.DMapReader.GetMapAsync(mapId);
-                if (map == null)
-                {
-                    Log.Error("Map {MapId} not found", mapId);
-                    return null;
-                }
 
-                var spawnPoint = await map.GetValidSpawnPointAsync();
-                if (!spawnPoint.HasValue)
-                {
-                    Log.Error("Could not find valid spawn point on map {MapId}", mapId);
-                    return null;
-                }
-
-                // Update player position
-                player.Position = spawnPoint.Value;
-                player.MapId = mapId;
-                player.Map = map;
-
-                // Add to map
-                if (!map.AddEntity(player))
-                {
-                    Log.Error("Failed to add player to map {MapId}", mapId);
-                    return null;
-                }
-
-
-                Log.Information("Spawned player {Name} on map {MapId} at {Position}",
-                    player.Name, mapId, spawnPoint.Value);
-
-                return player;
+                return null;
             }
             catch (Exception ex)
             {

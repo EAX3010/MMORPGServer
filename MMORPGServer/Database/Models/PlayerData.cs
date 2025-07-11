@@ -2,7 +2,7 @@
 
 namespace MMORPGServer.Database.Models
 {
-    public class PlayerEntity : BaseEntity
+    public class PlayerData : BaseEntity
     {
         public int Id { get; set; }
         public string Name { get; set; } = default!;
@@ -10,7 +10,7 @@ namespace MMORPGServer.Database.Models
         public long Experience { get; set; } = 0;
 
         // Position
-        public short MapId { get; set; } = 1001;
+        public int MapId { get; set; } = 1001;
         public short X { get; set; }
         public short Y { get; set; }
 

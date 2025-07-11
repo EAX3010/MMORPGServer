@@ -16,11 +16,11 @@ namespace MMORPGServer.Common.Interfaces
             set
             {
                 _map = value;
-                MapId = value?.Id ?? 0;
+                MapId = value?.Configuration.Id ?? 0;
             }
         }
 
-        public short MapId { get; set; }
+        public int MapId { get; set; }
         public bool IsActive { get; set; }
         public MapObjectType ObjectType { get; set; }
         public Position Position { get; set; }

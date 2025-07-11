@@ -11,7 +11,7 @@ namespace MMORPGServer.Networking.Packets
 
         public PacketHandler()
         {
-            // Auto-discovery happens at startup via PacketHandlerRegistry
+            Log.Debug("PacketHandler initialized");
         }
 
         /// <summary>

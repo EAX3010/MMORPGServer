@@ -24,8 +24,9 @@ public sealed class GameDbContext : DbContext
     /// <summary>
     /// DbSet for Player entities.
     /// </summary>
-    public DbSet<PlayerEntity> Players => Set<PlayerEntity>();
-    public DbSet<PointAllot> PointAllot { get; set; }
+    public DbSet<PlayerData> Players => Set<PlayerData>();
+    public DbSet<PointAllotData> PointAllot { get; set; }
+    public DbSet<MapData> MapData { get; set; }
 
     /// <summary>
     /// Configures the model creating conventions and relationships.
@@ -34,7 +35,8 @@ public sealed class GameDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-        modelBuilder.Entity<PointAllot>().ToTable("cq_point_allot");
+        modelBuilder.Entity<PointAllotData>().ToTable("cq_point_allot");
+        modelBuilder.Entity<MapData>().ToTable("cq_map");
         ApplyGlobalFilters(modelBuilder);
 
         base.OnModelCreating(modelBuilder);

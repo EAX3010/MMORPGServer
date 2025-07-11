@@ -8,13 +8,13 @@ namespace MMORPGServer.Services
 {
     public static class GameSystemsManager
     {
+        private static MapManager? _mapManager;
         private static PlayerManager? _playerManager;
         private static GameWorld? _gameWorld;
         private static TransferCipher? _transferCipher;
         private static NetworkManager? _networkManager;
         private static GameServer? _gameServer;
         private static PacketHandler? _packetHandler;
-
         public static PlayerManager PlayerManager => _playerManager ??
             throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
 
@@ -30,6 +30,10 @@ namespace MMORPGServer.Services
         public static GameServer GameServer => _gameServer ??
             throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
 
+        public static GameServer MapManager => _gameServer ??
+           throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
+
+
         public static async Task InitializeAsync()
         {
             Log.Information("Initializing game systems...");
@@ -38,23 +42,13 @@ namespace MMORPGServer.Services
             {
                 // Create core services in dependency order
                 _transferCipher = new TransferCipher(GameServerConfig.Configuration);
-                Log.Debug("TransferCipher initialized");
-
                 _playerManager = new PlayerManager();
-                Log.Debug("PlayerManager initialized");
-
+                _mapManager = new MapManager();
                 _gameWorld = new GameWorld(); // Pass PlayerManager to avoid duplicates
-                Log.Debug("GameWorld initialized");
-
-                // Create networking services
                 _networkManager = new NetworkManager();
-                Log.Debug("NetworkManager initialized");
-
                 _packetHandler = new PacketHandler();
-                Log.Debug("PacketHandler initialized");
-
                 _gameServer = new GameServer(_networkManager, _packetHandler);
-                Log.Debug("GameServer initialized");
+
 
                 Log.Information("Game systems initialized successfully");
                 Log.Information("System status:");
@@ -131,7 +125,7 @@ namespace MMORPGServer.Services
             Log.Information("=== Game Systems Status ===");
             Log.Information("Server Running: {IsRunning}", _gameServer?.IsRunning ?? false);
             Log.Information("Connected Players: {PlayerCount}", _networkManager?.ConnectionCount ?? 0);
-            Log.Information("Maps Loaded: {MapCount}", RepositoryManager.DMapReader.GetMapCount());
+            Log.Information("DMaps Loaded: {DMapCount}", RepositoryManager.DMapReader.GetDMapCount());
 
             if (_networkManager != null)
             {

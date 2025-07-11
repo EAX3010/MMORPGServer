@@ -1,28 +1,29 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MMORPGServer.Common.Enums;
 using MMORPGServer.Database.Models;
 using Serilog;
 
 namespace MMORPGServer.Database.Readers
 {
-    public class CqPointAllotReader
+    public class PointAllotReader
     {
         private readonly GameDbContext _context;
 
-        // Main lookup: [ClassId][Level] -> Stats
-        public Dictionary<int, Dictionary<int, PointAllot>> Stats { get; private set; }
+        private Dictionary<int, Dictionary<int, PointAllotData>> Stats { get; set; }
 
-        public CqPointAllotReader(GameDbContext context)
+        public PointAllotReader(GameDbContext context)
         {
             _context = context;
-            Stats = new Dictionary<int, Dictionary<int, PointAllot>>();
+            Stats = new Dictionary<int, Dictionary<int, PointAllotData>>(1200);
         }
 
         // Indexer to get stats with [classId, level] syntax
-        public PointAllot this[int classId, int level]
+        public PointAllotData this[ClassType classId, int level]
         {
             get
             {
-                if (Stats.TryGetValue(classId, out var classStats))
+                int classIdValue = (int)classId / 10;
+                if (Stats.TryGetValue(classIdValue, out var classStats))
                 {
                     if (classStats.TryGetValue(level, out var pointAllot))
                     {
@@ -40,7 +41,7 @@ namespace MMORPGServer.Database.Readers
             Stats.Clear();
 
             // Load all class level stats
-            var stats = await _context.PointAllot.ToListAsync();
+            var stats = await _context.PointAllot.AsNoTracking().ToListAsync();
 
             Log.Information("Loaded {Count} point allot records from database", stats.Count);
 
@@ -49,7 +50,7 @@ namespace MMORPGServer.Database.Readers
                 // Initialize class dictionary if not exists
                 if (!Stats.ContainsKey(stat.ClassId))
                 {
-                    Stats[stat.ClassId] = new Dictionary<int, PointAllot>();
+                    Stats[stat.ClassId] = new Dictionary<int, PointAllotData>();
                     Log.Debug("Created new class dictionary for ClassId: {ClassId}", stat.ClassId);
                 }
                 Stats[stat.ClassId][stat.Level] = stat;

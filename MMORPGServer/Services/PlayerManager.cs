@@ -11,6 +11,10 @@ namespace MMORPGServer.Services
     /// </summary>
     public class PlayerManager
     {
+        public PlayerManager()
+        {
+            Log.Debug("PlayerManager initialized");
+        }
         private readonly ConcurrentDictionary<int, Player> _players = new();
         public async Task<Player?> CreatePlayerAsync(Player player)
         {

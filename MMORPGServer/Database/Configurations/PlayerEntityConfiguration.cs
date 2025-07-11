@@ -2,13 +2,13 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MMORPGServer.Database.Models;
 
-public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerEntity>
+public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerData>
 {
     /// <summary>
     /// Configures the PlayerEntity mapping to the database.
     /// </summary>
     /// <param name="builder">The entity type builder</param>
-    public void Configure(EntityTypeBuilder<PlayerEntity> builder)
+    public void Configure(EntityTypeBuilder<PlayerData> builder)
     {
         // === Table Configuration ===
         builder.ToTable("Players");

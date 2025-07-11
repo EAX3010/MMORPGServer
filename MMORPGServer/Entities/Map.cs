@@ -1,281 +1,219 @@
-using MMORPGServer.Common.Enums;
-using MMORPGServer.Common.Interfaces;
+﻿using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Common.ValueObjects;
+using MMORPGServer.Database.Models;
 using System.Collections.Concurrent;
-
-namespace MMORPGServer.Entities
+namespace MMORPGServer.Entities;
+public class Map : IDisposable
 {
-    /// <summary>
-    /// Represents a game map with entities, terrain, and spatial management
-    /// </summary>
-    public class Map : IDisposable
+    private bool _disposed = false;
+    private readonly DMap _mapData;
+    private readonly ConcurrentDictionary<int, Player> _players;
+    private readonly Timer _updateTimer;
+
+    public MapData Configuration { get; }
+    public DMap MapData => _mapData;
+
+    // Entity collections
+    public IReadOnlyDictionary<int, Player> Players => _players;
+
+    // Map state
+    public DateTime CreatedTime { get; }
+    public DateTime LastActivity { get; private set; }
+    public int TotalEntities => _players.Count;
+    public bool IsActive => DateTime.UtcNow - LastActivity < TimeSpan.FromMinutes(30);
+
+    public Map(DMap mapData, MapData configuration)
     {
-        private bool _disposed = false;
-        private readonly Cell[,] _cells;
-        private readonly Dictionary<int, Position> _portalPositions;
-        private readonly ConcurrentDictionary<int, MapObject> _entities;
-        private readonly SpatialGrid _spatialGrid;
-        public short Id { get; }
-        public int Width { get; }
-        public int Height { get; }
-        public IReadOnlyDictionary<int, Position> PortalPositions => _portalPositions;
-        public IReadOnlyCollection<MapObject> Entities => _entities.Values.ToList();
-        public int EntityCount => _entities.Count;
+        _mapData = mapData ?? throw new ArgumentNullException(nameof(mapData));
+        Configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-        public Map(short id, int width, int height)
-        {
-            if (width <= 0 || height <= 0)
-                throw new ArgumentException("Map dimensions must be positive");
+        _players = new ConcurrentDictionary<int, Player>();
 
-            Id = id;
-            Width = width;
-            Height = height;
-            _entities = new ConcurrentDictionary<int, MapObject>();
-            _cells = new Cell[width, height];
-            _portalPositions = new Dictionary<int, Position>();
-            _spatialGrid = new SpatialGrid(width, height, 32); // 32x32 cell size
-        }
+        CreatedTime = DateTime.UtcNow;
+        LastActivity = DateTime.UtcNow;
 
-        /// <summary>
-        /// Gets or sets a cell at the specified coordinates
-        /// </summary>
-        public Cell this[int x, int y]
-        {
-            get
-            {
-                if (x < 0 || x >= Width || y < 0 || y >= Height)
-                    return new Cell(CellType.Blocked, 0, 0);
-                return _cells[x, y];
-            }
-            set
-            {
-                if (x >= 0 && x < Width && y >= 0 && y < Height)
-                    _cells[x, y] = value;
-            }
-        }
-
-        /// <summary>
-        /// Adds an entity to the map
-        /// </summary>
-        public bool AddEntity(MapObject entity)
-        {
-            ArgumentNullException.ThrowIfNull(entity);
-
-            if (!IsValidPosition(entity.Position))
-                return false;
-
-            if (!_entities.TryAdd(entity.Id, entity))
-                return false;
-
-            _spatialGrid.Add(entity);
-            this[entity.Position.X, entity.Position.Y].AddFlag(CellType.Entity);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Removes an entity from the map
-        /// </summary>
-        public bool RemoveEntity(int entityId)
-        {
-            if (!_entities.TryRemove(entityId, out MapObject entity))
-                return false;
-
-            _spatialGrid.Remove(entity);
-            this[entity.Position.X, entity.Position.Y].RemoveFlag(CellType.Entity);
-
-
-            return true;
-        }
-
-        /// <summary>
-        /// Gets an entity by its ID
-        /// </summary>
-        public MapObject? GetEntity(int entityId)
-        {
-            _entities.TryGetValue(entityId, out MapObject entity);
-            return entity;
-        }
-
-        /// <summary>
-        /// Gets all entities within range of a position
-        /// </summary>
-        public IEnumerable<MapObject> GetEntitiesInRange(Position position, float range)
-        {
-            if (range <= 0)
-                return Enumerable.Empty<MapObject>();
-
-            return _spatialGrid.GetEntitiesInRange(position, range);
-        }
-
-        /// <summary>
-        /// Checks if a position is valid for entity placement
-        /// </summary>
-        public bool IsValidPosition(Position position)
-        {
-            int x = position.X;
-            int y = position.Y;
-
-            if (x < 0 || x >= Width || y < 0 || y >= Height)
-                return false;
-
-            Cell cell = _cells[x, y];
-            bool result = !cell[CellType.Blocked];
-            return result;
-        }
-
-        /// <summary>
-        /// Attempts to move an entity to a new position
-        /// </summary>
-        public bool TryMoveEntity(MapObject entity, Position newPosition)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-
-            if (!IsValidPosition(newPosition))
-                return false;
-
-            // Check if position is occupied by another entity
-            IEnumerable<MapObject> entitiesAtPosition = GetEntitiesInRange(newPosition, 0.5f);
-            if (entitiesAtPosition.Any(e => e.Id != entity.Id && e.Position == newPosition))
-                return false;
-
-            Position oldPosition = entity.Position;
-            entity.Position = newPosition;
-            _spatialGrid.Update(entity);
-
-
-
-            return true;
-        }
-
-        /// <summary>
-        /// Updates all entities on the map
-        /// </summary>
-        public void Update(float deltaTime)
-        {
-            if (deltaTime <= 0)
-                return;
-
-            foreach (MapObject entity in _entities.Values)
-            {
-
-            }
-        }
-
-        /// <summary>
-        /// Adds a portal to the map
-        /// </summary>
-        public void AddPortal(int destinationMapId, Position position)
-        {
-            if (!IsValidPosition(position))
-                return;
-
-            _portalPositions[destinationMapId] = position;
-
-            // Mark the cell as a portal
-            this[position.X, position.Y] = new Cell(CellType.Blocked, 0, 0);
-        }
-
-        /// <summary>
-        /// Gets the destination map ID for a portal at the given position
-        /// </summary>
-        public int? GetPortalDestination(Position position)
-        {
-            foreach (KeyValuePair<int, Position> kvp in _portalPositions)
-            {
-                if (kvp.Value == position)
-                    return kvp.Key;
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Clears all entities from the map (for cleanup)
-        /// </summary>
-        public void Clear()
-        {
-            _entities.Clear();
-            _spatialGrid.Clear();
-        }
-
-        /// <summary>
-        /// Gets entities by type
-        /// </summary>
-        public IEnumerable<T> GetEntitiesOfType<T>() where T : MapObject
-        {
-            return _entities.Values.OfType<T>();
-        }
-
-        /// <summary>
-        /// Checks if the map contains an entity
-        /// </summary>
-        public bool ContainsEntity(int entityId)
-        {
-            return _entities.ContainsKey(entityId);
-        }
-        public async Task<Position?> GetValidSpawnPointAsync()
-        {
-            Random random = new Random();
-            while (true)
-            {
-                int x = random.Next(0, Width);
-                int y = random.Next(0, Height);
-
-                Cell cell = this[x, y];
-                if (cell.Flags == CellType.Open)
-                {
-                    return new Position((short)x, (short)y);
-                }
-            }
-        }
-        /// <summary>
-        /// Releases all resources used by the Map instance.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// The core logic for disposing map resources.
-        /// </summary>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            if (disposing)
-            {
-
-                // Dispose of any disposable entities on the map.
-                foreach (MapObject entity in _entities.Values)
-                {
-                    if (entity is IDisposable disposableEntity)
-                    {
-                        disposableEntity.Dispose();
-                    }
-                }
-
-                // Clear all collections to release references.
-                _entities.Clear();
-                _portalPositions.Clear();
-                _spatialGrid.Clear();
-            }
-
-            // 2. Free unmanaged resources (if any) - none in this class.
-
-            _disposed = true;
-        }
-
-        // Finalizer (called by the garbage collector)
-        ~Map()
-        {
-            Dispose(false);
-        }
-
+        // Start update timer (60 FPS = ~16ms)
+        _updateTimer = new Timer(Update, null, TimeSpan.FromMilliseconds(16), TimeSpan.FromMilliseconds(16));
     }
+
+    #region Player Management
+
+    /// <summary>
+    /// Adds a player to the map
+    /// </summary>
+    public async Task<bool> AddPlayerAsync(Player player)
+    {
+        if (player == null) return false;
+
+        // Get spawn position if player doesn't have valid position
+        if (!_mapData.IsValidPosition(player.Position))
+        {
+
+            player.Position = this.SpawnPoint();
+        }
+
+        // Add to map data first
+        if (!_mapData.AddEntity(player)) return false;
+
+        // Add to players collection
+        if (_players.TryAdd(player.Id, player))
+        {
+            player.Map = this;
+            LastActivity = DateTime.UtcNow;
+            return true;
+        }
+        else
+        {
+            _mapData.RemoveEntity(player);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Removes a player from the map
+    /// </summary>
+    public async Task<bool> RemovePlayerAsync(int playerId)
+    {
+        if (_players.TryRemove(playerId, out Player player))
+        {
+            _mapData.RemoveEntity(playerId);
+            player.Map = null;
+            LastActivity = DateTime.UtcNow;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Moves a player to a new position
+    /// </summary>
+    public async Task<bool> MovePlayerAsync(int playerId, Position newPosition)
+    {
+        if (!_players.TryGetValue(playerId, out Player player))
+            return false;
+
+        if (_mapData.TryMoveEntity(player, newPosition))
+        {
+            LastActivity = DateTime.UtcNow;
+            return true;
+        }
+        return false;
+    }
+
+    #endregion
+    #region Map Queries
+
+    /// <summary>
+    /// Gets all entities in range of a position
+    /// </summary>
+    public IEnumerable<MapObject> GetEntitiesInRange(Position position, float range)
+    {
+        return _mapData.GetEntitiesInRange(position, range);
+    }
+
+    /// <summary>
+    /// Gets all players in range of a position
+    /// </summary>
+    public IEnumerable<Player> GetPlayersInRange(Position position, float range)
+    {
+        return GetEntitiesInRange(position, range).OfType<Player>();
+    }
+
+
+    /// <summary>
+    /// Checks if position is valid for placement
+    /// </summary>
+    public bool IsValidPosition(Position position)
+    {
+        return _mapData.IsValidPosition(position);
+    }
+
+    /// <summary>
+    /// Gets a valid spawn point
+    /// </summary>
+    public Position SpawnPoint()
+    {
+        return new Position((short)this.Configuration.Portal0X, (short)Configuration.Portal0Y);
+    }
+
+    #endregion
+
+    #region Portal Handling
+
+    /// <summary>
+    /// Handles player portal usage
+    /// </summary>
+    public async Task<int?> HandlePortalUsage(Player player)
+    {
+        var destinationMapId = _mapData.GetPortalDestination(player.Position);
+        if (destinationMapId.HasValue)
+        {
+            LastActivity = DateTime.UtcNow;
+            return destinationMapId;
+        }
+        return null;
+    }
+
+    #endregion
+
+    #region Update Loop
+    private void Update(object state)
+    {
+        if (_disposed) return;
+
+        try
+        {
+            var deltaTime = 0.016f; // ~60 FPS
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in map update loop: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    /// <summary>
+    /// Clears all entities from the map
+    /// </summary>
+    public async Task ClearAllEntitiesAsync()
+    {
+        // Remove all players
+        var playerIds = _players.Keys.ToList();
+        foreach (var playerId in playerIds)
+        {
+            await RemovePlayerAsync(playerId);
+        }
+        _mapData.Clear();
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed) return;
+
+        if (disposing)
+        {
+            _updateTimer?.Dispose();
+
+            // Clear all entities
+            Task.Run(async () => await ClearAllEntitiesAsync()).Wait();
+
+            // Dispose map data
+            _mapData?.Dispose();
+        }
+
+        _disposed = true;
+    }
+
+    #endregion
 }
