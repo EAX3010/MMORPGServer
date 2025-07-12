@@ -1,14 +1,14 @@
-﻿using MMORPGServer.Database;
+﻿using MMORPGServer.Common.ValueObjects;
+using MMORPGServer.Database;
 using MMORPGServer.Entities;
 using Serilog;
 using System.Collections.Concurrent;
 
 namespace MMORPGServer.Services
 {
-    internal class MapManager
+    public class MapManager
     {
         private readonly ConcurrentDictionary<int, Map> Maps = new();
-
         public MapManager()
         {
             Log.Information("Starting MapManager initialization...");
@@ -19,7 +19,7 @@ namespace MMORPGServer.Services
         /// <summary>
         /// Loads all maps from database
         /// </summary>
-        private void LoadAllMaps()
+        private async void LoadAllMaps()
         {
             var allMapData = RepositoryManager.MapDataReader.GetAllMaps();
             int loadedCount = 0;
@@ -29,12 +29,20 @@ namespace MMORPGServer.Services
             {
                 try
                 {
-                    var dMap = RepositoryManager.DMapReader.GetDMapAsync((short)mapData.MapDoc).GetAwaiter().GetResult();
-
+                    var dMap = await RepositoryManager.DMapReader.GetDMapAsync((short)mapData.MapDoc);
                     if (dMap != null)
                     {
-                        Map map = new Map(dMap, mapData);
-                        Maps.TryAdd(mapData.Id, map);
+
+                        var newDMap = new DMap((short)dMap.Id, dMap.Width, dMap.Height);
+                        for (int y = 0; y < newDMap.Height; y++)
+                        {
+                            for (int x = 0; x < newDMap.Width; x++)
+                            {
+                                newDMap[x, y] = new Cell(dMap[x, y].Flags, dMap[x, y].Argument, dMap[x, y].FloorType);
+                            }
+                        }
+                        Map map = new Map(newDMap, mapData);
+                        _ = Maps.TryAdd(mapData.Id, map);
                         loadedCount++;
 
                         Log.Debug("Loaded map {MapId}: {MapName}", mapData.Id, mapData.Name);
@@ -67,8 +75,16 @@ namespace MMORPGServer.Services
         }
 
         /// <summary>
+        /// Gets total number of maps loaded
+        /// </summary>
+        public int GetTotalMaps()
+        {
+            return Maps.Count();
+        }
+        /// <summary>
         /// Indexer for easy access
         /// </summary>
         public Map this[int mapId] => GetMap(mapId);
+
     }
 }

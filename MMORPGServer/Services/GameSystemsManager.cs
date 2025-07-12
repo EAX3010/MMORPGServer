@@ -1,5 +1,4 @@
-﻿using MMORPGServer.Database;
-using MMORPGServer.Networking.Packets;
+﻿using MMORPGServer.Networking.Packets;
 using MMORPGServer.Networking.Security;
 using MMORPGServer.Networking.Server;
 using Serilog;
@@ -30,7 +29,7 @@ namespace MMORPGServer.Services
         public static GameServer GameServer => _gameServer ??
             throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
 
-        public static GameServer MapManager => _gameServer ??
+        public static MapManager MapManager => _mapManager ??
            throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
 
 
@@ -51,11 +50,6 @@ namespace MMORPGServer.Services
 
 
                 Log.Information("Game systems initialized successfully");
-                Log.Information("System status:");
-                Log.Information("  - Database: Ready");
-                Log.Information("  - Repositories: Ready");
-                Log.Information("  - Game World: Ready");
-                Log.Information("  - Network: Ready");
                 Log.Information("  - Packet Handlers: {HandlerCount} registered", PacketHandlerRegistry.GetHandlerCount());
             }
             catch (Exception ex)
@@ -125,7 +119,7 @@ namespace MMORPGServer.Services
             Log.Information("=== Game Systems Status ===");
             Log.Information("Server Running: {IsRunning}", _gameServer?.IsRunning ?? false);
             Log.Information("Connected Players: {PlayerCount}", _networkManager?.ConnectionCount ?? 0);
-            Log.Information("DMaps Loaded: {DMapCount}", RepositoryManager.DMapReader.GetDMapCount());
+            Log.Information("DMaps Loaded: {DMapCount}", MapManager.GetTotalMaps());
 
             if (_networkManager != null)
             {

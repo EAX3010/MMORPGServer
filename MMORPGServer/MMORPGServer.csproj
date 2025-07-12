@@ -8,6 +8,7 @@
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 		<AnalysisLevel>preview-all</AnalysisLevel>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
 		
 	</PropertyGroup>
 	<ItemGroup>
@@ -16,12 +17,16 @@
 	  <None Remove="logs\**" />
 	</ItemGroup>
 	<ItemGroup>
+	  <None Remove="app.manifest" />
+	</ItemGroup>
+	<ItemGroup>
 	  <EmbeddedResource Include="appsettings.json">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Aspose.Zip" Version="25.6.0" />
 		<PackageReference Include="FluentValidation" Version="12.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.6">
@@ -40,6 +45,7 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.6" />
 		<PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0" />
 		<PackageReference Include="protobuf-net" Version="3.2.52" />
+		<PackageReference Include="SevenZip" Version="19.0.0" />
 		<PackageReference Include="System.Drawing.Common" Version="9.0.6" />
 		<PackageReference Include="System.Threading.Channels" Version="9.0.6" />
 		<PackageReference Include="System.Threading.RateLimiting" Version="9.0.6" />
@@ -53,5 +59,11 @@
 		<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
 		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
 		<PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="app.manifest">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </Resource>
 	</ItemGroup>
 </Project>

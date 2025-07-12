@@ -1,3 +1,4 @@
+using Aspose.Zip.SevenZip;
 using MMORPGServer.Common.Enums;
 using MMORPGServer.Common.ValueObjects;
 using MMORPGServer.Entities;
@@ -124,7 +125,7 @@ namespace MMORPGServer.Database.Readers
                     {
                         int DMapId = reader.ReadInt32();
                         int fileLength = reader.ReadInt32();
-                        string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength)).Replace(".7z", ".DMap");
+                        string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength));
                         _ = reader.ReadInt32(); // puzzleSize
 
                         var DMap = await LoaDMapDataAsync((short)DMapId, fileName);
@@ -150,7 +151,6 @@ namespace MMORPGServer.Database.Readers
                 throw;
             }
         }
-
         private async Task<DMap?> LoaDMapDataAsync(short DMapId, string fileName)
         {
             try
@@ -162,56 +162,75 @@ namespace MMORPGServer.Database.Readers
                     return null;
                 }
 
-                using var reader = new BinaryReader(File.OpenRead(fullPath));
-                byte[] skip = reader.ReadBytes(268); // Skip header
-                int width = reader.ReadInt32();
-                int height = reader.ReadInt32();
-
-                Log.Debug("Loading DMap {DMapId} with dimensions {Width}x{Height}", DMapId, width, height);
-
-                var DMap = new DMap(DMapId, width, height);
-
-                // Load cell data
-                for (int y = 0; y < height; y++)
+                using (SevenZipArchive archive = new SevenZipArchive(fullPath))
                 {
-                    for (int x = 0; x < width; x++)
+                    SevenZipArchiveEntry entry = archive.Entries.FirstOrDefault();
+                    if (entry.IsDirectory)
                     {
-                        CellType cellFlag = (CellType)reader.ReadInt16();
-                        if (cellFlag == CellType.None)
-                        {
-                            cellFlag = CellType.Open;
-                        }
-
-                        short floorType = reader.ReadInt16();
-                        short cellHeight = reader.ReadInt16();
-
-                        if (!IsValidCellType((int)cellFlag))
-                        {
-                            Log.Warning("Invalid cell type flags: {CellFlag} at {X},{Y} in DMap {DMapId}",
-                                cellFlag, x, y, DMapId);
-                            cellFlag = CellType.Open; // Default to open for invalid cells
-                        }
-
-                        DMap[x, y] = new Cell(cellFlag, cellHeight, floorType);
+                        Log.Error("DMap file {FileName} is a directory, not a valid DMap file", fileName);
+                        return null;
                     }
-                    reader.ReadInt32(); // Skip padding
-                }
+                    if (!entry.Name.EndsWith(".dmap", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Log.Warning("Skipping non-DMap entry: {EntryName}", entry.Name);
+                        return null;
+                    }
 
-                // Generate DMap visualization
-                try
-                {
-                    string imagePath = Path.Combine(AppContext.BaseDirectory, "DMaps", $"{DMap.Id}.png");
-                    _DMapVisualizer.GenerateMapImage(DMap, imagePath);
-                    Log.Debug("Generated DMap visualization: {ImagePath}", imagePath);
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to generate DMap visualization for DMap {DMapId}", DMapId);
-                    // Don't fail DMap loading if visualization fails
-                }
+                    using var memoryStream = new MemoryStream(new byte[entry.UncompressedSize], 0, (int)entry.UncompressedSize);
+                    entry.Extract(memoryStream);
+                    memoryStream.Position = 0;
+                    using var reader = new BinaryReader(memoryStream);
 
-                Log.Debug("Successfully loaded DMap {DMapId} ({FileName})", DMap.Id, fileName);
-                return DMap;
+                    long someId = reader.ReadInt64();
+                    string pulFile = Encoding.ASCII.GetString(reader.ReadBytes(256));
+                    int junk = reader.ReadInt32();
+
+                    int width = reader.ReadInt32();
+                    int height = reader.ReadInt32();
+
+                    Log.Debug("Loading DMap {DMapId} with dimensions {Width}x{Height}", DMapId, width, height);
+
+                    var DMap = new DMap(DMapId, width, height);
+                    // Load cell data
+                    for (int y = 0; y < height; y++)
+                    {
+                        for (int x = 0; x < width; x++)
+                        {
+                            CellType cellFlag = (CellType)reader.ReadInt16();
+                            if (cellFlag == CellType.None)
+                            {
+                                cellFlag = CellType.Open;
+                            }
+
+                            short floorType = reader.ReadInt16();
+                            short cellHeight = reader.ReadInt16();
+
+                            if (!IsValidCellType((int)cellFlag))
+                            {
+                                Log.Warning("Invalid cell type flags: {CellFlag} at {X},{Y} in DMap {DMapId}",
+                                    cellFlag, x, y, DMapId);
+                                cellFlag = CellType.Open; // Default to open for invalid cells
+                            }
+
+                            DMap[x, y] = new Cell(cellFlag, cellHeight, floorType);
+                        }
+                        _ = reader.ReadInt32(); // Skip padding
+                    }
+                    // Generate DMap visualization
+                    try
+                    {
+                        string imagePath = Path.Combine(AppContext.BaseDirectory, "DMaps", $"{DMap.Id}.png");
+                        _DMapVisualizer.GenerateMapImage(DMap, imagePath);
+                        Log.Debug("Generated DMap visualization: {ImagePath}", imagePath);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warning(ex, "Failed to generate DMap visualization for DMap {DMapId}", DMapId);
+                    }
+
+                    Log.Debug("Successfully loaded DMap {DMapId} ({FileName})", DMap.Id, fileName);
+                    return DMap;
+                }
             }
             catch (Exception ex)
             {
