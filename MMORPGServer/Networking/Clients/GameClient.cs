@@ -9,12 +9,10 @@ using System.Diagnostics;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Channels;
-using System.Threading.RateLimiting;
 
 namespace MMORPGServer.Networking.Clients
 {
-
-    public sealed class GameClient
+    public sealed class GameClient : IDisposable
     {
         #region Constants
         private const int MAX_PACKET_SIZE = 1024;
@@ -22,11 +20,6 @@ namespace MMORPGServer.Networking.Clients
         private const int PACKET_LENGTH_SIZE = 2;
         private const int PACKET_SIGNATURE_SIZE = 8;
         private const int MIN_PACKET_SIZE = PACKET_LENGTH_SIZE + PACKET_SIGNATURE_SIZE;
-
-        // Rate limiting
-        private const int MAX_PACKETS_PER_SECOND = 100;
-        private const int MAX_BYTES_PER_SECOND = 100_000;
-        private const int RATE_LIMIT_WINDOW_SECONDS = 1;
         private const int MAX_CONSECUTIVE_ERRORS = 5;
 
         // Timeouts
@@ -34,16 +27,16 @@ namespace MMORPGServer.Networking.Clients
         private static readonly TimeSpan IDLE_TIMEOUT = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan WOULD_BLOCK_RETRY_DELAY = TimeSpan.FromMilliseconds(10);
         #endregion
+
         #region Properties
         public int ClientId { get; }
+        public int PlayerId { get; set; }
         public bool IsConnected => State != ClientState.Disconnected && _tcpClient?.Connected == true;
         public string IPAddress { get; }
         public DateTime ConnectedAt { get; }
         public ClientState State { get; private set; }
         public DateTime LastActivityTime { get; private set; }
-
         public Player Player { get; set; }
-
         #endregion
 
         #region Private Fields
@@ -74,22 +67,9 @@ namespace MMORPGServer.Networking.Clients
         private readonly SemaphoreSlim _stateLock = new(1, 1);
         private bool _disposed;
 
-        // Rate limiting
-        private readonly RateLimiter _packetRateLimiter;
-        private readonly RateLimiter _byteRateLimiter;
-
         // Security
         private int _consecutiveErrors;
         private DateTime _handshakeStartTime;
-        private readonly HashSet<GamePackets> _recentPacketTypes = new();
-        private DateTime _lastPacketTypeReset = DateTime.UtcNow;
-
-        // Anti-flood
-        private readonly Queue<DateTime> _recentPacketTimes = new();
-        private const int FLOOD_DETECTION_WINDOW_MS = 100;
-        private const int FLOOD_DETECTION_THRESHOLD = 10;
-
-
         #endregion
 
         #region Constructor
@@ -118,28 +98,8 @@ namespace MMORPGServer.Networking.Clients
                 FullMode = BoundedChannelFullMode.Wait
             });
 
-            // Initialize rate limiters
-            _packetRateLimiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
-            {
-                TokenLimit = MAX_PACKETS_PER_SECOND,
-                ReplenishmentPeriod = TimeSpan.FromSeconds(RATE_LIMIT_WINDOW_SECONDS),
-                TokensPerPeriod = MAX_PACKETS_PER_SECOND,
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 10
-            });
-
-            _byteRateLimiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
-            {
-                TokenLimit = MAX_BYTES_PER_SECOND,
-                ReplenishmentPeriod = TimeSpan.FromSeconds(RATE_LIMIT_WINDOW_SECONDS),
-                TokensPerPeriod = MAX_BYTES_PER_SECOND,
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 5
-            });
-
             ConfigureSocket();
             _connectionTimer.Start();
-            // Player will be spawned after connection
         }
 
         private void ConfigureSocket()
@@ -151,11 +111,7 @@ namespace MMORPGServer.Networking.Clients
                 _socket.ReceiveBufferSize = BUFFER_SIZE;
                 _socket.LingerState = new LingerOption(false, 0);
                 _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-
-                // Set non-blocking mode for better control
                 _socket.Blocking = false;
-
-                // Set send/receive timeouts
                 _socket.SendTimeout = 5000;
                 _socket.ReceiveTimeout = 5000;
             }
@@ -169,7 +125,8 @@ namespace MMORPGServer.Networking.Clients
         #region Public Methods
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _cancellationTokenSource.Token);
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken, _cancellationTokenSource.Token);
 
             Task[] processTasks = new[]
             {
@@ -212,14 +169,6 @@ namespace MMORPGServer.Networking.Clients
 
             try
             {
-                // Check rate limit for outgoing packets
-                using RateLimitLease lease = await _byteRateLimiter.AcquireAsync(packetData.Length, _cancellationTokenSource.Token);
-                if (!lease.IsAcquired)
-                {
-                    Log.Warning("Client {ClientId} exceeded outgoing byte rate limit", ClientId);
-                    return;
-                }
-
                 await _sendChannel.Writer.WriteAsync(packetData, _cancellationTokenSource.Token);
                 Interlocked.Increment(ref _packetsSent);
             }
@@ -233,7 +182,7 @@ namespace MMORPGServer.Networking.Clients
             }
         }
 
-        public async ValueTask DisconnectAsync(string reason = "")
+        public async ValueTask DisconnectAsync(string reason = "", bool immediate = false)
         {
             await _stateLock.WaitAsync();
             try
@@ -241,18 +190,56 @@ namespace MMORPGServer.Networking.Clients
                 if (State == ClientState.Disconnected)
                     return;
 
+                var previousState = State;
                 State = ClientState.Disconnected;
                 _connectionTimer.Stop();
 
                 Log.Information("Disconnecting client {ClientId}: {Reason} (Duration: {Duration}, Packets R/S: {Received}/{Sent}, Bytes R/S: {BytesReceived}/{BytesSent})",
                     ClientId, reason, _connectionTimer.Elapsed, _packetsReceived, _packetsSent, _bytesReceived, _bytesSent);
 
+                // Step 1: Cancel all operations
                 _cancellationTokenSource.Cancel();
+
+                // Step 2: Complete send channel (no more outgoing packets)
                 _sendChannel.Writer.TryComplete();
 
+                // Step 3: If not immediate, try to send final packets gracefully
+                if (!immediate && previousState == ClientState.Connected)
+                {
+                    try
+                    {
+                        // Give a brief moment for any pending sends to complete
+                        await Task.Delay(100, CancellationToken.None);
+                    }
+                    catch { }
+                }
+
+                // Step 4: Close TCP connection
                 try
                 {
+                    if (immediate)
+                    {
+                        // Force close immediately
+                        _socket?.Shutdown(SocketShutdown.Both);
+                    }
+                    else
+                    {
+                        // Graceful close
+                        _socket?.Shutdown(SocketShutdown.Send);
+                        await Task.Delay(50, CancellationToken.None); // Brief wait
+                    }
+
                     _tcpClient?.Close();
+                }
+                catch (Exception ex)
+                {
+                    Log.Debug("Error closing socket for client {ClientId}: {Error}", ClientId, ex.Message);
+                }
+
+                // Step 5: Clear sensitive data
+                try
+                {
+                    _cryptographer?.Reset();
                 }
                 catch { }
             }
@@ -260,6 +247,20 @@ namespace MMORPGServer.Networking.Clients
             {
                 _stateLock.Release();
             }
+        }
+
+        // Helper methods for different disconnect scenarios
+        public ValueTask DisconnectGracefullyAsync(string reason = "")
+            => DisconnectAsync(reason, immediate: false);
+
+        public ValueTask DisconnectImmediatelyAsync(string reason = "")
+            => DisconnectAsync(reason, immediate: true);
+
+        // For security violations - immediate disconnect
+        public ValueTask DisconnectSecurityViolationAsync(string violation)
+        {
+            Log.Warning("Security violation from client {ClientId}: {Violation}", ClientId, violation);
+            return DisconnectAsync($"Security violation: {violation}", immediate: true);
         }
 
         public void Dispose()
@@ -274,8 +275,6 @@ namespace MMORPGServer.Networking.Clients
                 DisconnectAsync("Disposed").GetAwaiter().GetResult();
             }
 
-            _packetRateLimiter?.Dispose();
-            _byteRateLimiter?.Dispose();
             _cancellationTokenSource?.Dispose();
             _stateLock?.Dispose();
             _tcpClient?.Dispose();
@@ -378,7 +377,6 @@ namespace MMORPGServer.Networking.Clients
                 try
                 {
                     _cryptographer.Encrypt(packetData.Span, encryptedMemory.AsSpan(0, packetData.Length));
-                    // Return a copy since we're returning the rented array
                     return new ReadOnlyMemory<byte>(encryptedMemory.AsSpan(0, packetData.Length).ToArray());
                 }
                 finally
@@ -408,15 +406,6 @@ namespace MMORPGServer.Networking.Clients
                     _receiveBufferOffset += bytesRead;
                     Interlocked.Add(ref _bytesReceived, bytesRead);
                     UpdateActivity();
-
-                    // Check byte rate limit
-                    using RateLimitLease lease = await _byteRateLimiter.AcquireAsync(bytesRead, cancellationToken);
-                    if (!lease.IsAcquired)
-                    {
-                        Log.Warning("Client {ClientId} exceeded incoming byte rate limit", ClientId);
-                        await DisconnectAsync("Byte rate limit exceeded");
-                        break;
-                    }
 
                     ProcessReceivedData();
                     ResetErrorCount();
@@ -455,7 +444,6 @@ namespace MMORPGServer.Networking.Clients
             }
             catch (SocketException ex) when (ex.SocketErrorCode == SocketError.WouldBlock)
             {
-                // No data available right now, this is normal for non-blocking sockets
                 return 0;
             }
         }
@@ -492,14 +480,6 @@ namespace MMORPGServer.Networking.Clients
             consumedLength = 0;
             Span<byte> bufferSpan = _receiveBuffer.Span.Slice(0, _receiveBufferOffset);
 
-            // Check flood detection
-            if (IsFlooding())
-            {
-                Log.Warning("Client {ClientId} is flooding, disconnecting", ClientId);
-                DisconnectAsync("Flood detected").GetAwaiter().GetResult();
-                return false;
-            }
-
             return State switch
             {
                 ClientState.WaitingForDummyPacket => ProcessDummyPacket(bufferSpan, out consumedLength),
@@ -520,7 +500,6 @@ namespace MMORPGServer.Networking.Clients
 
         private bool ProcessDhKeyExchange(ReadOnlySpan<byte> buffer, out int consumedLength)
         {
-            // Check handshake timeout
             if (DateTime.UtcNow - _handshakeStartTime > HANDSHAKE_TIMEOUT)
             {
                 Log.Warning("Client {ClientId} handshake timeout", ClientId);
@@ -572,7 +551,6 @@ namespace MMORPGServer.Networking.Clients
                 if (buffer.Length < lengthBytesNeeded)
                     return false;
 
-                // Decrypt missing length bytes
                 _cryptographer.Decrypt(
                     buffer.Slice(0, lengthBytesNeeded),
                     _decryptedBuffer.Span.Slice(_decryptedBufferOffset, lengthBytesNeeded)
@@ -581,23 +559,20 @@ namespace MMORPGServer.Networking.Clients
                 consumedLength += lengthBytesNeeded;
             }
 
-            // Now we have the full length
             short declaredLength = BitConverter.ToInt16(_decryptedBuffer.Span);
             int totalPacketSize = declaredLength + PACKET_SIGNATURE_SIZE;
 
             if (!ValidatePacketSize(totalPacketSize, "Game"))
             {
-                _decryptedBufferOffset = 0; // Reset for next packet
+                _decryptedBufferOffset = 0;
                 DisconnectAsync("Invalid packet size").GetAwaiter().GetResult();
                 return false;
             }
 
-            // Check if we have enough data for the full packet
             int remainingEncryptedBytes = totalPacketSize - _decryptedBufferOffset;
             if (buffer.Length - consumedLength < remainingEncryptedBytes)
                 return false;
 
-            // Decrypt the rest of the packet
             ProcessPacket(buffer.Slice(consumedLength), remainingEncryptedBytes, totalPacketSize);
             consumedLength += remainingEncryptedBytes;
 
@@ -606,17 +581,6 @@ namespace MMORPGServer.Networking.Clients
 
         private void ProcessPacket(ReadOnlySpan<byte> buffer, int bytesToDecrypt, int totalPacketSize)
         {
-            // Check packet rate limit
-            using RateLimitLease lease = _packetRateLimiter.AcquireAsync(1).GetAwaiter().GetResult();
-            if (!lease.IsAcquired)
-            {
-                Log.Warning("Client {ClientId} exceeded packet rate limit", ClientId);
-                _decryptedBufferOffset = 0;
-                DisconnectAsync("Packet rate limit exceeded").GetAwaiter().GetResult();
-                return;
-            }
-            //
-
             // Decrypt remaining bytes
             _cryptographer.Decrypt(
                 buffer.Slice(0, bytesToDecrypt),
@@ -625,18 +589,12 @@ namespace MMORPGServer.Networking.Clients
 
             // Create packet from complete decrypted data
             byte[] packetData = _decryptedBuffer.Slice(0, totalPacketSize).ToArray();
+            _decryptedBufferOffset = 0; // Reset for next packet
 
-            // Reset for next packet
-            _decryptedBufferOffset = 0;
-
-            // Send to processing pipeline
             using Packet packet = new Packet(packetData);
 
-            // Track packet type diversity (security check)
-            TrackPacketType(packet.Type);
             if (packet.IsComplete && packet.IsClientPacket())
             {
-
                 if (!_messageWriter.TryWrite(new ClientMessage(this, packet)))
                 {
                     Log.Warning("Failed to queue packet from client {ClientId} - message queue full", ClientId);
@@ -644,7 +602,6 @@ namespace MMORPGServer.Networking.Clients
                 else
                 {
                     Interlocked.Increment(ref _packetsReceived);
-                    RecordPacketTime();
                 }
             }
             else
@@ -728,7 +685,6 @@ namespace MMORPGServer.Networking.Clients
             {
                 try
                 {
-                    // Check idle timeout
                     if (DateTime.UtcNow - LastActivityTime > IDLE_TIMEOUT)
                     {
                         Log.Information("Client {ClientId} idle timeout", ClientId);
@@ -736,20 +692,12 @@ namespace MMORPGServer.Networking.Clients
                         break;
                     }
 
-                    // Check handshake timeout for non-connected clients
                     if (State != ClientState.Connected &&
                         DateTime.UtcNow - _handshakeStartTime > HANDSHAKE_TIMEOUT)
                     {
                         Log.Warning("Client {ClientId} handshake timeout", ClientId);
                         await DisconnectAsync("Handshake timeout");
                         break;
-                    }
-
-                    // Reset packet type tracking periodically
-                    if (DateTime.UtcNow - _lastPacketTypeReset > TimeSpan.FromMinutes(1))
-                    {
-                        _recentPacketTypes.Clear();
-                        _lastPacketTypeReset = DateTime.UtcNow;
                     }
                 }
                 catch (Exception ex)
@@ -760,7 +708,7 @@ namespace MMORPGServer.Networking.Clients
         }
         #endregion
 
-        #region Security & Helper Methods
+        #region Helper Methods
         private bool ShouldDisconnectOnError(Exception ex)
         {
             return ex switch
@@ -803,45 +751,6 @@ namespace MMORPGServer.Networking.Clients
             finally
             {
                 _stateLock.Release();
-            }
-        }
-
-        private void TrackPacketType(GamePackets packetType)
-        {
-            lock (_recentPacketTypes)
-            {
-                _recentPacketTypes.Add(packetType);
-
-                // Security check: too many different packet types might indicate fuzzing
-                if (_recentPacketTypes.Count > 50)
-                {
-                    Log.Warning("Client {ClientId} sending too many different packet types ({Count})",
-                        ClientId, _recentPacketTypes.Count);
-                }
-            }
-        }
-
-        private void RecordPacketTime()
-        {
-            DateTime now = DateTime.UtcNow;
-            lock (_recentPacketTimes)
-            {
-                _recentPacketTimes.Enqueue(now);
-
-                // Remove old entries
-                while (_recentPacketTimes.Count > 0 &&
-                       (now - _recentPacketTimes.Peek()).TotalMilliseconds > FLOOD_DETECTION_WINDOW_MS)
-                {
-                    _recentPacketTimes.Dequeue();
-                }
-            }
-        }
-
-        private bool IsFlooding()
-        {
-            lock (_recentPacketTimes)
-            {
-                return _recentPacketTimes.Count > FLOOD_DETECTION_THRESHOLD;
             }
         }
         #endregion

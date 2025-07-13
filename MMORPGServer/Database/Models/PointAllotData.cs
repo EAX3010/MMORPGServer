@@ -14,16 +14,16 @@ namespace MMORPGServer.Database.Models
         public int Level { get; set; }
 
         [Column("force")]
-        public int Strength { get; set; }
+        public short Strength { get; set; }
 
         [Column("speed")]
-        public int Agility { get; set; }
+        public short Agility { get; set; }
 
         [Column("health")]
-        public int Vitality { get; set; }
+        public short Vitality { get; set; }
 
         [Column("soul")]
-        public int Spirit { get; set; }
+        public short Spirit { get; set; }
 
     }
 }

@@ -14,7 +14,7 @@ namespace MMORPGServer.Networking.Packets.PacketsProto
         [ProtoMember(4, IsRequired = true)]
         public int Hair;
         [ProtoMember(5, IsRequired = true)]
-        public long Money;
+        public long Gold;
         [ProtoMember(6, IsRequired = true)]
         public int ConquerPoints;
         [ProtoMember(7, IsRequired = true)]

@@ -4,6 +4,7 @@ using MMORPGServer.Networking.Packets;
 using MMORPGServer.Networking.Security;
 using MMORPGServer.Services;
 using Serilog;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Channels;
@@ -15,13 +16,13 @@ namespace MMORPGServer.Networking.Server
         private readonly NetworkManager _networkManager;
         private readonly PacketHandler _packetHandler;
 
-        private readonly ChannelWriter<ClientMessage> _messageWriter;
-        private readonly ChannelReader<ClientMessage> _messageReader;
+        // Per-client channels for sequential processing
+        private readonly ConcurrentDictionary<int, Channel<ClientMessage>> _clientChannels = new();
+        private readonly ConcurrentDictionary<int, Task> _clientProcessingTasks = new();
 
         private TcpListener? _tcpListener;
         private CancellationTokenSource? _cancellationTokenSource;
         private Task? _acceptTask;
-        private Task? _messageProcessingTask;
         private int _nextClientId = 1;
         private long _totalConnectionsAccepted = 0;
         private long _totalMessagesProcessed = 0;
@@ -32,11 +33,7 @@ namespace MMORPGServer.Networking.Server
             _networkManager = networkManager ?? throw new ArgumentNullException(nameof(networkManager));
             _packetHandler = packetHandler ?? throw new ArgumentNullException(nameof(packetHandler));
 
-            var channel = Channel.CreateUnbounded<ClientMessage>();
-            _messageWriter = channel.Writer;
-            _messageReader = channel.Reader;
-
-            Log.Debug("GameServer initialized");
+            Log.Debug("GameServer initialized with direct client channel processing");
         }
 
         public async Task StartAsync(CancellationToken cancellationToken = default)
@@ -57,7 +54,6 @@ namespace MMORPGServer.Networking.Server
             Log.Information("Maximum clients: {MaxClients}", GameServerConfig.MaxPlayers);
 
             _acceptTask = AcceptClientsAsync(_cancellationTokenSource.Token);
-            _messageProcessingTask = ProcessMessagesAsync(_cancellationTokenSource.Token);
 
             Log.Information("Game server is now online and ready!");
             await Task.CompletedTask;
@@ -89,17 +85,20 @@ namespace MMORPGServer.Networking.Server
                         continue;
                     }
 
+                    // Create dedicated channel for this client FIRST
+                    var clientChannel = CreateClientChannel(clientId, cancellationToken);
+
                     // Create cryptographic services directly
                     var dhKeyExchange = new DiffieHellmanKeyExchange();
                     var cryptographer = new TQCast5Cryptographer();
 
-                    // Create GameClient directly
+                    // Create GameClient with direct channel writer
                     var gameClient = new GameClient(
                         clientId,
                         tcpClient,
                         dhKeyExchange,
                         cryptographer,
-                        _messageWriter
+                        clientChannel.Writer  // Direct to client channel!
                     );
 
                     _networkManager.AddClient(gameClient);
@@ -152,20 +151,34 @@ namespace MMORPGServer.Networking.Server
             Log.Debug("Client acceptance loop stopped");
         }
 
-        private async Task ProcessMessagesAsync(CancellationToken cancellationToken)
+        private Channel<ClientMessage> CreateClientChannel(int clientId, CancellationToken cancellationToken)
         {
-            Log.Debug("Message processing loop started");
+            // Create unbounded channel for this client
+            var channel = Channel.CreateUnbounded<ClientMessage>();
+            _clientChannels[clientId] = channel;
+
+            // Start processing task for this client
+            var processingTask = ProcessClientChannelAsync(clientId, channel.Reader, cancellationToken);
+            _clientProcessingTasks[clientId] = processingTask;
+
+            Log.Debug("Created dedicated channel for client {ClientId}", clientId);
+
+            return channel;
+        }
+
+        private async Task ProcessClientChannelAsync(int clientId, ChannelReader<ClientMessage> reader, CancellationToken cancellationToken)
+        {
+            Log.Debug("Started message processing for client {ClientId}", clientId);
 
             try
             {
-                await foreach (ClientMessage message in _messageReader.ReadAllAsync(cancellationToken))
+                await foreach (var message in reader.ReadAllAsync(cancellationToken))
                 {
                     try
                     {
-                        // Reset packet position for processing
                         message.Packet.Seek(4);
 
-                        // Process the packet
+                        // Process the packet (sequential per client, parallel across clients)
                         await _packetHandler.HandlePacketAsync(message.Client, message.Packet);
 
                         Interlocked.Increment(ref _totalMessagesProcessed);
@@ -176,28 +189,59 @@ namespace MMORPGServer.Networking.Server
                             Log.Debug("Processed {TotalMessages} total messages", _totalMessagesProcessed);
                         }
                     }
+                    catch (OperationCanceledException)
+                    {
+                        Log.Debug("Packet processing cancelled for client {ClientId}", clientId);
+                        break;
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        Log.Debug("Client {ClientId} disposed during packet processing", clientId);
+                        break;
+                    }
                     catch (Exception ex)
                     {
-                        Log.Error(ex, "Error processing message from client {ClientId} (Type: {PacketType})",
-                           message.Client.ClientId, message.Packet.Type);
+                        Log.Error(ex, "Error processing packet from client {ClientId} (Type: {PacketType})",
+                            message.Client.ClientId, message.Packet.Type);
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                Log.Debug("Message processing cancelled");
+                Log.Debug("Message processing cancelled for client {ClientId}", clientId);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Unexpected error in message processing loop");
+                Log.Error(ex, "Unexpected error in message processing loop for client {ClientId}", clientId);
             }
 
-            Log.Debug("Message processing loop stopped");
+            Log.Debug("Message processing stopped for client {ClientId}", clientId);
         }
 
         public void RemoveClient(int clientId)
         {
             _networkManager.RemoveClient(clientId);
+
+            // Clean up client's dedicated channel and processing task
+            if (_clientChannels.TryRemove(clientId, out var channel))
+            {
+                channel.Writer.Complete();
+                Log.Debug("Completed channel for client {ClientId}", clientId);
+            }
+
+            if (_clientProcessingTasks.TryRemove(clientId, out var task))
+            {
+                // Don't await here - let it finish naturally
+                _ = task.ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                    {
+                        Log.Error(t.Exception, "Client {ClientId} processing task faulted", clientId);
+                    }
+                    Log.Debug("Processing task completed for client {ClientId}", clientId);
+                }, TaskScheduler.Default);
+            }
+
             Log.Information("Player #{ClientId} disconnected (Remaining: {CurrentConnections})",
                 clientId, _networkManager.ConnectionCount);
         }
@@ -222,22 +266,32 @@ namespace MMORPGServer.Networking.Server
             Log.Information("   Total Connections: {TotalConnections}", _totalConnectionsAccepted);
             Log.Information("   Messages Processed: {TotalMessages}", _totalMessagesProcessed);
             Log.Information("   Active Connections: {ActiveConnections}", _networkManager.ConnectionCount);
+            Log.Information("   Active Client Channels: {ActiveChannels}", _clientChannels.Count);
 
             // Cancel all operations
             _cancellationTokenSource?.Cancel();
-            _messageWriter.Complete();
 
             Log.Information("Stopping TCP listener...");
             _tcpListener?.Stop();
 
+            // Complete all client channels
+            Log.Information("Completing client channels...");
+            foreach (var channel in _clientChannels.Values)
+            {
+                channel.Writer.Complete();
+            }
+
             // Wait for background tasks
             var tasks = new List<Task>();
-            if (_acceptTask != null) tasks.Add(_acceptTask);
-            if (_messageProcessingTask != null) tasks.Add(_messageProcessingTask);
+            if (_acceptTask != null)
+                tasks.Add(_acceptTask);
+
+            // Add all client processing tasks
+            tasks.AddRange(_clientProcessingTasks.Values);
 
             if (tasks.Count > 0)
             {
-                Log.Information("Waiting for background tasks to complete...");
+                Log.Information("Waiting for {TaskCount} background tasks to complete...", tasks.Count);
                 try
                 {
                     await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
@@ -252,6 +306,10 @@ namespace MMORPGServer.Networking.Server
             Log.Information("Disconnecting all clients...");
             await _networkManager.DisconnectAllAsync();
 
+            // Clear collections
+            _clientChannels.Clear();
+            _clientProcessingTasks.Clear();
+
             Log.Information("Server shutdown sequence completed");
         }
 
@@ -261,7 +319,12 @@ namespace MMORPGServer.Networking.Server
             {
                 _cancellationTokenSource?.Cancel();
                 _tcpListener?.Stop();
-                _messageWriter.Complete();
+
+                // Complete all client channels
+                foreach (var channel in _clientChannels.Values)
+                {
+                    channel.Writer.Complete();
+                }
             }
             catch (Exception ex)
             {
@@ -270,6 +333,8 @@ namespace MMORPGServer.Networking.Server
             finally
             {
                 _cancellationTokenSource?.Dispose();
+                _clientChannels.Clear();
+                _clientProcessingTasks.Clear();
             }
         }
 
@@ -277,6 +342,7 @@ namespace MMORPGServer.Networking.Server
         public long TotalConnectionsAccepted => _totalConnectionsAccepted;
         public long TotalMessagesProcessed => _totalMessagesProcessed;
         public int CurrentConnections => _networkManager.ConnectionCount;
+        public int ActiveClientChannels => _clientChannels.Count;
         public TimeSpan Uptime => DateTime.UtcNow - _serverStartTime;
         public bool IsRunning => _tcpListener != null && _cancellationTokenSource?.Token.IsCancellationRequested == false;
     }

@@ -28,7 +28,6 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
                 // Log the error and handle it appropriately
                 Console.WriteLine($"Error processing action packet: {ex.Message}");
             }
-            await Task.CompletedTask;
         }
 
         /// <summary>

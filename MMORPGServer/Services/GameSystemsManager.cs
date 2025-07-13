@@ -1,4 +1,5 @@
-﻿using MMORPGServer.Networking.Packets;
+﻿using MMORPGServer.Entities;
+using MMORPGServer.Networking.Packets;
 using MMORPGServer.Networking.Security;
 using MMORPGServer.Networking.Server;
 using Serilog;
@@ -7,31 +8,37 @@ namespace MMORPGServer.Services
 {
     public static class GameSystemsManager
     {
-        private static MapManager? _mapManager;
-        private static PlayerManager? _playerManager;
-        private static GameWorld? _gameWorld;
-        private static TransferCipher? _transferCipher;
-        private static NetworkManager? _networkManager;
-        private static GameServer? _gameServer;
-        private static PacketHandler? _packetHandler;
-        public static PlayerManager PlayerManager => _playerManager ??
-            throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
-
-        public static GameWorld GameWorld => _gameWorld ??
-            throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
-
-        public static TransferCipher TransferCipher => _transferCipher ??
-            throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
-
-        public static NetworkManager NetworkManager => _networkManager ??
-            throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
-
-        public static GameServer GameServer => _gameServer ??
-            throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
-
-        public static MapManager MapManager => _mapManager ??
-           throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
-
+        public static Map TwinCity => MapManager?.GetMap(1002) ?? throw new InvalidOperationException("MapManager not initialized");
+        public static PlayerManager? PlayerManager
+        {
+            get => field ?? throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
+            private set;
+        }
+        public static GameWorld? GameWorld
+        {
+            get => field ?? throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
+            private set;
+        }
+        public static TransferCipher? TransferCipher
+        {
+            get => field ?? throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
+            private set;
+        }
+        public static NetworkManager? NetworkManager
+        {
+            get => field ?? throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
+            private set;
+        }
+        public static GameServer? GameServer
+        {
+            get => field ?? throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
+            private set;
+        }
+        public static MapManager? MapManager
+        {
+            get => field ?? throw new InvalidOperationException("Game systems not initialized. Call InitializeAsync() first.");
+            private set;
+        }
 
         public static async Task InitializeAsync()
         {
@@ -40,13 +47,13 @@ namespace MMORPGServer.Services
             try
             {
                 // Create core services in dependency order
-                _transferCipher = new TransferCipher(GameServerConfig.Configuration);
-                _playerManager = new PlayerManager();
-                _mapManager = new MapManager();
-                _gameWorld = new GameWorld(); // Pass PlayerManager to avoid duplicates
-                _networkManager = new NetworkManager();
-                _packetHandler = new PacketHandler();
-                _gameServer = new GameServer(_networkManager, _packetHandler);
+                TransferCipher = new TransferCipher(GameServerConfig.Configuration);
+                PlayerManager = new PlayerManager();
+                MapManager = new MapManager();
+                GameWorld = new GameWorld();
+                NetworkManager = new NetworkManager();
+                var PacketHandler = new PacketHandler();
+                GameServer = new GameServer(NetworkManager, PacketHandler);
 
 
                 Log.Information("Game systems initialized successfully");
@@ -67,29 +74,21 @@ namespace MMORPGServer.Services
             try
             {
                 // Stop server first
-                if (_gameServer != null)
+                if (GameServer != null)
                 {
-                    await _gameServer.StopAsync();
-                    _gameServer.Dispose();
-                    _gameServer = null;
+                    await GameServer.StopAsync();
+                    GameServer.Dispose();
+                    GameServer = null;
                     Log.Debug("GameServer disposed");
                 }
 
                 // Dispose networking
-                if (_networkManager != null)
+                if (NetworkManager != null)
                 {
-                    _networkManager.Dispose();
-                    _networkManager = null;
+                    NetworkManager.Dispose();
+                    NetworkManager = null;
                     Log.Debug("NetworkManager disposed");
                 }
-
-                // Dispose other services
-                _packetHandler = null;
-                _gameWorld = null;
-                _playerManager = null;
-                _transferCipher = null;
-
-
                 Log.Information("Game systems disposed successfully");
             }
             catch (Exception ex)
@@ -117,26 +116,25 @@ namespace MMORPGServer.Services
         public static void LogSystemStatus()
         {
             Log.Information("=== Game Systems Status ===");
-            Log.Information("Server Running: {IsRunning}", _gameServer?.IsRunning ?? false);
-            Log.Information("Connected Players: {PlayerCount}", _networkManager?.ConnectionCount ?? 0);
+            Log.Information("Server Running: {IsRunning}", GameServer?.IsRunning ?? false);
+            Log.Information("Connected Players: {PlayerCount}", NetworkManager?.ConnectionCount ?? 0);
             Log.Information("DMaps Loaded: {DMapCount}", MapManager.GetTotalMaps());
 
-            if (_networkManager != null)
+            if (NetworkManager != null)
             {
-                var stats = _networkManager.GetNetworkStatistics();
+                var stats = NetworkManager.GetNetworkStatistics();
                 Log.Information("Network Stats - Packets: {Packets:N0}, Data: {MB:F1} MB, Uptime: {Uptime}",
                     stats.TotalPacketsSent, stats.TotalBytesSent / 1024.0 / 1024.0, stats.Uptime);
             }
 
-            if (_gameServer != null)
+            if (GameServer != null)
             {
                 Log.Information("Server Stats - Connections: {Connections:N0}, Messages: {Messages:N0}, Uptime: {Uptime}",
-                    _gameServer.TotalConnectionsAccepted, _gameServer.TotalMessagesProcessed, _gameServer.Uptime);
+                    GameServer.TotalConnectionsAccepted, GameServer.TotalMessagesProcessed, GameServer.Uptime);
             }
             Log.Information("========================");
         }
 
-        public static bool IsInitialized => _playerManager != null && _gameWorld != null && _transferCipher != null;
-        public static bool IsServerRunning => _gameServer?.IsRunning ?? false;
+        public static bool IsServerRunning => GameServer?.IsRunning ?? false;
     }
 }

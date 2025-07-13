@@ -22,7 +22,7 @@ namespace MMORPGServer.Database.Readers
         {
             get
             {
-                int classIdValue = (int)classId / 10;
+                int classIdValue = (int)classId / 1000;
                 if (Stats.TryGetValue(classIdValue, out var classStats))
                 {
                     if (classStats.TryGetValue(level, out var pointAllot))
@@ -56,6 +56,24 @@ namespace MMORPGServer.Database.Readers
                 Stats[stat.ClassId][stat.Level] = stat;
                 Log.Debug("Added ClassId: {ClassId}, Level: {Level}, STR: {Strength}, AGI: {Agility}, VIT: {Vitality}, SPI: {Spirit}",
                     stat.ClassId, stat.Level, stat.Strength, stat.Agility, stat.Vitality, stat.Spirit);
+
+                if (stat.ClassId == 10)
+                {
+                    Log.Debug("Special handling for ClassId 100: {Level} - STR: {Strength}, AGI: {Agility}, VIT: {Vitality}, SPI: {Spirit}",
+                        stat.Level, stat.Strength, stat.Agility, stat.Vitality, stat.Spirit);
+                    int[] newClass = [13, 14];
+                    foreach (var newClassId in newClass)
+                    {
+                        if (!Stats.ContainsKey(newClassId))
+                        {
+                            Stats[newClassId] = new Dictionary<int, PointAllotData>();
+                            Log.Debug("Created new class dictionary for ClassId: {ClassId}", newClassId);
+                        }
+                        Stats[newClassId][stat.Level] = stat;
+                        Log.Debug("Added ClassId: {ClassId}, Level: {Level}, STR: {Strength}, AGI: {Agility}, VIT: {Vitality}, SPI: {Spirit}",
+                            newClassId, stat.Level, stat.Strength, stat.Agility, stat.Vitality, stat.Spirit);
+                    }
+                }
             }
 
             Log.Information("Final Stats loaded: {ClassCount} classes", Stats.Count);

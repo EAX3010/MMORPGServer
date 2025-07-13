@@ -16,7 +16,7 @@ namespace MMORPGServer.Common.Interfaces
             set
             {
                 _map = value;
-                MapId = value?.Configuration.Id ?? 0;
+                MapId = value?.MapId ?? 0;
             }
         }
 

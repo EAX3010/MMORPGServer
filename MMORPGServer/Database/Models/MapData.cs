@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MMORPGServer.Database.Models
 {
-    [Table("cq_map")] // Update with your actual table name
     public class MapData
     {
         [Key]
@@ -11,11 +10,9 @@ namespace MMORPGServer.Database.Models
         public int Id { get; set; }
 
         [Column("name")]
-        [StringLength(105)]
         public string Name { get; set; }
 
         [Column("describe_text")]
-        [StringLength(381)]
         public string DescribeText { get; set; }
 
         [Column("mapdoc")]

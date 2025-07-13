@@ -12,7 +12,6 @@ public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerData>
     {
         // === Table Configuration ===
         builder.ToTable("Players");
-
         // === Primary Key ===
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
@@ -25,44 +24,12 @@ public class PlayerEntityConfiguration : IEntityTypeConfiguration<PlayerData>
             .IsRequired()
             .HasMaxLength(15); // Case-insensitive collation supporting Arabic
 
-        // Level: Default value 1
-        builder.Property(e => e.Level)
-            .IsRequired()
-            .HasDefaultValue(1);
 
-        // Experience: Default value 0
-        builder.Property(e => e.Experience)
-            .IsRequired()
-            .HasDefaultValue(0L);
-
-        // Money: Stored as Currency column, default 0
-        builder.Property(e => e.Gold)
-            .IsRequired()
-            .HasDefaultValue(0L)
-            .HasColumnName("Gold");
-
-        builder.Property(e => e.MapId)
-       .IsRequired();
-        builder.Property(e => e.X)
-         .IsRequired();
-        builder.Property(e => e.Y)
-             .IsRequired();
-
-
-        // Last login: Required with default current UTC time
-        _ = builder.Property(e => e.LastLogin);
-
-        // Last logout: Optional (null when player is online)
-        _ = builder.Property(e => e.LastLogout);
-
-        // === Audit Fields ===
-
-        // Created timestamp: Set by default to current UTC time
-        _ = builder.Property(e => e.CreatedAt);
-
-
-        // Modified timestamp: Optional (null until first modification)
-        _ = builder.Property(e => e.LastModifiedAt);
+        //builder.Property(e => e.Class)
+        //.HasConversion(
+        //    p => p.ToString(),           // Convert enum to string for database
+        //    p => Enum.Parse<ClassType>(p)) // Convert string back to enum
+        //   .IsRequired();
 
         // === Soft Delete Fields ===
 

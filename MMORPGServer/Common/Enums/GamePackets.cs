@@ -489,7 +489,7 @@ namespace MMORPGServer.Common.Enums
         TratePartnerInfo = 2123,/////
         KnowPersonInfo = 2185,//
         ClainInfo = 2322,//
-        NewClient = 2205,//
+        CMsgNewClient = 2205,//
         Fairy = 2688,///
         CrossPlayerInfo = 15400,
         CrossAlert = 15401,

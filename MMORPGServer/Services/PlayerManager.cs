@@ -5,10 +5,6 @@ using System.Collections.Concurrent;
 
 namespace MMORPGServer.Services
 {
-    /// <summary>
-    /// Memory-based player manager for real-time operations.
-    /// Only works with Domain entities.
-    /// </summary>
     public class PlayerManager
     {
         public PlayerManager()
@@ -16,29 +12,43 @@ namespace MMORPGServer.Services
             Log.Debug("PlayerManager initialized");
         }
         private readonly ConcurrentDictionary<int, Player> _players = new();
-        public async Task<Player?> CreatePlayerAsync(Player player)
+
+
+        public async Task<bool> UpdatePlayerAsync(Player player)
         {
             try
             {
-
-                var success = await RepositoryManager.PlayerRepository.UpsertPlayerAsync(player);
-
+                var success = await RepositoryManager.PlayerRepository?.UpdateAsync(player)!;
                 if (success)
                 {
-                    Log.Information("Created player {Name} (ID: {PlayerId})", player.Name, player.Id);
-                    return player;
+                    Log.Information("Updated player {Name} (ID: {PlayerId})", player.Name, player.Id);
                 }
-
-                return null;
+                return success;
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Failed to create player {Name}", player.Name);
-                return null;
+                return false;
             }
         }
-
-        public async Task<Player?> LoadPlayerAsync(int playerId, int connectionId)
+        public async Task<bool> SavePlayerAsync(Player player)
+        {
+            try
+            {
+                var success = await RepositoryManager.PlayerRepository?.SaveAsync(player)!;
+                if (success)
+                {
+                    Log.Information("Created player {Name} (ID: {PlayerId})", player.Name, player.Id);
+                }
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to create player {Name}", player.Name);
+                return false;
+            }
+        }
+        public async Task<Player?> LoadPlayerAsync(int playerId)
         {
             try
             {
@@ -47,7 +57,6 @@ namespace MMORPGServer.Services
 
                 if (player != null)
                 {
-                    player.ConnectionId = connectionId;
                     Log.Information("Loaded player {Name} (ID: {PlayerId})", player.Name, playerId);
                 }
                 else

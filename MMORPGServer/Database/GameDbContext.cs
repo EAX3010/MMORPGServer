@@ -35,8 +35,10 @@ public sealed class GameDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-        modelBuilder.Entity<PointAllotData>().ToTable("cq_point_allot");
-        modelBuilder.Entity<MapData>().ToTable("cq_map");
+
+        modelBuilder.Entity<PointAllotData>().ToView("cq_point_allot");
+        modelBuilder.Entity<MapData>().ToView("cq_map");
+
         ApplyGlobalFilters(modelBuilder);
 
         base.OnModelCreating(modelBuilder);

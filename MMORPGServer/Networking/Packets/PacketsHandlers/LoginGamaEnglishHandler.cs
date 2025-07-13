@@ -20,10 +20,16 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
 
 
             Log.Information("LoginGamaEnglish decrypted UID: {uid}, State: {state}", data.Id, data.State);
-            client.Player = await GameSystemsManager.PlayerManager.LoadPlayerAsync(data.Id, client.ClientId);
-            if (client.Player != null)
+
+            client.PlayerId = data.Id;
+            Entities.Player? player = await GameSystemsManager.PlayerManager?.LoadPlayerAsync(data.Id)!;
+
+            if (player != null)
             {
-                _ = await GameSystemsManager.GameWorld.SpawnPlayerAsync(client.Player, 1002);
+                client.Player = player!;
+                client.Player.ClientId = client.ClientId;
+
+                _ = await GameSystemsManager.GameWorld?.SpawnPlayerAsync(client.Player, 1002)!;
                 await client.SendPacketAsync(PacketFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
                 await client.SendPacketAsync(PacketFactory.CreateHeroInfoPacket(client.Player));
             }

@@ -1,4 +1,5 @@
-﻿using MMORPGServer.Database.Common.Interfaces;
+﻿using MMORPGServer.Common.Enums;
+using MMORPGServer.Database.Common.Interfaces;
 
 namespace MMORPGServer.Database.Models
 {
@@ -8,7 +9,11 @@ namespace MMORPGServer.Database.Models
         public string Name { get; set; } = default!;
         public int Level { get; set; } = 1;
         public long Experience { get; set; } = 0;
-
+        public short Body { get; set; } = 0;
+        public int Hair { get; set; } = 0;
+        public int Face { get; set; } = 0;
+        public ClassType Class { get; set; } = 0;
+        public int ClassLevel { get; set; } = 0;
         // Position
         public int MapId { get; set; } = 1001;
         public short X { get; set; }
@@ -29,7 +34,8 @@ namespace MMORPGServer.Database.Models
         public short Agility { get; set; } = 0;
         public short Vitality { get; set; } = 0;
         public short Spirit { get; set; } = 0;
-
+        public string CreatedAtMacAddress { get; set; } = "";
+        public uint CreatedFingerPrint { get; set; } = 0;
         // Player-specific timestamps
         public DateTime? LastLogin { get; set; }
         public DateTime? LastLogout { get; set; }

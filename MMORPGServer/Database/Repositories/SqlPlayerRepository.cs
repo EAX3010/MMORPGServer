@@ -102,72 +102,126 @@ namespace MMORPGServer.Database.Repositories
         }
 
         /// <summary>
-        /// Creates or updates a player in the database.
+        /// Creates a new player in the database.
         /// </summary>
-        /// <param name="player">The player to upsert</param>
+        /// <param name="player">The player to create</param>
         /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Number of affected rows</returns>
-        public async Task<bool> UpsertPlayerAsync(Player player, CancellationToken cancellationToken = default)
+        /// <returns>True if the player was created successfully, false otherwise</returns>
+        public async Task<bool> SaveAsync(Player player, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(player);
-            if (!player.IsDirty)
-            {
-                Log.Debug("player: {PlayerId} is not dirty", player.Id);
-            }
+
             try
             {
-                Log.Debug("Upserting player: {PlayerId} - {PlayerName}", player.Id, player.Name);
+                Log.Debug("Creating new player: {PlayerName}", player.Name);
 
                 var dbPlayer = player.ToDatabaseObject();
 
-                // Check if player exists
-                var existingPlayer = await _context.Players
-                    .FirstOrDefaultAsync(p => p.Id == player.Id, cancellationToken);
-
-                if (existingPlayer != null)
-                {
-                    Log.Debug("Updating existing player: {PlayerId}", player.Id);
-                    _context.Entry(existingPlayer).CurrentValues.SetValues(dbPlayer);
-                }
-                else
-                {
-                    Log.Debug("Creating new player: {PlayerId}", player.Id);
-                    await _context.Players.AddAsync(dbPlayer, cancellationToken);
-                }
-
+                await _context.Players.AddAsync(dbPlayer, cancellationToken);
                 var result = await _context.SaveChangesAsync(cancellationToken);
+
                 if (result > 0)
                 {
-                    player.IsDirty = false; // Reset dirty flag after successful save
+                    player.IsDirty = false;
+
+                    Log.Information("Successfully created player: {PlayerId} - {PlayerName}",
+                        player.Id, player.Name);
                     return true;
-
                 }
-                Log.Information("Successfully upserted player: {PlayerId} - {PlayerName}, Affected rows: {AffectedRows}",
-                    player.Id, player.Name, result);
 
+                Log.Warning("Failed to create player: {PlayerName}", player.Name);
                 return false;
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                Log.Warning(ex, "Concurrency conflict while upserting player: {PlayerId}", player.Id);
-                throw;
             }
             catch (DbUpdateException ex)
             {
-                Log.Error(ex, "Database update error while upserting player: {PlayerId}", player.Id);
+                Log.Error(ex, "Database update error while creating player: {PlayerName}", player.Name);
                 throw;
             }
             catch (OperationCanceledException)
             {
-                Log.Information("Player upsert cancelled: {PlayerId}", player.Id);
+                Log.Information("Player creation cancelled: {PlayerName}", player.Name);
                 throw;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Unexpected error upserting player: {PlayerId}", player.Id);
+                Log.Error(ex, "Unexpected error creating player: {PlayerName}", player.Name);
                 throw;
             }
         }
+
+        /// <summary>
+        /// Updates an existing player in the database.
+        /// </summary>
+        /// <param name="player">The player to update</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>True if the player was updated successfully, false otherwise</returns>
+        public async Task<bool> UpdateAsync(Player player, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(player);
+
+            if (player.Id == 0)
+            {
+                Log.Warning("Attempted to update player with invalid ID: {PlayerId}", player.Id);
+                return false;
+            }
+
+            if (!player.IsDirty)
+            {
+                Log.Debug("Player: {PlayerId} is not dirty, skipping update", player.Id);
+                return true;
+            }
+
+            try
+            {
+                Log.Debug("Updating player: {PlayerId} - {PlayerName}", player.Id, player.Name);
+
+                var existingPlayer = await _context.Players
+                    .FirstOrDefaultAsync(p => p.Id == player.Id, cancellationToken);
+
+                if (existingPlayer == null)
+                {
+                    Log.Warning("Player not found for update: {PlayerId}", player.Id);
+                    return false;
+                }
+
+                var dbPlayer = player.ToDatabaseObject();
+                _context.Entry(existingPlayer).CurrentValues.SetValues(dbPlayer);
+
+                var result = await _context.SaveChangesAsync(cancellationToken);
+
+                if (result > 0)
+                {
+                    player.IsDirty = false;
+                    Log.Information("Successfully updated player: {PlayerId} - {PlayerName}, Affected rows: {AffectedRows}",
+                        player.Id, player.Name, result);
+                    return true;
+                }
+
+                Log.Warning("No rows affected when updating player: {PlayerId}", player.Id);
+                return false;
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                Log.Warning(ex, "Concurrency conflict while updating player: {PlayerId}", player.Id);
+                throw;
+            }
+            catch (DbUpdateException ex)
+            {
+                Log.Error(ex, "Database update error while updating player: {PlayerId}", player.Id);
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Information("Player update cancelled: {PlayerId}", player.Id);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Unexpected error updating player: {PlayerId}", player.Id);
+                throw;
+            }
+        }
+
 
         /// <summary>
         /// Checks if a player name is available for use.
@@ -176,7 +230,8 @@ namespace MMORPGServer.Database.Repositories
         /// <param name="excludePlayerId">Optional player ID to exclude from the check (for updates)</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>True if the name is available, false otherwise</returns>
-        public async Task<bool> IsNameAvailableAsync(string name, CancellationToken cancellationToken = default)
+        public async Task<bool> IsNameAvailableAsync(string name, int? excludePlayerId = null,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -193,12 +248,17 @@ namespace MMORPGServer.Database.Repositories
 
             try
             {
-                Log.Debug("Checking name availability: {PlayerName}", name);
+                Log.Debug("Checking name availability: {PlayerName}, ExcludePlayerId: {ExcludePlayerId}",
+                    name, excludePlayerId);
 
                 var query = _context.Players
                     .AsNoTracking()
                     .Where(p => p.Name.ToLower() == name.ToLower());
 
+                if (excludePlayerId.HasValue)
+                {
+                    query = query.Where(p => p.Id != excludePlayerId.Value);
+                }
 
                 var isAvailable = !await query.AnyAsync(cancellationToken);
 
@@ -217,5 +277,62 @@ namespace MMORPGServer.Database.Repositories
                 throw;
             }
         }
+
+        /// <summary>
+        /// Deletes a player from the database.
+        /// </summary>
+        /// <param name="playerId">The player's unique identifier</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>True if the player was deleted successfully, false otherwise</returns>
+        public async Task<bool> DeleteAsync(int playerId, CancellationToken cancellationToken = default)
+        {
+            if (playerId == 0)
+            {
+                Log.Warning("Attempted to delete player with invalid ID: {PlayerId}", playerId);
+                return false;
+            }
+
+            try
+            {
+                Log.Debug("Deleting player: {PlayerId}", playerId);
+
+                var existingPlayer = await _context.Players
+                    .FirstOrDefaultAsync(p => p.Id == playerId, cancellationToken);
+
+                if (existingPlayer == null)
+                {
+                    Log.Warning("Player not found for deletion: {PlayerId}", playerId);
+                    return false;
+                }
+
+                _context.Players.Remove(existingPlayer);
+                var result = await _context.SaveChangesAsync(cancellationToken);
+
+                if (result > 0)
+                {
+                    Log.Information("Successfully deleted player: {PlayerId}", playerId);
+                    return true;
+                }
+
+                Log.Warning("No rows affected when deleting player: {PlayerId}", playerId);
+                return false;
+            }
+            catch (DbUpdateException ex)
+            {
+                Log.Error(ex, "Database update error while deleting player: {PlayerId}", playerId);
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Information("Player deletion cancelled: {PlayerId}", playerId);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Unexpected error deleting player: {PlayerId}", playerId);
+                throw;
+            }
+        }
     }
+
 }
