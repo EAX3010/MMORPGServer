@@ -155,10 +155,6 @@ partial class Program
             .MinimumLevel.Override("System", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Error)
             // Add game-specific logging overrides
-            .MinimumLevel.Override("GameServer", LogEventLevel.Debug)
-            .MinimumLevel.Override("NetworkManager", LogEventLevel.Debug)
-            .MinimumLevel.Override("PlayerManager", LogEventLevel.Debug)
-            .MinimumLevel.Override("GameWorld", LogEventLevel.Debug)
             .Enrich.FromLogContext()
             .Enrich.WithThreadId()
             .Enrich.WithProcessId()

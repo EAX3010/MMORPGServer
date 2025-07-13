@@ -52,7 +52,7 @@ namespace MMORPGServer.Services
                 MapManager = new MapManager();
                 GameWorld = new GameWorld();
                 NetworkManager = new NetworkManager();
-                var PacketHandler = new PacketHandler();
+                var PacketHandler = PacketHandlerFactory.CreateDevelopment();
                 GameServer = new GameServer(NetworkManager, PacketHandler);
 
 
