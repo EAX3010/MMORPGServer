@@ -122,7 +122,6 @@ namespace MMORPGServer.Database.Repositories
 
                 if (result > 0)
                 {
-                    player.MarkAsSaved();
                     Log.Information("Successfully created player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                     return true;
                 }
@@ -163,11 +162,6 @@ namespace MMORPGServer.Database.Repositories
                 return false;
             }
 
-            if (!player.IsDirty)
-            {
-                Log.Debug("Player {PlayerName} (ID: {PlayerId}) is not dirty, skipping update", player.Name, player.Id);
-                return true;
-            }
 
             try
             {
@@ -189,7 +183,6 @@ namespace MMORPGServer.Database.Repositories
 
                 if (result > 0)
                 {
-                    player.MarkAsSaved();
                     Log.Information("Successfully updated player: {PlayerName} (ID: {PlayerId}), Affected rows: {AffectedRows}",
                         player.Name, player.Id, result);
                     return true;

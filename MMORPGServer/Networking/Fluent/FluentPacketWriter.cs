@@ -18,14 +18,14 @@ namespace MMORPGServer.Networking.Fluent
         public FluentPacketWriter(GamePackets type, int initialCapacity = 1024)
         {
             _packetType = type;
-            _packet = new Packet((short)type, true, initialCapacity);
+            _packet = new Packet((short)type, initialCapacity);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public FluentPacketWriter(short type, int initialCapacity = 1024)
         {
             _packetType = (GamePackets)type;
-            _packet = new Packet(type, true, initialCapacity);
+            _packet = new Packet(type, initialCapacity);
         }
 
         // Properties

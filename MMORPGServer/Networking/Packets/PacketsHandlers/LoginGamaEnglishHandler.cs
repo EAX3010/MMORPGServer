@@ -15,20 +15,20 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         {
             try
             {
-                uint[] outputDecrypted = GameSystemsManager.TransferCipher!.Decrypt([(uint)packet.ReadInt32(), (uint)packet.ReadInt32()]);
+                uint[] outputDecrypted = GameRuntime.TransferCipher!.Decrypt([(uint)packet.ReadInt32(), (uint)packet.ReadInt32()]);
                 LoginGamaEnglishData data = new((int)outputDecrypted[0], (int)outputDecrypted[1]);
 
                 Log.Debug("LoginGamaEnglish decrypted for ClientId {ClientId} -> PlayerId: {PlayerId}, State: {State}", client.ClientId, data.Id, data.State);
 
                 client.PlayerId = data.Id;
-                Player? player = await GameSystemsManager.GameWorld.PlayerManager.LoadPlayerAsync(data.Id);
+                Player? player = await GameRuntime.GameWorld.PlayerManager.LoadPlayerAsync(data.Id);
 
                 if (player != null)
                 {
                     client.Player = player;
                     client.Player.ClientId = client.ClientId;
 
-                    await GameSystemsManager.GameWorld.SpawnPlayerAsync(client.Player, client.Player.MapId);
+                    await GameRuntime.GameWorld.SpawnPlayerAsync(client.Player, client.Player.MapId);
                     await client.SendPacketAsync(PacketFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
                     await client.SendPacketAsync(PacketFactory.CreateHeroInfoPacket(client.Player));
                     Log.Information("Player {PlayerName} (ID: {PlayerId}) has logged in successfully for ClientId {ClientId}", player.Name, player.Id, client.ClientId);

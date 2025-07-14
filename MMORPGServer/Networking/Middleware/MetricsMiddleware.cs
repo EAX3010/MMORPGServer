@@ -93,12 +93,6 @@ namespace MMORPGServer.Networking.Middleware
                     packetMetrics.MinProcessingTime = processingTimeMs;
             }
 
-            // Log slow packet processing
-            if (processingTimeMs > 5) // Log if packet took more than 100ms
-            {
-                Log.Warning("Slow packet processing: {PacketType} from client {ClientId} took {ProcessingTime:F2}ms",
-                    packetMetrics.PacketType, clientMetrics.ClientId, processingTimeMs);
-            }
         }
 
         private void RecordFailedPacket(ClientMetrics clientMetrics, PacketMetrics packetMetrics, Exception exception)

@@ -42,7 +42,6 @@ namespace MMORPGServer.Database.Mappings
                 Spirit = entity.Spirit,
 
                 LastLogin = DateTime.UtcNow,
-                IsDirty = false
             };
 
             return player;

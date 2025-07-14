@@ -26,7 +26,6 @@ namespace MMORPGServer.Entities
                 CreatedAtMacAddress = createdAtMacAddress,
                 Face = 1,
                 LastLogin = DateTime.UtcNow,
-                IsDirty = true,
             };
 
         }
@@ -58,7 +57,6 @@ namespace MMORPGServer.Entities
         public short Spirit { get; set; } = 0;
         public string CreatedAtMacAddress { get; set; } = "";
         public uint CreatedFingerPrint { get; set; } = 0;
-        public bool IsDirty { get; set; }
         public DateTime LastLogin { get; set; }
         public int Mesh => TransformationID * 10000000 + Face * 10000 + Body;
         #endregion
@@ -71,7 +69,6 @@ namespace MMORPGServer.Entities
                 Agility = points.Agility;
                 Vitality = points.Vitality;
                 Spirit = points.Spirit;
-                IsDirty = true;
                 return true;
             }
             return false;
@@ -80,11 +77,5 @@ namespace MMORPGServer.Entities
         {
             return MapObjectType.Player;
         }
-
-        public void MarkAsSaved()
-        {
-            IsDirty = true;
-        }
     }
-
 }

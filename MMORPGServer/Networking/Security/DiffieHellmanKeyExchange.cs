@@ -136,7 +136,7 @@ namespace MMORPGServer.Networking.Security
             string publicKeyHex = GenerateServerRequest();
             byte[] publicKeyBytes = Encoding.ASCII.GetBytes(publicKeyHex);
 
-            using Packet packet = new Packet((short)0, isServerPacket: true, capacity: 1024);
+            using Packet packet = new Packet((short)0, capacity: 1024);
 
             byte[] pBytes = KeyExchange.GetP();
             byte[] gBytes = KeyExchange.GetG();

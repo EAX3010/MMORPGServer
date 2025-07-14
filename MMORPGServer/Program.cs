@@ -34,13 +34,13 @@ partial class Program
                 PacketHandlerRegistry.GetHandlerCount());
 
             // Initialize all game systems (includes infrastructure)
-            await GameSystemsManager.InitializeAsync();
+            await GameRuntime.InitializeAsync();
 
             // Start the game server
-            await GameSystemsManager.StartServerAsync();
+            await GameRuntime.StartServerAsync();
 
             // Log initial system status
-            GameSystemsManager.LogSystemStatus();
+            GameRuntime.LogSystemStatus();
 
             // Setup graceful shutdown
             await WaitForShutdownSignalAsync();
@@ -78,7 +78,7 @@ partial class Program
             try
             {
                 // Graceful shutdown with timeout
-                var shutdownTask = GameSystemsManager.DisposeAsync();
+                var shutdownTask = GameRuntime.DisposeAsync();
                 var timeoutTask = Task.Delay(TimeSpan.FromSeconds(30));
 
                 var completedTask = await Task.WhenAny(shutdownTask, timeoutTask);
@@ -108,9 +108,9 @@ partial class Program
             {
                 try
                 {
-                    if (GameSystemsManager.IsServerRunning)
+                    if (GameRuntime.IsServerRunning)
                     {
-                        GameSystemsManager.LogSystemStatus();
+                        GameRuntime.LogSystemStatus();
                     }
                 }
                 catch (Exception ex)

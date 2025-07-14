@@ -4,7 +4,6 @@ using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Packets;
 using Serilog;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace MMORPGServer.Networking.Middleware
@@ -14,8 +13,8 @@ namespace MMORPGServer.Networking.Middleware
     /// </summary>
     public sealed class SlowPacketMiddleware : IPacketMiddleware, IDisposable
     {
-        private const int SLOW_PACKET_THRESHOLD_MS = 100;
-        private const int VERY_SLOW_PACKET_THRESHOLD_MS = 500;
+        private const int SLOW_PACKET_THRESHOLD_MS = 5;
+        private const int VERY_SLOW_PACKET_THRESHOLD_MS = 50;
         private const int MAX_SLOW_PACKETS_PER_CLIENT = 10;
         private const int SLOW_PACKET_WINDOW_MINUTES = 5;
 

@@ -25,10 +25,10 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
                 string createdAtMacAddress = packet.ReadString(32);
 
                 client.Player = Player.Create(client.PlayerId, name, body, (ClassType)Class,
-                    GameSystemsManager.GameWorld.TwinCity, createdAtFingerPrint, createdAtMacAddress);
+                    GameRuntime.GameWorld.TwinCity, createdAtFingerPrint, createdAtMacAddress);
                 _ = client.Player.UpdateAllotPoints();
 
-                bool success = await GameSystemsManager.GameWorld.PlayerManager.SavePlayerAsync(client.Player);
+                bool success = await GameRuntime.GameWorld.PlayerManager.SavePlayerAsync(client.Player);
                 if (success)
                 {
                     Log.Information("New player '{PlayerName}' (ID: {PlayerId}) created for ClientId {ClientId}",
