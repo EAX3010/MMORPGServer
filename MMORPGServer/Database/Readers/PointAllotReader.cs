@@ -18,7 +18,7 @@ namespace MMORPGServer.Database.Readers
         }
 
         // Indexer to get stats with [classId, level] syntax
-        public PointAllotData this[ClassType classId, int level]
+        public PointAllotData? this[ClassType classId, int level]
         {
             get
             {
@@ -30,6 +30,7 @@ namespace MMORPGServer.Database.Readers
                         return pointAllot;
                     }
                 }
+                Log.Warning("PointAllot data not found for Class: {Class} (ID: {ClassIdValue}), Level: {Level}", classId, classIdValue, level);
                 return null;
             }
         }
@@ -37,59 +38,68 @@ namespace MMORPGServer.Database.Readers
         // Load all class/level stats from database
         public async Task LoadAllStatsAsync()
         {
-            // Clear existing data
-            Stats.Clear();
-
-            // Load all class level stats
-            var stats = await _context.PointAllot.AsNoTracking().ToListAsync();
-
-            Log.Information("Loaded {Count} point allot records from database", stats.Count);
-
-            foreach (var stat in stats)
+            try
             {
-                // Initialize class dictionary if not exists
-                if (!Stats.ContainsKey(stat.ClassId))
-                {
-                    Stats[stat.ClassId] = new Dictionary<int, PointAllotData>();
-                    Log.Debug("Created new class dictionary for ClassId: {ClassId}", stat.ClassId);
-                }
-                Stats[stat.ClassId][stat.Level] = stat;
-                Log.Debug("Added ClassId: {ClassId}, Level: {Level}, STR: {Strength}, AGI: {Agility}, VIT: {Vitality}, SPI: {Spirit}",
-                    stat.ClassId, stat.Level, stat.Strength, stat.Agility, stat.Vitality, stat.Spirit);
+                Log.Information("Loading point allotment stats from database...");
+                // Clear existing data
+                Stats.Clear();
 
-                if (stat.ClassId == 10)
+                // Load all class level stats
+                var stats = await _context.PointAllot.AsNoTracking().ToListAsync();
+
+                Log.Information("Loaded {Count} point allot records from database", stats.Count);
+
+                foreach (var stat in stats)
                 {
-                    Log.Debug("Special handling for ClassId 100: {Level} - STR: {Strength}, AGI: {Agility}, VIT: {Vitality}, SPI: {Spirit}",
-                        stat.Level, stat.Strength, stat.Agility, stat.Vitality, stat.Spirit);
-                    int[] newClass = [13, 14];
-                    foreach (var newClassId in newClass)
+                    // Initialize class dictionary if not exists
+                    if (!Stats.ContainsKey(stat.ClassId))
                     {
-                        if (!Stats.ContainsKey(newClassId))
+                        Stats[stat.ClassId] = new Dictionary<int, PointAllotData>();
+                        Log.Debug("Created new point allot dictionary for ClassId: {ClassId}", stat.ClassId);
+                    }
+                    Stats[stat.ClassId][stat.Level] = stat;
+                    Log.Debug("Cached PointAllot: ClassId={ClassId}, Level={Level}, STR={Strength}, AGI={Agility}, VIT={Vitality}, SPI={Spirit}",
+                        stat.ClassId, stat.Level, stat.Strength, stat.Agility, stat.Vitality, stat.Spirit);
+
+                    // Special handling for base Taoist class to apply stats to Water and Fire Taoists
+                    if (stat.ClassId == 10)
+                    {
+                        Log.Debug("Applying special handling for base Taoist stats (ClassId 10) for Level {Level}", stat.Level);
+                        int[] newClass = { 13, 14 }; // WaterTao and FireTao
+                        foreach (var newClassId in newClass)
                         {
-                            Stats[newClassId] = new Dictionary<int, PointAllotData>();
-                            Log.Debug("Created new class dictionary for ClassId: {ClassId}", newClassId);
+                            if (!Stats.ContainsKey(newClassId))
+                            {
+                                Stats[newClassId] = new Dictionary<int, PointAllotData>();
+                                Log.Debug("Created new point allot dictionary for derived ClassId: {ClassId}", newClassId);
+                            }
+                            Stats[newClassId][stat.Level] = stat;
+                            Log.Debug("Applied base Taoist stats to ClassId: {ClassId}, Level: {Level}",
+                                newClassId, stat.Level);
                         }
-                        Stats[newClassId][stat.Level] = stat;
-                        Log.Debug("Added ClassId: {ClassId}, Level: {Level}, STR: {Strength}, AGI: {Agility}, VIT: {Vitality}, SPI: {Spirit}",
-                            newClassId, stat.Level, stat.Strength, stat.Agility, stat.Vitality, stat.Spirit);
                     }
                 }
-            }
 
-            Log.Information("Final Stats loaded: {ClassCount} classes", Stats.Count);
+                Log.Information("Finished caching point allotment stats for {ClassCount} classes", Stats.Count);
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Failed to load point allotment stats from database.");
+                throw;
+            }
         }
 
         // Debug method to print all stats
         public void LogAllStats()
         {
-            Log.Information("=== All Point Allot Stats ===");
+            Log.Debug("=== All Point Allot Stats ===");
             foreach (var classKvp in Stats.OrderBy(x => x.Key))
             {
-                Log.Information("Class {ClassId}:", classKvp.Key);
+                Log.Debug("Class {ClassId}:", classKvp.Key);
                 foreach (var levelKvp in classKvp.Value.OrderBy(x => x.Key))
                 {
                     var stats = levelKvp.Value;
-                    Log.Information("  Level {Level}: STR={Strength}, AGI={Agility}, VIT={Vitality}, SPI={Spirit}",
+                    Log.Debug("  Level {Level}: STR={Strength}, AGI={Agility}, VIT={Vitality}, SPI={Spirit}",
                         levelKvp.Key, stats.Strength, stats.Agility, stats.Vitality, stats.Spirit);
                 }
             }

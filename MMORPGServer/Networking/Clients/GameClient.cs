@@ -194,8 +194,8 @@ namespace MMORPGServer.Networking.Clients
                 State = ClientState.Disconnected;
                 _connectionTimer.Stop();
 
-                Log.Information("Disconnecting client {ClientId}: {Reason} (Duration: {Duration}, Packets R/S: {Received}/{Sent}, Bytes R/S: {BytesReceived}/{BytesSent})",
-                    ClientId, reason, _connectionTimer.Elapsed, _packetsReceived, _packetsSent, _bytesReceived, _bytesSent);
+                Log.Information("Disconnecting client {ClientId} (Player: {PlayerName}): {Reason} (Duration: {Duration}, Packets R/S: {Received}/{Sent}, Bytes R/S: {BytesReceived}/{BytesSent})",
+                    ClientId, Player?.Name ?? "N/A", reason, _connectionTimer.Elapsed, _packetsReceived, _packetsSent, _bytesReceived, _bytesSent);
 
                 // Step 1: Cancel all operations
                 _cancellationTokenSource.Cancel();

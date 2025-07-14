@@ -1,5 +1,7 @@
-﻿using MMORPGServer.Networking.Clients;
+﻿using MMORPGServer.Common.Enums;
+using MMORPGServer.Networking.Clients;
 using Serilog;
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Globalization;
 
@@ -32,7 +34,7 @@ namespace MMORPGServer.Services
 
                 // Log connection milestones
                 int currentCount = _clients.Count;
-                if (currentCount % 10 == 0 && currentCount > 0)
+                if (currentCount > 0 && currentCount % 10 == 0)
                 {
                     Log.Information("Network milestone: {ClientCount} concurrent connections", currentCount);
                 }
@@ -57,8 +59,8 @@ namespace MMORPGServer.Services
             {
                 TimeSpan connectionDuration = DateTime.UtcNow - client.ConnectedAt;
 
-                Log.Information("Client {ClientId} removed from network manager (Duration: {Duration}, Remaining: {Count})",
-                    clientId, connectionDuration.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture), _clients.Count);
+                Log.Information("Client {ClientId} (Player: {PlayerName}) removed from network manager (Duration: {Duration}, Remaining: {Count})",
+                    clientId, client.Player?.Name ?? "N/A", connectionDuration.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture), _clients.Count);
 
                 try
                 {
@@ -113,8 +115,9 @@ namespace MMORPGServer.Services
 
             if (tasks.Count > 0)
             {
-                Log.Debug("Broadcasting packet to {ClientCount} clients (Size: {PacketSize} bytes, Failed: {FailedCount})",
-                    clientCount, packetData.Length, failedClients);
+                var packetType = (GamePackets)BinaryPrimitives.ReadInt16LittleEndian(packetData.Span[2..]);
+                Log.Debug("Broadcasting packet {PacketType} to {ClientCount} clients (Size: {PacketSize} bytes, Failed: {FailedCount})",
+                    packetType, clientCount, packetData.Length, failedClients);
 
                 // Execute all send tasks
                 int successfulSends = 0;
@@ -138,7 +141,7 @@ namespace MMORPGServer.Services
                     Interlocked.Add(ref _totalBytesSent, (long)packetData.Length * successfulSends);
 
                     // Log broadcast milestones
-                    if (_totalPacketsSent % 1000 == 0)
+                    if (_totalPacketsSent > 0 && _totalPacketsSent % 1000 == 0)
                     {
                         Log.Debug("Network statistics: {TotalPackets} packets sent, {TotalMB:F1} MB total",
                             _totalPacketsSent, _totalBytesSent / 1024.0 / 1024.0);
@@ -185,9 +188,9 @@ namespace MMORPGServer.Services
 
                 Interlocked.Increment(ref _totalPacketsSent);
                 Interlocked.Add(ref _totalBytesSent, packetData.Length);
-
-                Log.Debug("Sent packet to client {ClientId} (Size: {PacketSize} bytes)",
-                    clientId, packetData.Length);
+                var packetType = (GamePackets)BinaryPrimitives.ReadInt16LittleEndian(packetData.Span[2..]);
+                Log.Debug("Sent packet {PacketType} to client {ClientId} (Size: {PacketSize} bytes)",
+                    packetType, clientId, packetData.Length);
             }
             catch (Exception ex)
             {
@@ -207,7 +210,7 @@ namespace MMORPGServer.Services
                 {
                     try
                     {
-                        await client.DisconnectAsync();
+                        await client.DisconnectAsync("Server shutdown");
                     }
                     catch (Exception ex)
                     {
@@ -240,7 +243,7 @@ namespace MMORPGServer.Services
 
         public IEnumerable<GameClient> GetClientsInMap(int mapId)
         {
-            return _clients.Values.Where(c => c.IsConnected && c.Player.MapId == mapId);
+            return _clients.Values.Where(c => c.IsConnected && c.Player?.MapId == mapId);
         }
 
         public async ValueTask BroadcastToMapAsync(ReadOnlyMemory<byte> packetData, int mapId, int excludeClientId = 0)
@@ -258,7 +261,7 @@ namespace MMORPGServer.Services
             {
                 if (client.ClientId != excludeClientId &&
                     client.IsConnected &&
-                    client.Player.MapId == mapId)
+                    client.Player?.MapId == mapId)
                 {
                     tasks.Add(client.SendPacketAsync(packetData));
                     clientCount++;
@@ -267,8 +270,9 @@ namespace MMORPGServer.Services
 
             if (tasks.Count > 0)
             {
-                Log.Debug("Broadcasting packet to {ClientCount} clients in map {MapId} (Size: {PacketSize} bytes)",
-                    clientCount, mapId, packetData.Length);
+                var packetType = (GamePackets)BinaryPrimitives.ReadInt16LittleEndian(packetData.Span[2..]);
+                Log.Debug("Broadcasting packet {PacketType} to {ClientCount} clients in map {MapId} (Size: {PacketSize} bytes)",
+                    packetType, clientCount, mapId, packetData.Length);
 
                 int successfulSends = 0;
                 foreach (ValueTask task in tasks)

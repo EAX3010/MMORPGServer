@@ -14,6 +14,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         {
             try
             {
+                Log.Debug("Handling new client creation for ClientId {ClientId}", client.ClientId);
 
                 packet.Seek(40);
                 string name = packet.ReadString(32);
@@ -24,27 +25,33 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
                 string createdAtMacAddress = packet.ReadString(32);
 
                 client.Player = Player.Create(client.PlayerId, name, body, (ClassType)Class,
-                    GameSystemsManager.TwinCity, createdAtFingerPrint, createdAtMacAddress);
+                    GameSystemsManager.GameWorld.TwinCity, createdAtFingerPrint, createdAtMacAddress);
                 _ = client.Player.UpdateAllotPoints();
 
-                bool success = await GameSystemsManager.PlayerManager?.SavePlayerAsync(client.Player)!;
+                bool success = await GameSystemsManager.GameWorld.PlayerManager.SavePlayerAsync(client.Player);
                 if (success)
                 {
-                    Log.Information("New client created: {Name}, Body: {Body}, Class: {Class}, FingerPrint: {FingerPrint}, MacAddress: {MacAddress}",
-                     client.Player.Name, client.Player.Body, client.Player.Class, client.Player.CreatedFingerPrint, client.Player.CreatedAtMacAddress);
+                    Log.Information("New player '{PlayerName}' (ID: {PlayerId}) created for ClientId {ClientId}",
+                         client.Player.Name, client.Player.Id, client.ClientId);
 
                     if (client.Player == null)
                     {
-                        Log.Error("Failed to create player for client {ClientId}", client.ClientId);
+                        Log.Error("Failed to assign created player to client {ClientId}", client.ClientId);
                         return;
                     }
+
+                    Log.Debug("Sending ANSWER_OK and HeroInfo to client {ClientId}", client.ClientId);
                     await client.SendPacketAsync(PacketFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
                     await client.SendPacketAsync(PacketFactory.CreateHeroInfoPacket(client.Player));
+                }
+                else
+                {
+                    Log.Warning("Failed to save new player for ClientId {ClientId}", client.ClientId);
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error handling CMsgNewClient packet");
+                Log.Error(ex, "Error handling CMsgNewClient packet for ClientId {ClientId}", client.ClientId);
             }
         }
     }

@@ -23,21 +23,24 @@ namespace MMORPGServer.Database.Readers
             _isInitialized = false;
         }
 
-
-
         public async Task<DMap?> GetDMapAsync(short DMapId)
         {
             if (!_isInitialized)
             {
-                Log.Warning("DMaps not initialized, call InitializeDMapsAsync() first");
+                Log.Warning("Attempted to get DMap {DMapId} before initialization", DMapId);
                 return null;
             }
 
-            _DMaps.TryGetValue(DMapId, out DMap? DMap);
-            return DMap;
+            if (_DMaps.TryGetValue(DMapId, out DMap? DMap))
+            {
+                return DMap;
+            }
+
+            Log.Warning("DMap with ID {DMapId} not found in cache", DMapId);
+            return null;
         }
 
-        public async Task<IEnumerable<DMap>> GetAllDMapsAsync()
+        public IEnumerable<DMap> GetAllDMaps()
         {
             if (!_isInitialized)
             {
@@ -52,36 +55,34 @@ namespace MMORPGServer.Database.Readers
         {
             if (DMap == null)
             {
-                Log.Warning("Cannot save null DMap");
+                Log.Warning("Cannot save a null DMap object");
                 return false;
             }
 
-            var success = _DMaps.TryAdd(DMap.Id, DMap);
-            if (success)
+            if (_DMaps.TryAdd(DMap.Id, DMap))
             {
-                Log.Debug("DMap {DMapId} saved successfully", DMap.Id);
+                Log.Debug("DMap {DMapId} cached successfully", DMap.Id);
+                return true;
             }
             else
             {
-                Log.Warning("DMap {DMapId} already exists, cannot save", DMap.Id);
+                Log.Warning("DMap {DMapId} already exists in cache, cannot save", DMap.Id);
+                return false;
             }
-
-            return success;
         }
 
         public async Task<bool> DeleteDMapAsync(short DMapId)
         {
-            var success = _DMaps.TryRemove(DMapId, out _);
-            if (success)
+            if (_DMaps.TryRemove(DMapId, out _))
             {
-                Log.Information("DMap {DMapId} deleted successfully", DMapId);
+                Log.Information("DMap {DMapId} removed from cache", DMapId);
+                return true;
             }
             else
             {
                 Log.Warning("DMap {DMapId} not found for deletion", DMapId);
+                return false;
             }
-
-            return success;
         }
 
         public async Task InitializeDMapsAsync()
@@ -101,38 +102,38 @@ namespace MMORPGServer.Database.Readers
 
                 if (!File.Exists(gameDMapPath))
                 {
-                    Log.Error("GameDMap.dat not found at: {GameDMapPath}", gameDMapPath);
+                    Log.Error("GameMap.dat not found at: {GameDMapPath}", gameDMapPath);
                     return;
                 }
 
                 // Ensure DMaps directory exists for visualization
-                string DMapsDir = Path.Combine(AppContext.BaseDirectory, "Maps");
-                if (!Directory.Exists(DMapsDir))
+                string dMapsDir = Path.Combine(AppContext.BaseDirectory, "DMaps");
+                if (!Directory.Exists(dMapsDir))
                 {
-                    Directory.CreateDirectory(DMapsDir);
-                    Log.Information("Created DMaps directory: {DMapsDir}", DMapsDir);
+                    Directory.CreateDirectory(dMapsDir);
+                    Log.Debug("Created DMaps directory: {DMapsDir}", dMapsDir);
                 }
 
                 using var reader = new BinaryReader(File.OpenRead(gameDMapPath));
-                int DMapCount = reader.ReadInt32();
-                int loadeDMaps = 0;
+                int dMapCount = reader.ReadInt32();
+                int loadedDMaps = 0;
 
-                Log.Information("Found {DMapCount} DMaps to load", DMapCount);
+                Log.Information("Found {DMapCount} DMaps to load from GameMap.dat", dMapCount);
 
-                for (int i = 0; i < DMapCount; i++)
+                for (int i = 0; i < dMapCount; i++)
                 {
                     try
                     {
-                        int DMapId = reader.ReadInt32();
+                        int dMapId = reader.ReadInt32();
                         int fileLength = reader.ReadInt32();
                         string fileName = Encoding.ASCII.GetString(reader.ReadBytes(fileLength));
                         _ = reader.ReadInt32(); // puzzleSize
 
-                        var DMap = await LoaDMapDataAsync((short)DMapId, fileName);
-                        if (DMap != null)
+                        var dMap = await LoadDMapDataAsync((short)dMapId, fileName);
+                        if (dMap != null)
                         {
-                            await SaveDMapAsync(DMap);
-                            loadeDMaps++;
+                            await SaveDMapAsync(dMap);
+                            loadedDMaps++;
                         }
                     }
                     catch (Exception ex)
@@ -142,8 +143,8 @@ namespace MMORPGServer.Database.Readers
                 }
 
                 _isInitialized = true;
-                Log.Information("DMap initialization completed. Loaded {LoadeDMaps}/{TotalDMaps} DMaps successfully",
-                    loadeDMaps, DMapCount);
+                Log.Information("DMap initialization completed. Loaded {LoadedDMaps}/{TotalDMaps} DMaps successfully",
+                    loadedDMaps, dMapCount);
             }
             catch (Exception ex)
             {
@@ -151,7 +152,7 @@ namespace MMORPGServer.Database.Readers
                 throw;
             }
         }
-        private async Task<DMap?> LoaDMapDataAsync(short DMapId, string fileName)
+        private async Task<DMap?> LoadDMapDataAsync(short dMapId, string fileName)
         {
             try
             {
@@ -164,15 +165,10 @@ namespace MMORPGServer.Database.Readers
 
                 using (SevenZipArchive archive = new SevenZipArchive(fullPath))
                 {
-                    SevenZipArchiveEntry entry = archive.Entries.FirstOrDefault();
-                    if (entry.IsDirectory)
+                    SevenZipArchiveEntry? entry = archive.Entries.FirstOrDefault(e => e.Name.EndsWith(".dmap", StringComparison.OrdinalIgnoreCase));
+                    if (entry == null || entry.IsDirectory)
                     {
-                        Log.Error("DMap file {FileName} is a directory, not a valid DMap file", fileName);
-                        return null;
-                    }
-                    if (!entry.Name.EndsWith(".dmap", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Log.Warning("Skipping non-DMap entry: {EntryName}", entry.Name);
+                        Log.Error("No valid .dmap entry found in archive {FileName} for DMapId {DMapId}", fileName, dMapId);
                         return null;
                     }
 
@@ -181,16 +177,16 @@ namespace MMORPGServer.Database.Readers
                     memoryStream.Position = 0;
                     using var reader = new BinaryReader(memoryStream);
 
-                    long someId = reader.ReadInt64();
-                    string pulFile = Encoding.ASCII.GetString(reader.ReadBytes(256));
-                    int junk = reader.ReadInt32();
+                    _ = reader.ReadInt64(); // someId
+                    _ = Encoding.ASCII.GetString(reader.ReadBytes(256)); // pulFile
+                    _ = reader.ReadInt32(); // junk
 
                     int width = reader.ReadInt32();
                     int height = reader.ReadInt32();
 
-                    Log.Debug("Loading DMap {DMapId} with dimensions {Width}x{Height}", DMapId, width, height);
+                    Log.Debug("Loading DMap {DMapId} ({FileName}) with dimensions {Width}x{Height}", dMapId, fileName, width, height);
 
-                    var DMap = new DMap(DMapId, width, height);
+                    var dMap = new DMap(dMapId, width, height);
                     // Load cell data
                     for (int y = 0; y < height; y++)
                     {
@@ -207,34 +203,33 @@ namespace MMORPGServer.Database.Readers
 
                             if (!IsValidCellType((int)cellFlag))
                             {
-                                Log.Warning("Invalid cell type flags: {CellFlag} at {X},{Y} in DMap {DMapId}",
-                                    cellFlag, x, y, DMapId);
+                                Log.Warning("Invalid cell type flags: {CellFlag} at ({X},{Y}) in DMap {DMapId}",
+                                    cellFlag, x, y, dMapId);
                                 cellFlag = CellType.Open; // Default to open for invalid cells
                             }
 
-                            DMap[x, y] = new Cell(cellFlag, cellHeight, floorType);
+                            dMap[x, y] = new Cell(cellFlag, cellHeight, floorType);
                         }
                         _ = reader.ReadInt32(); // Skip padding
                     }
                     // Generate DMap visualization
                     try
                     {
-                        string imagePath = Path.Combine(AppContext.BaseDirectory, "DMaps", $"{DMap.Id}.png");
-                        _DMapVisualizer.GenerateMapImage(DMap, imagePath);
-                        Log.Debug("Generated DMap visualization: {ImagePath}", imagePath);
+                        string imagePath = Path.Combine(AppContext.BaseDirectory, "DMaps", $"{dMap.Id}.png");
+                        _DMapVisualizer.GenerateMapImage(dMap, imagePath);
                     }
                     catch (Exception ex)
                     {
-                        Log.Warning(ex, "Failed to generate DMap visualization for DMap {DMapId}", DMapId);
+                        Log.Warning(ex, "Failed to generate DMap visualization for DMap {DMapId}", dMapId);
                     }
 
-                    Log.Debug("Successfully loaded DMap {DMapId} ({FileName})", DMap.Id, fileName);
-                    return DMap;
+                    Log.Debug("Successfully loaded DMap {DMapId} ({FileName})", dMap.Id, fileName);
+                    return dMap;
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error loading DMap data for DMap {DMapId} from file {FileName}", DMapId, fileName);
+                Log.Error(ex, "Error loading DMap data for DMap {DMapId} from file {FileName}", dMapId, fileName);
                 return null;
             }
         }
@@ -245,7 +240,7 @@ namespace MMORPGServer.Database.Readers
                                            CellType.Gate | CellType.Entity |
                                            CellType.StaticObj | CellType.BlockedObj);
 
-            return value >= 0 && (value & AllValidFlags) == value;
+            return value >= 0 && (value & ~AllValidFlags) == 0;
         }
 
         // Reset method for testing or reinitialization
@@ -253,7 +248,7 @@ namespace MMORPGServer.Database.Readers
         {
             _DMaps.Clear();
             _isInitialized = false;
-            Log.Information("DMap repository reset");
+            Log.Information("DMap repository has been reset");
         }
 
         // Get DMap count

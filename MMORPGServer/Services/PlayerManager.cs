@@ -21,13 +21,13 @@ namespace MMORPGServer.Services
                 var success = await RepositoryManager.PlayerRepository?.UpdateAsync(player)!;
                 if (success)
                 {
-                    Log.Information("Updated player {Name} (ID: {PlayerId})", player.Name, player.Id);
+                    Log.Information("Updated player {PlayerName} (ID: {PlayerId}) in database", player.Name, player.Id);
                 }
                 return success;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to create player {Name}", player.Name);
+                Log.Error(ex, "Failed to update player {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 return false;
             }
         }
@@ -38,13 +38,13 @@ namespace MMORPGServer.Services
                 var success = await RepositoryManager.PlayerRepository?.SaveAsync(player)!;
                 if (success)
                 {
-                    Log.Information("Created player {Name} (ID: {PlayerId})", player.Name, player.Id);
+                    Log.Information("Saved new player {PlayerName} (ID: {PlayerId}) to database", player.Name, player.Id);
                 }
                 return success;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to create player {Name}", player.Name);
+                Log.Error(ex, "Failed to save player {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 return false;
             }
         }
@@ -54,14 +54,13 @@ namespace MMORPGServer.Services
             {
                 // Repository returns Domain Player, handles database mapping internally
                 var player = await RepositoryManager.PlayerRepository.GetByIdAsync(playerId);
-
                 if (player != null)
                 {
-                    Log.Information("Loaded player {Name} (ID: {PlayerId})", player.Name, playerId);
+                    Log.Information("Loaded player {PlayerName} (ID: {PlayerId}) from database", player.Name, playerId);
                 }
                 else
                 {
-                    Log.Warning("Player {PlayerId} not found", playerId);
+                    Log.Debug("Player with ID {PlayerId} not found in database", playerId);
                 }
 
                 return player;
@@ -82,7 +81,7 @@ namespace MMORPGServer.Services
         {
             if (_players.TryAdd(player.Id, player))
             {
-                Log.Debug("Added player {Name} to memory", player.Name);
+                Log.Debug("Added player {PlayerName} (ID: {PlayerId}) to in-memory cache", player.Name, player.Id);
             }
             return ValueTask.CompletedTask;
         }
@@ -91,7 +90,7 @@ namespace MMORPGServer.Services
         {
             if (_players.TryRemove(playerId, out var player))
             {
-                Log.Debug("Removed player {Name} from memory", player.Name);
+                Log.Debug("Removed player {PlayerName} (ID: {PlayerId}) from in-memory cache", player.Name, player.Id);
             }
             return ValueTask.CompletedTask;
         }

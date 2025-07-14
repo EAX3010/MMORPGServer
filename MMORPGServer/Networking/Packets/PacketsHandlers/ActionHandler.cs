@@ -2,6 +2,7 @@
 using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Packets.Attributes;
 using MMORPGServer.Networking.Packets.PacketsProto;
+using Serilog;
 
 namespace MMORPGServer.Networking.Packets.PacketsHandlers
 {
@@ -13,20 +14,21 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         [PacketHandler(GamePackets.CMsgAction)]
         public static async ValueTask HandleAsync(GameClient client, Packet packet)
         {
-            if (client.ClientId is 0)
+            if (client.Player == null)
             {
+                Log.Warning("Action packet received from client {ClientId} with no associated player.", client.ClientId);
                 return;
             }
 
             try
             {
                 ActionProto actionProto = packet.DeserializeProto<ActionProto>();
+                Log.Debug("Processing action {ActionType} for player {PlayerName} (ID: {PlayerId})", actionProto.Type, client.Player.Name, client.Player.Id);
                 await ProcessActionAsync(client, actionProto);
             }
             catch (Exception ex)
             {
-                // Log the error and handle it appropriately
-                Console.WriteLine($"Error processing action packet: {ex.Message}");
+                Log.Error(ex, "Error processing action packet for client {ClientId} (Player: {PlayerName})", client.ClientId, client.Player?.Name ?? "N/A");
             }
         }
 
@@ -38,12 +40,12 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
             switch (action.Type)
             {
                 case ActionType.SetLocation:
+                    Log.Debug("Handling SetLocation for player {PlayerId}", client.Player.Id);
                     await HandleSetLocationAsync(client, action);
                     break;
 
                 default:
-                    // Log unknown action type
-                    Console.WriteLine($"Unknown action type: {action.Type}");
+                    Log.Warning("Unhandled action type {ActionType} received from player {PlayerName} (ID: {PlayerId})", action.Type, client.Player.Name, client.Player.Id);
                     break;
             }
         }
@@ -63,6 +65,4 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
             }));
         }
     }
-
-
 }

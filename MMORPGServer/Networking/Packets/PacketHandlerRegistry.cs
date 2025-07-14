@@ -19,7 +19,7 @@ namespace MMORPGServer.Networking.Packets
         {
             if (_isInitialized)
             {
-                Log.Warning("PacketHandlerRegistry already initialized");
+                Log.Warning("PacketHandlerRegistry is already initialized. Skipping.");
                 return;
             }
 
@@ -30,8 +30,8 @@ namespace MMORPGServer.Networking.Packets
                 var assembly = Assembly.GetExecutingAssembly();
                 var handlerCount = 0;
 
-                // Find all static methods with PacketHandlerAttribute
                 var types = assembly.GetTypes();
+                Log.Debug("Scanning {TypeCount} types in assembly {AssemblyName} for packet handlers.", types.Length, assembly.GetName().Name);
 
                 foreach (var type in types)
                 {
@@ -41,6 +41,7 @@ namespace MMORPGServer.Networking.Packets
                     foreach (var method in methods)
                     {
                         var attribute = method.GetCustomAttribute<PacketHandlerAttribute>()!;
+                        Log.Debug("Found potential handler {MethodName} for packet {PacketType}", method.Name, attribute.PacketType);
 
                         if (ValidateHandlerMethod(method, attribute.PacketType))
                         {
@@ -51,7 +52,7 @@ namespace MMORPGServer.Networking.Packets
                 }
 
                 _isInitialized = true;
-                Log.Information("Packet handler registry initialized with {HandlerCount} handlers", handlerCount);
+                Log.Information("Packet handler registry initialized successfully with {HandlerCount} handlers.", handlerCount);
             }
             catch (Exception ex)
             {
@@ -68,7 +69,7 @@ namespace MMORPGServer.Networking.Packets
             // Check return type
             if (method.ReturnType != typeof(ValueTask))
             {
-                Log.Error("Handler {MethodName} for packet {PacketType} must return ValueTask",
+                Log.Error("Invalid Handler: Method {MethodName} for packet {PacketType} must return ValueTask.",
                     method.Name, packetType);
                 return false;
             }
@@ -79,8 +80,7 @@ namespace MMORPGServer.Networking.Packets
                 parameters[0].ParameterType != typeof(GameClient) ||
                 parameters[1].ParameterType != typeof(Packet))
             {
-                Log.Error("Handler {MethodName} for packet {PacketType} must have signature: " +
-                         "static ValueTask HandleAsync(IGameClient client, IPacket packet)",
+                Log.Error("Invalid Handler: Method {MethodName} for packet {PacketType} has an incorrect signature. Expected: static ValueTask HandleAsync(GameClient client, Packet packet)",
                     method.Name, packetType);
                 return false;
             }
@@ -88,7 +88,8 @@ namespace MMORPGServer.Networking.Packets
             // Check if packet type already registered
             if (_handlers.ContainsKey(packetType))
             {
-                Log.Error("Packet type {PacketType} already has a registered handler", packetType);
+                Log.Error("Duplicate Handler: Packet type {PacketType} already has a registered handler ({ExistingHandler}). New handler {NewHandler} will be ignored.",
+                    packetType, _handlerNames.GetValueOrDefault(packetType, "Unknown"), $"{method.DeclaringType?.Name}.{method.Name}");
                 return false;
             }
 
@@ -107,14 +108,15 @@ namespace MMORPGServer.Networking.Packets
                     Delegate.CreateDelegate(typeof(Func<GameClient, Packet, ValueTask>), method);
 
                 _handlers[packetType] = handlerDelegate;
-                _handlerNames[packetType] = $"{method.DeclaringType?.Name}.{method.Name}";
+                var handlerName = $"{method.DeclaringType?.Name}.{method.Name}";
+                _handlerNames[packetType] = handlerName;
 
-                Log.Debug("Registered static handler {HandlerName} for packet {PacketType}",
-                    _handlerNames[packetType], packetType);
+                Log.Debug("Registered handler {HandlerName} for packet {PacketType}",
+                    handlerName, packetType);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to register handler {MethodName} for packet {PacketType}",
+                Log.Error(ex, "Failed to create delegate for handler {MethodName} for packet {PacketType}",
                     method.Name, packetType);
             }
         }
@@ -141,7 +143,7 @@ namespace MMORPGServer.Networking.Packets
         /// </summary>
         public static IReadOnlyDictionary<GamePackets, string> GetRegisteredHandlers()
         {
-            return _handlerNames.AsReadOnly();
+            return _handlerNames;
         }
 
         /// <summary>

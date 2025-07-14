@@ -25,37 +25,39 @@ namespace MMORPGServer.Database
 
             try
             {
-
                 _dbContext = CreateDbContext([new AuditableEntitySaveChangesInterceptor()]);
 
                 // Test database connection
-                Log.Information("Testing database connection...");
-                _ = await _dbContext.Database.CanConnectAsync();
-                Log.Information("Database connection successful");
-
-                // Check if database exists, create if it doesn't
-                var databaseExists = await _dbContext.Database.CanConnectAsync();
-                if (!databaseExists)
+                Log.Debug("Testing database connection...");
+                if (!await _dbContext.Database.CanConnectAsync())
                 {
-                    Log.Information("Database does not exist, creating...");
-                    _ = await _dbContext.Database.EnsureCreatedAsync();
-                    Log.Information("Database created successfully");
+                    Log.Warning("Could not connect to the database. Checking if it needs to be created...");
+                }
+                else
+                {
+                    Log.Information("Database connection successful");
                 }
 
-                // Apply any pending migrations
-                IEnumerable<string> pendingMigrations = await _dbContext.Database.GetPendingMigrationsAsync();
+                // Check if database exists, create if it doesn't
+                // Note: EnsureCreated() is simple but doesn't support migrations.
+                // MigrateAsync() is generally preferred for production environments.
+                var pendingMigrations = await _dbContext.Database.GetPendingMigrationsAsync();
                 if (pendingMigrations.Any())
                 {
                     Log.Information("Applying {Count} pending migrations...", pendingMigrations.Count());
                     await _dbContext.Database.MigrateAsync();
                     Log.Information("Migrations applied successfully");
                 }
+                else
+                {
+                    Log.Debug("No pending migrations found.");
+                }
 
                 Log.Information("Database initialized successfully");
             }
             catch (Exception ex)
             {
-                Log.Fatal(ex, "Failed to initialize database");
+                Log.Fatal(ex, "Failed to initialize database. Please check the connection string and database server status.");
                 throw;
             }
         }
@@ -99,13 +101,13 @@ namespace MMORPGServer.Database
 
         public static async Task DisposeAsync()
         {
-            Log.Information("Disposing database...");
+            Log.Information("Disposing database context...");
             if (_dbContext != null)
             {
                 await _dbContext.DisposeAsync();
                 _dbContext = null;
             }
-            Log.Information("Database disposed");
+            Log.Information("Database context disposed");
         }
     }
 }

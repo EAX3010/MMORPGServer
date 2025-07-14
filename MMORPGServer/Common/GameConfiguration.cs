@@ -20,7 +20,7 @@ public static class GameServerConfig
         // Create appsettings.json if it doesn't exist
         if (!File.Exists("appsettings.json"))
         {
-            Log.Information("Creating default appsettings.json");
+            Log.Debug("Creating default appsettings.json");
             var defaultConfig = new
             {
                 ConnectionStrings = new
@@ -52,7 +52,7 @@ public static class GameServerConfig
                     WorldSaveInterval = 300,
                     AutoSave = true,
                     StartingLevel = 1,
-                    MaxLevel = 100,
+                    MaxLevel = 140,
                     ExperienceRate = 1.0,
                     DropRate = 1.0
                 },
@@ -82,21 +82,21 @@ public static class GameServerConfig
         if (!Directory.Exists("logs"))
         {
             Directory.CreateDirectory("logs");
-            Log.Information("Created logs directory");
+            Log.Debug("Created logs directory");
         }
 
         // Create data directory for game data
         if (!Directory.Exists("data"))
         {
             Directory.CreateDirectory("data");
-            Log.Information("Created data directory");
+            Log.Debug("Created data directory");
         }
 
         // Create maps directory
         if (!Directory.Exists("maps"))
         {
             Directory.CreateDirectory("maps");
-            Log.Information("Created maps directory");
+            Log.Debug("Created maps directory");
         }
     }
 
@@ -161,6 +161,9 @@ public static class GameServerConfig
     public static int WorldSaveInterval => Configuration.GetValue("Game:WorldSaveInterval", 300);
     public static bool AutoSave => Configuration.GetValue("Game:AutoSave", true);
     public static double ExperienceRate => Configuration.GetValue("Game:ExperienceRate", 1.0);
+    public static int MaxLevel => Configuration.GetValue("Game:MaxLevel", 140);
+    public static int StartingLevel => Configuration.GetValue("Game:StartingLevel", 1);
+
 
     // Generic helper for custom sections
     public static T GetSection<T>(string sectionName) where T : new() =>
@@ -178,4 +181,3 @@ public static class GameServerConfig
     public static double GetValue(string key, double defaultValue) =>
         Configuration.GetValue(key, defaultValue);
 }
-

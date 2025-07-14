@@ -47,7 +47,7 @@ namespace MMORPGServer.Database.Repositories
                 }
 
                 var player = playerEntity.ToGameObject();
-                Log.Debug("Successfully retrieved player: {PlayerId} - {PlayerName}", id, player.Name);
+                Log.Debug("Successfully retrieved player: {PlayerName} (ID: {PlayerId})", player.Name, id);
 
                 return player;
             }
@@ -113,7 +113,7 @@ namespace MMORPGServer.Database.Repositories
 
             try
             {
-                Log.Debug("Creating new player: {PlayerName}", player.Name);
+                Log.Debug("Attempting to save new player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
 
                 var dbPlayer = player.ToDatabaseObject();
 
@@ -122,29 +122,27 @@ namespace MMORPGServer.Database.Repositories
 
                 if (result > 0)
                 {
-                    player.IsDirty = false;
-
-                    Log.Information("Successfully created player: {PlayerId} - {PlayerName}",
-                        player.Id, player.Name);
+                    player.MarkAsSaved();
+                    Log.Information("Successfully created player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                     return true;
                 }
 
-                Log.Warning("Failed to create player: {PlayerName}", player.Name);
+                Log.Warning("Failed to create player: {PlayerName} (ID: {PlayerId}). SaveChanges returned 0.", player.Name, player.Id);
                 return false;
             }
             catch (DbUpdateException ex)
             {
-                Log.Error(ex, "Database update error while creating player: {PlayerName}", player.Name);
+                Log.Error(ex, "Database update error while creating player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 throw;
             }
             catch (OperationCanceledException)
             {
-                Log.Information("Player creation cancelled: {PlayerName}", player.Name);
+                Log.Information("Player creation cancelled for: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 throw;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Unexpected error creating player: {PlayerName}", player.Name);
+                Log.Error(ex, "Unexpected error creating player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 throw;
             }
         }
@@ -167,20 +165,20 @@ namespace MMORPGServer.Database.Repositories
 
             if (!player.IsDirty)
             {
-                Log.Debug("Player: {PlayerId} is not dirty, skipping update", player.Id);
+                Log.Debug("Player {PlayerName} (ID: {PlayerId}) is not dirty, skipping update", player.Name, player.Id);
                 return true;
             }
 
             try
             {
-                Log.Debug("Updating player: {PlayerId} - {PlayerName}", player.Id, player.Name);
+                Log.Debug("Updating player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
 
                 var existingPlayer = await _context.Players
                     .FirstOrDefaultAsync(p => p.Id == player.Id, cancellationToken);
 
                 if (existingPlayer == null)
                 {
-                    Log.Warning("Player not found for update: {PlayerId}", player.Id);
+                    Log.Warning("Player not found for update: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                     return false;
                 }
 
@@ -191,33 +189,33 @@ namespace MMORPGServer.Database.Repositories
 
                 if (result > 0)
                 {
-                    player.IsDirty = false;
-                    Log.Information("Successfully updated player: {PlayerId} - {PlayerName}, Affected rows: {AffectedRows}",
-                        player.Id, player.Name, result);
+                    player.MarkAsSaved();
+                    Log.Information("Successfully updated player: {PlayerName} (ID: {PlayerId}), Affected rows: {AffectedRows}",
+                        player.Name, player.Id, result);
                     return true;
                 }
 
-                Log.Warning("No rows affected when updating player: {PlayerId}", player.Id);
+                Log.Warning("No rows affected when updating player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 return false;
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                Log.Warning(ex, "Concurrency conflict while updating player: {PlayerId}", player.Id);
+                Log.Warning(ex, "Concurrency conflict while updating player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 throw;
             }
             catch (DbUpdateException ex)
             {
-                Log.Error(ex, "Database update error while updating player: {PlayerId}", player.Id);
+                Log.Error(ex, "Database update error while updating player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 throw;
             }
             catch (OperationCanceledException)
             {
-                Log.Information("Player update cancelled: {PlayerId}", player.Id);
+                Log.Information("Player update cancelled for: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 throw;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Unexpected error updating player: {PlayerId}", player.Id);
+                Log.Error(ex, "Unexpected error updating player: {PlayerName} (ID: {PlayerId})", player.Name, player.Id);
                 throw;
             }
         }
@@ -242,14 +240,14 @@ namespace MMORPGServer.Database.Repositories
             // Validate name length and characters
             if (name.Length < 3 || name.Length > 20)
             {
-                Log.Debug("Name availability check failed: invalid length {NameLength}", name.Length);
+                Log.Debug("Name availability check failed for '{PlayerName}': invalid length {NameLength}", name, name.Length);
                 return false;
             }
 
             try
             {
                 Log.Debug("Checking name availability: {PlayerName}, ExcludePlayerId: {ExcludePlayerId}",
-                    name, excludePlayerId);
+                    name, excludePlayerId ?? 0);
 
                 var query = _context.Players
                     .AsNoTracking()
@@ -262,7 +260,7 @@ namespace MMORPGServer.Database.Repositories
 
                 var isAvailable = !await query.AnyAsync(cancellationToken);
 
-                Log.Debug("Name availability check result for {PlayerName}: {IsAvailable}", name, isAvailable);
+                Log.Debug("Name availability check result for '{PlayerName}': {IsAvailable}", name, isAvailable);
 
                 return isAvailable;
             }
@@ -294,7 +292,7 @@ namespace MMORPGServer.Database.Repositories
 
             try
             {
-                Log.Debug("Deleting player: {PlayerId}", playerId);
+                Log.Debug("Deleting player with ID: {PlayerId}", playerId);
 
                 var existingPlayer = await _context.Players
                     .FirstOrDefaultAsync(p => p.Id == playerId, cancellationToken);
@@ -310,7 +308,7 @@ namespace MMORPGServer.Database.Repositories
 
                 if (result > 0)
                 {
-                    Log.Information("Successfully deleted player: {PlayerId}", playerId);
+                    Log.Information("Successfully deleted player {PlayerName} (ID: {PlayerId})", existingPlayer.Name, playerId);
                     return true;
                 }
 
@@ -324,7 +322,7 @@ namespace MMORPGServer.Database.Repositories
             }
             catch (OperationCanceledException)
             {
-                Log.Information("Player deletion cancelled: {PlayerId}", playerId);
+                Log.Information("Player deletion cancelled for ID: {PlayerId}", playerId);
                 throw;
             }
             catch (Exception ex)
@@ -334,5 +332,4 @@ namespace MMORPGServer.Database.Repositories
             }
         }
     }
-
 }

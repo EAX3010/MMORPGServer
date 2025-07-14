@@ -16,14 +16,16 @@ namespace MMORPGServer.Networking.Packets
         // Core middleware instances
         private readonly RateLimitingMiddleware _rateLimitingMiddleware;
         private readonly AuthenticationMiddleware _authMiddleware;
+        private readonly SlowPacketMiddleware _slowPacketMiddleware;
         private readonly MetricsMiddleware _metricsMiddleware;
         private readonly LoggingMiddleware _loggingMiddleware;
 
-        public PacketHandler(bool enableDebugLogging = false, bool enableSlowPacketDetection = true)
+        public PacketHandler(bool enableDebugLogging = false, bool enableSlowPacketDetection = false)
         {
             // Initialize middleware instances
             _rateLimitingMiddleware = new RateLimitingMiddleware();
             _authMiddleware = new AuthenticationMiddleware();
+            _slowPacketMiddleware = new SlowPacketMiddleware();
             _metricsMiddleware = new MetricsMiddleware();
             _loggingMiddleware = new LoggingMiddleware(
                 logAllPackets: enableDebugLogging,
@@ -31,19 +33,17 @@ namespace MMORPGServer.Networking.Packets
                 logClientInfo: true
             );
 
-
-
             // Register middleware in execution order
-            RegisterMiddleware(_rateLimitingMiddleware);  // 1. Rate limiting
-            RegisterMiddleware(_authMiddleware);          // 2. Authentication  
-
+            RegisterMiddleware(_rateLimitingMiddleware);
+            RegisterMiddleware(_authMiddleware);
             if (enableDebugLogging)
-                RegisterMiddleware(_loggingMiddleware);   // 4. Logging (debug)
+                RegisterMiddleware(_loggingMiddleware);
+            if (enableSlowPacketDetection)
+                RegisterMiddleware(_slowPacketMiddleware);
 
+            RegisterMiddleware(_metricsMiddleware);
 
-            RegisterMiddleware(_metricsMiddleware);       // 6. Metrics (wraps handler)
-
-            Log.Information("PacketHandler initialized with {MiddlewareCount} middleware components (Debug: {Debug}, SlowDetection: {SlowDetection})",
+            Log.Information("PacketHandler initialized with {MiddlewareCount} middleware components (Debug: {Debug}, SlowPacketDetection: {SlowDetection})",
                 _middlewares.Count, enableDebugLogging, enableSlowPacketDetection);
         }
 
@@ -53,7 +53,7 @@ namespace MMORPGServer.Networking.Packets
         public void RegisterMiddleware(IPacketMiddleware middleware)
         {
             _middlewares.Add(middleware);
-            Log.Information("Registered middleware {MiddlewareType}", middleware.GetType().Name);
+            Log.Debug("Registered middleware {MiddlewareType}", middleware.GetType().Name);
         }
 
         /// <summary>
@@ -64,8 +64,8 @@ namespace MMORPGServer.Networking.Packets
             var handler = PacketHandlerRegistry.GetHandler(packet.Type);
             if (handler == null)
             {
-                Log.Warning("No handler registered for packet type {PacketType} from client {ClientId}",
-                    packet.Type, client.ClientId);
+                Log.Warning("No handler registered for packet type {PacketType} from client {ClientId} (Player: {PlayerName})",
+                    packet.Type, client.ClientId, client.Player?.Name ?? "N/A");
                 return;
             }
 
@@ -75,8 +75,8 @@ namespace MMORPGServer.Networking.Packets
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Critical error handling packet {PacketType} from client {ClientId}",
-                    packet.Type, client.ClientId);
+                Log.Error(ex, "Critical error handling packet {PacketType} from client {ClientId} (Player: {PlayerName})",
+                    packet.Type, client.ClientId, client.Player?.Name ?? "N/A");
 
                 // Consider disconnecting client on critical errors
                 await client.DisconnectAsync($"Packet handling error: {ex.GetType().Name}");
@@ -201,6 +201,7 @@ namespace MMORPGServer.Networking.Packets
                 // Basic health check - ensure all middleware instances are not null
                 return _rateLimitingMiddleware != null &&
                        _authMiddleware != null &&
+                       _slowPacketMiddleware != null &&
                        _metricsMiddleware != null &&
                        _loggingMiddleware != null &&
                        _middlewares.Count > 0;
@@ -220,6 +221,7 @@ namespace MMORPGServer.Networking.Packets
 
                 // Dispose middleware that implement IDisposable
                 _rateLimitingMiddleware.Dispose();
+                _slowPacketMiddleware.Dispose();
                 _metricsMiddleware.Dispose();
                 Log.Information("PacketHandler disposed successfully");
             }

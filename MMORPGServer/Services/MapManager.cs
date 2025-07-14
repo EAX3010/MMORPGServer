@@ -12,14 +12,14 @@ namespace MMORPGServer.Services
         public MapManager()
         {
             Log.Information("Starting MapManager initialization...");
-            LoadAllMaps();
+            LoadAllMapsAsync().GetAwaiter().GetResult();
             Log.Information("MapManager loaded {MapCount} maps", Maps.Count);
         }
 
         /// <summary>
-        /// Loads all maps from database
+        /// Loads all maps from the database asynchronously.
         /// </summary>
-        private async void LoadAllMaps()
+        private async Task LoadAllMapsAsync()
         {
             var allMapData = RepositoryManager.MapDataReader.GetAllMaps();
             int loadedCount = 0;
@@ -32,7 +32,6 @@ namespace MMORPGServer.Services
                     var dMap = await RepositoryManager.DMapReader.GetDMapAsync((short)mapData.MapDoc);
                     if (dMap != null)
                     {
-
                         var newDMap = new DMap((short)dMap.Id, dMap.Width, dMap.Height);
                         for (int y = 0; y < newDMap.Height; y++)
                         {
@@ -70,8 +69,12 @@ namespace MMORPGServer.Services
         /// </summary>
         public Map GetMap(int mapId)
         {
-            Maps.TryGetValue(mapId, out Map map);
-            return map;
+            if (Maps.TryGetValue(mapId, out Map map))
+            {
+                return map;
+            }
+            Log.Warning("Attempted to get non-existent map with ID {MapId}", mapId);
+            return null;
         }
 
         /// <summary>
@@ -79,7 +82,7 @@ namespace MMORPGServer.Services
         /// </summary>
         public int GetTotalMaps()
         {
-            return Maps.Count();
+            return Maps.Count;
         }
         /// <summary>
         /// Indexer for easy access

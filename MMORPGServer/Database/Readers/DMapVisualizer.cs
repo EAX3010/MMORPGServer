@@ -15,7 +15,7 @@ namespace MMORPGServer.Database.Readers
         {
             _combinationColors = GenerateAllCombinationColors();
 
-            Log.Debug("MapVisualizer initialized with {CombinationCount} color combinations",
+            Log.Debug("DMapVisualizer initialized with {CombinationCount} color combinations",
                 _combinationColors.Count);
         }
 
@@ -129,11 +129,11 @@ namespace MMORPGServer.Database.Readers
                 // Check if file already exists
                 if (!forceRegenerate && File.Exists(outputPath))
                 {
-                    Log.Debug("Map image already exists, skipping generation: {OutputPath}", outputPath);
+                    Log.Debug("Map image for DMap {DMapId} already exists, skipping generation: {OutputPath}", map.Id, outputPath);
                     return;
                 }
 
-                Log.Information("Generating map image: {OutputPath}", outputPath);
+                Log.Debug("Generating map image for DMap {DMapId}: {OutputPath}", map.Id, outputPath);
 
                 using var bitmap = new Bitmap(map.Width, map.Height);
                 var encounteredCombinations = new HashSet<CellType>();
@@ -155,11 +155,11 @@ namespace MMORPGServer.Database.Readers
                 if (directory != null && !Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
-                    Log.Debug("Created directory: {Directory}", directory);
+                    Log.Debug("Created directory for map images: {Directory}", directory);
                 }
 
                 bitmap.Save(outputPath, ImageFormat.Png);
-                Log.Information("Map image saved: {OutputPath}", outputPath);
+                Log.Debug("Map image saved for DMap {DMapId}: {OutputPath}", map.Id, outputPath);
 
                 // Generate legend only if it doesn't exist or force regenerate
                 string legendPath = Path.ChangeExtension(outputPath, ".legend.png");
@@ -169,12 +169,12 @@ namespace MMORPGServer.Database.Readers
                 }
                 else
                 {
-                    Log.Debug("Legend already exists, skipping: {LegendPath}", legendPath);
+                    Log.Debug("Legend already exists for DMap {DMapId}, skipping: {LegendPath}", map.Id, legendPath);
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to generate map image: {OutputPath}", outputPath);
+                Log.Error(ex, "Failed to generate map image for DMap {DMapId} at {OutputPath}", map?.Id, outputPath);
                 throw;
             }
         }
@@ -190,7 +190,7 @@ namespace MMORPGServer.Database.Readers
             }
 
             // Fallback: generate color on the fly for unknown combinations
-            Log.Warning("Unknown flag combination: {Flags} ({FlagsValue})", flags, (int)flags);
+            Log.Warning("Unknown flag combination encountered: {Flags} ({FlagsValue})", flags, (int)flags);
             return GenerateColorForCombination(flags, new Dictionary<CellType, Color>
             {
                 [CellType.Blocked] = Color.Black,
@@ -207,17 +207,17 @@ namespace MMORPGServer.Database.Readers
         /// </summary>
         private void LogEncounteredCombinations(HashSet<CellType> combinations)
         {
-            Log.Information("=== Map Analysis ===");
-            Log.Information("Total unique flag combinations found: {CombinationCount}", combinations.Count);
+            Log.Debug("=== Map Analysis ===");
+            Log.Debug("Total unique flag combinations found: {CombinationCount}", combinations.Count);
 
             foreach (var combo in combinations.OrderBy(c => (int)c))
             {
                 var flagNames = GetFlagNames(combo);
                 var color = GetColorForFlags(combo);
-                Log.Information("Flags: {Combo} ({ComboValue}) = [{FlagNames}] → Color: {ColorName} (R:{R}, G:{G}, B:{B})",
+                Log.Debug("Flags: {Combo} ({ComboValue}) = [{FlagNames}] → Color: {ColorName} (R:{R}, G:{G}, B:{B})",
                     combo, (int)combo, string.Join(" | ", flagNames), color.Name, color.R, color.G, color.B);
             }
-            Log.Information("==================");
+            Log.Debug("==================");
         }
 
         /// <summary>
@@ -279,7 +279,7 @@ namespace MMORPGServer.Database.Readers
                 }
 
                 legendBitmap.Save(legendPath, ImageFormat.Png);
-                Log.Information("Legend saved to: {LegendPath}", legendPath);
+                Log.Debug("Legend saved to: {LegendPath}", legendPath);
             }
             catch (Exception ex)
             {

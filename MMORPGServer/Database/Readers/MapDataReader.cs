@@ -21,7 +21,7 @@ namespace MMORPGServer.Database.Readers
         }
 
         // Indexer to get map by ID
-        public MapData this[int mapId]
+        public MapData? this[int mapId]
         {
             get
             {
@@ -29,6 +29,7 @@ namespace MMORPGServer.Database.Readers
                 {
                     return mapData;
                 }
+                Log.Warning("MapData not found for MapId: {MapId}", mapId);
                 return null;
             }
         }
@@ -108,47 +109,56 @@ namespace MMORPGServer.Database.Readers
         // Load all maps from database
         public async Task LoadAllMapsAsync()
         {
-            // Clear existing data
-            MapsData.Clear();
-            MapsByGroup.Clear();
-            MapsByOwner.Clear();
-
-            // Load all maps from database
-            var maps = await _context.MapData
-                .AsNoTracking()
-                .Where(m => m.DelFlag == 0) // Only load active maps
-                .ToListAsync();
-
-            Log.Information("Loaded {Count} map records from database", maps.Count);
-
-            foreach (var map in maps)
+            try
             {
-                // Add to main dictionary
-                MapsData[map.Id] = map;
+                Log.Information("Loading map data records from database...");
+                // Clear existing data
+                MapsData.Clear();
+                MapsByGroup.Clear();
+                MapsByOwner.Clear();
 
-                // Group by mapgroup
-                if (!MapsByGroup.ContainsKey(map.MapGroup))
-                {
-                    MapsByGroup[map.MapGroup] = new List<MapData>();
-                }
-                MapsByGroup[map.MapGroup].Add(map);
+                // Load all maps from database
+                var maps = await _context.MapData
+                    .AsNoTracking()
+                    .Where(m => m.DelFlag == 0) // Only load active maps
+                    .ToListAsync();
 
-                // Group by owner
-                if (map.OwnerId > 0)
+                Log.Information("Loaded {Count} map records from database", maps.Count);
+
+                foreach (var map in maps)
                 {
-                    if (!MapsByOwner.ContainsKey(map.OwnerId))
+                    // Add to main dictionary
+                    MapsData[map.Id] = map;
+
+                    // Group by mapgroup
+                    if (!MapsByGroup.ContainsKey(map.MapGroup))
                     {
-                        MapsByOwner[map.OwnerId] = new List<MapData>();
+                        MapsByGroup[map.MapGroup] = new List<MapData>();
                     }
-                    MapsByOwner[map.OwnerId].Add(map);
+                    MapsByGroup[map.MapGroup].Add(map);
+
+                    // Group by owner
+                    if (map.OwnerId > 0)
+                    {
+                        if (!MapsByOwner.ContainsKey(map.OwnerId))
+                        {
+                            MapsByOwner[map.OwnerId] = new List<MapData>();
+                        }
+                        MapsByOwner[map.OwnerId].Add(map);
+                    }
+
+                    Log.Debug("Cached MapData: ID={MapId}, Name={Name}, Group={Group}, Type={Type}, Portal=({X},{Y})",
+                        map.Id, map.Name, map.MapGroup, map.Type, map.Portal0X, map.Portal0Y);
                 }
 
-                Log.Debug("Added Map ID: {MapId}, Name: {Name}, Group: {Group}, Type: {Type}, Portal: ({X},{Y})",
-                    map.Id, map.Name, map.MapGroup, map.Type, map.Portal0X, map.Portal0Y);
+                Log.Information("Finished caching map data: {MapCount} maps, {GroupCount} groups, {OwnerCount} owners",
+                    MapsData.Count, MapsByGroup.Count, MapsByOwner.Count);
             }
-
-            Log.Information("Final Maps loaded: {MapCount} maps, {GroupCount} groups, {OwnerCount} owners",
-                MapsData.Count, MapsByGroup.Count, MapsByOwner.Count);
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Failed to load map data from database.");
+                throw;
+            }
         }
 
         // Reload specific map
@@ -161,8 +171,7 @@ namespace MMORPGServer.Database.Readers
             if (map != null)
             {
                 // Remove from old groups if exists
-                var oldMap = MapsData.GetValueOrDefault(mapId);
-                if (oldMap != null)
+                if (MapsData.TryGetValue(mapId, out var oldMap))
                 {
                     RemoveFromGroups(oldMap);
                 }
@@ -176,11 +185,10 @@ namespace MMORPGServer.Database.Readers
             else
             {
                 // Map was deleted or deactivated
-                if (MapsData.TryGetValue(mapId, out var removedMap))
+                if (MapsData.Remove(mapId, out var removedMap))
                 {
-                    MapsData.Remove(mapId);
                     RemoveFromGroups(removedMap);
-                    Log.Information("Removed map {MapId} from cache", mapId);
+                    Log.Information("Removed map {MapId} ({MapName}) from cache", mapId, removedMap.Name);
                 }
             }
         }
@@ -231,44 +239,42 @@ namespace MMORPGServer.Database.Readers
         // Debug method to print all maps
         public void LogAllMaps()
         {
-            Log.Information("=== All Map Configurations ===");
+            Log.Debug("=== All Map Configurations ===");
 
             foreach (var mapKvp in MapsData.OrderBy(x => x.Key))
             {
                 var map = mapKvp.Value;
-                Log.Information("Map {MapId}: {Name} ({Description})",
+                Log.Debug("Map {MapId}: {Name} ({Description})",
                     map.Id, map.Name, map.DescribeText);
-                Log.Information("  Group: {Group}, Owner: {Owner}, Type: {Type}, Server: {Server}",
+                Log.Debug("  Group: {Group}, Owner: {Owner}, Type: {Type}, Server: {Server}",
                     map.MapGroup, map.OwnerId, map.Type, map.IdxServer);
-                Log.Information("  Portal: ({X},{Y}) -> Map {LinkMap}, Reborn: Map {RebornMap}",
+                Log.Debug("  Portal: ({X},{Y}) -> Map {LinkMap}, Reborn: Map {RebornMap}",
                     map.Portal0X, map.Portal0Y, map.LinkMap, map.RebornMap);
-                Log.Information("  Settings: Weather={Weather}, Music={Music}, ResLev={ResLev}, Color={Color:X}",
+                Log.Debug("  Settings: Weather={Weather}, Music={Music}, ResLev={ResLev}, Color={Color:X}",
                     map.Weather, map.BgMusic, map.ResLev, map.Color);
             }
 
-            Log.Information("=== Maps by Group ===");
+            Log.Debug("=== Maps by Group ===");
             foreach (var groupKvp in MapsByGroup.OrderBy(x => x.Key))
             {
-                Log.Information("Group {GroupId}: {Count} maps",
+                Log.Debug("Group {GroupId}: {Count} maps",
                     groupKvp.Key, groupKvp.Value.Count);
                 foreach (var map in groupKvp.Value.OrderBy(m => m.Id))
                 {
-                    Log.Information("  - {MapId}: {Name}", map.Id, map.Name);
+                    Log.Debug("  - {MapId}: {Name}", map.Id, map.Name);
                 }
             }
 
-            Log.Information("=== Maps by Owner ===");
+            Log.Debug("=== Maps by Owner ===");
             foreach (var ownerKvp in MapsByOwner.OrderBy(x => x.Key))
             {
-                Log.Information("Owner {OwnerId}: {Count} maps",
+                Log.Debug("Owner {OwnerId}: {Count} maps",
                     ownerKvp.Key, ownerKvp.Value.Count);
                 foreach (var map in ownerKvp.Value.OrderBy(m => m.Id))
                 {
-                    Log.Information("  - {MapId}: {Name}", map.Id, map.Name);
+                    Log.Debug("  - {MapId}: {Name}", map.Id, map.Name);
                 }
             }
         }
-
     }
-
 }
