@@ -4,7 +4,7 @@ using MMORPGServer.Database;
 
 namespace MMORPGServer.Entities
 {
-    public class Player : MapObject
+    public class Player : MapObject, IPlayerNetworkContext
     {
         public Player(int id)
         {
@@ -30,7 +30,6 @@ namespace MMORPGServer.Entities
 
         }
         #region Variables
-        public int ClientId { get; set; } = 0;
         public string Name { get; set; } = String.Empty;
         public int Level { get; set; } = 1;
         public long Experience { get; set; } = 0;

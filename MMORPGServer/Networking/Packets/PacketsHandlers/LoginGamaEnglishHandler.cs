@@ -22,13 +22,10 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
 
                 client.PlayerId = data.Id;
                 Player? player = await GameRuntime.GameWorld.PlayerManager.LoadPlayerAsync(data.Id);
-
-                if (player != null)
+                if (player is not null)
                 {
-                    client.Player = player;
-                    client.Player.ClientId = client.ClientId;
-
-                    await GameRuntime.GameWorld.SpawnPlayerAsync(client.Player, client.Player.MapId);
+                    client.PlayerContext = player;
+                    _ = await GameRuntime.GameWorld.AddPlayerAsync(client.Player, client.Player.MapId);
                     await client.SendPacketAsync(PacketFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
                     await client.SendPacketAsync(PacketFactory.CreateHeroInfoPacket(client.Player));
                     Log.Information("Player {PlayerName} (ID: {PlayerId}) has logged in successfully for ClientId {ClientId}", player.Name, player.Id, client.ClientId);

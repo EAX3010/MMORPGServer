@@ -5,39 +5,49 @@ namespace MMORPGServer.Services
 {
     public class GameWorld
     {
-        public Map TwinCity => MapManager?.GetMap(1002) ?? throw new InvalidOperationException("MapManager not initialized");
-
-        public GameWorld(MapManager mapManager, PlayerManager playerManager)
-        {
-            MapManager = mapManager;
-            PlayerManager = playerManager;
-            Log.Information("GameWorld initialized successfully");
-
-        }
 
         public MapManager MapManager { get; }
         public PlayerManager PlayerManager { get; }
 
-        public async Task<Player?> SpawnPlayerAsync(Player player, int mapId)
+        public Map TwinCity;
+        public GameWorld(MapManager mapManager, PlayerManager playerManager)
+        {
+            MapManager = mapManager;
+            PlayerManager = playerManager;
+            TwinCity = MapManager?.GetMap(1002)!;
+            Log.Information("GameWorld initialized successfully");
+
+        }
+        public async ValueTask<Player?> AddPlayerAsync(Player player, int mapId)
         {
             try
             {
-                var map = MapManager.GetMap(mapId);
-                player.Map = map;
+                Map? map = await MapManager.GetMapAsync(mapId);
                 if (map == null)
                 {
                     Log.Warning("Attempted to spawn player {PlayerName} on non-existent map {MapId}", player.Name, mapId);
                     return null;
                 }
-                if (await map.AddPlayerAsync(player))
+
+
+                if (await PlayerManager.AddPlayerAsync(player))
                 {
-                    Log.Information("Player {PlayerName} (ID: {PlayerId}) spawned on map {MapId} at {Position}",
-                        player.Name, player.Id, mapId, player.Position);
-                    return player;
+                    player.Map = map;
+                    if (await map.AddPlayerAsync(player))
+                    {
+                        Log.Information("Player {PlayerName} (ID: {PlayerId}) spawned on map {MapId} at {Position}",
+                            player.Name, player.Id, mapId, player.Position);
+                        return player;
+                    }
+                    else
+                    {
+                        Log.Warning("Failed to add player {PlayerName} to map {MapId}", player.Name, mapId);
+                        return null;
+                    }
                 }
                 else
                 {
-                    Log.Warning("Failed to add player {PlayerName} to map {MapId}", player.Name, mapId);
+                    Log.Warning("Failed to add player {PlayerName} to PlayerManager", player.Name, mapId);
                     return null;
                 }
             }
@@ -47,5 +57,36 @@ namespace MMORPGServer.Services
                 return null;
             }
         }
+        public async ValueTask<Player?> RemovePlayerAsync(Player player, int mapId)
+        {
+            try
+            {
+                if (await PlayerManager.RemovePlayerAsync(player.Id))
+                {
+                    if (await player.Map.RemovePlayerAsync(player.Id))
+                    {
+                        Log.Information("Player {PlayerName} (ID: {PlayerId}) removed from map {MapId}",
+                            player.Name, player.Id, mapId);
+                        return player;
+                    }
+                    else
+                    {
+                        Log.Warning("Failed to remove player {PlayerName} from map {MapId}", player.Name, mapId);
+                        return null;
+                    }
+                }
+                else
+                {
+                    Log.Warning("Failed to remove player {PlayerName} from PlayerManager", player.Name);
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to remove player {PlayerName} from map {MapId}", player?.Name ?? "N/A", mapId);
+                return null;
+            }
+        }
+
     }
 }

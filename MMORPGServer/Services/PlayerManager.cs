@@ -71,33 +71,35 @@ namespace MMORPGServer.Services
                 return null;
             }
         }
-        public ValueTask<Player?> GetPlayerAsync(int playerId)
+        public async ValueTask<Player?> GetPlayerAsync(int playerId)
         {
             _players.TryGetValue(playerId, out var player);
-            return ValueTask.FromResult(player);
+            return player;
         }
 
-        public ValueTask AddPlayerAsync(Player player)
+        public async ValueTask<bool> AddPlayerAsync(Player player)
         {
             if (_players.TryAdd(player.Id, player))
             {
                 Log.Debug("Added player {PlayerName} (ID: {PlayerId}) to in-memory cache", player.Name, player.Id);
+                return true;
             }
-            return ValueTask.CompletedTask;
+            return false;
         }
 
-        public ValueTask RemovePlayerAsync(int playerId)
+        public async ValueTask<bool> RemovePlayerAsync(int playerId)
         {
             if (_players.TryRemove(playerId, out var player))
             {
                 Log.Debug("Removed player {PlayerName} (ID: {PlayerId}) from in-memory cache", player.Name, player.Id);
+                return true;
             }
-            return ValueTask.CompletedTask;
+            return false;
         }
 
-        public ValueTask<int> GetOnlinePlayerCountAsync()
+        public async ValueTask<int> GetOnlinePlayerCountAsync()
         {
-            return ValueTask.FromResult(_players.Count);
+            return _players.Count;
         }
 
         public ConcurrentDictionary<int, Player> GetPlayers()
@@ -105,15 +107,16 @@ namespace MMORPGServer.Services
             return _players;
         }
 
-        public ValueTask<IEnumerable<Player>> GetPlayersByMapAsync(short mapId)
+        public async ValueTask<IEnumerable<Player>> GetPlayersByMapAsync(short mapId)
         {
             var playersOnMap = _players.Values.Where(p => p.MapId == mapId);
-            return ValueTask.FromResult(playersOnMap);
+            return playersOnMap;
         }
 
-        public ValueTask<bool> IsPlayerOnlineAsync(int playerId)
+        public async ValueTask<bool> IsPlayerOnlineAsync(int playerId)
         {
-            return ValueTask.FromResult(_players.ContainsKey(playerId));
+            return _players.ContainsKey(playerId);
         }
     }
 }
+

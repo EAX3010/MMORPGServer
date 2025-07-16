@@ -1,4 +1,5 @@
 ﻿using MMORPGServer.Common.Enums;
+using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Common.ValueObjects;
 using MMORPGServer.Entities;
 using MMORPGServer.Networking.Packets;
@@ -40,7 +41,9 @@ namespace MMORPGServer.Networking.Clients
         public DateTime ConnectedAt { get; }
         public ClientState State { get; private set; }
         public DateTime LastActivityTime { get; private set; }
-        public Player Player { get; set; } = default!; // Initialize with default to avoid null warnings
+        public IPlayerNetworkContext? PlayerContext { get; set; }
+        public Player? Player => PlayerContext is Player ? PlayerContext as Player : null;
+
         #endregion
 
         #region Private Fields
@@ -232,17 +235,16 @@ namespace MMORPGServer.Networking.Clients
                 var previousState = State;
                 State = ClientState.Disconnected; // Set state to disconnected
                 _connectionTimer.Stop(); // Stop timing the connection duration
-
+                                         // Use PlayerContext for logging
                 Log.Information("Disconnecting client {ClientId} (Player: {PlayerName}): {Reason} (Duration: {Duration}, Packets R/S: {Received}/{Sent}, Bytes R/S: {BytesReceived}/{BytesSent})",
                     ClientId, Player?.Name ?? "N/A", reason, _connectionTimer.Elapsed, _packetsReceived, _packetsSent, _bytesReceived, _bytesSent);
 
-                // Save player data on disconnect if player exists and has unsaved changes
-                if (Player != null)
+
+                if (Player is not null)
                 {
                     try
                     {
                         Log.Debug("Saving player {PlayerName} (ID: {PlayerId}) on disconnect...", Player.Name, Player.Id);
-                        // Ensure GameRuntime is initialized before accessing its properties
                         if (GameRuntime.IsInitialized)
                         {
                             await GameRuntime.GameWorld.PlayerManager.UpdatePlayerAsync(Player);
@@ -258,7 +260,6 @@ namespace MMORPGServer.Networking.Clients
                         Log.Error(ex, "Failed to save player {PlayerName} (ID: {PlayerId}) on disconnect.", Player.Name, Player.Id);
                     }
                 }
-
                 // Step 1: Cancel all ongoing operations for this client
                 _cancellationTokenSource.Cancel();
 

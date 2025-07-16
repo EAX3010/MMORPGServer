@@ -67,7 +67,7 @@ namespace MMORPGServer.Services
         /// <summary>
         /// Gets a map by ID
         /// </summary>
-        public Map GetMap(int mapId)
+        public async ValueTask<Map?> GetMapAsync(int mapId)
         {
             if (Maps.TryGetValue(mapId, out Map map))
             {
@@ -76,7 +76,18 @@ namespace MMORPGServer.Services
             Log.Warning("Attempted to get non-existent map with ID {MapId}", mapId);
             return null;
         }
-
+        /// <summary>
+        /// Gets a map by ID
+        /// </summary>
+        public Map? GetMap(int mapId)
+        {
+            if (Maps.TryGetValue(mapId, out Map map))
+            {
+                return map;
+            }
+            Log.Warning("Attempted to get non-existent map with ID {MapId}", mapId);
+            return null;
+        }
         /// <summary>
         /// Gets total number of maps loaded
         /// </summary>
