@@ -170,6 +170,7 @@ namespace MMORPGServer.Networking.Packets.Structures
                 u53 = 0
             };
         }
+
     }
 
 }

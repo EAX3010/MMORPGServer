@@ -700,16 +700,11 @@ namespace MMORPGServer.Networking.Packets.Core
         /// <param name="message">The Protobuf message to serialize.</param>
         public void SerializeProto<T>(T message)
         {
-            int originalPosition = Position; // Store original position
-            try
-            {
-                Seek(4); // Seek to the start of the payload (after header)
-                using var ms = new MemoryStream(); // Create a MemoryStream for serialization
-                Serializer.Serialize(ms, message); // Serialize the message into the stream
-                var data = ms.GetBuffer().AsSpan(0, (int)ms.Length); // Get the serialized data as a span
-                WriteBytes(data); // Write the serialized data into the packet's buffer
-            }
-            finally { Position = originalPosition; } // Restore original position
+            Seek(4); // Seek to the start of the payload (after header)
+            using var ms = new MemoryStream(); // Create a MemoryStream for serialization
+            Serializer.Serialize(ms, message); // Serialize the message into the stream
+            var data = ms.GetBuffer().AsSpan(0, (int)ms.Length); // Get the serialized data as a span
+            WriteBytes(data); // Write the serialized data into the packet's buffer
         }
     }
 

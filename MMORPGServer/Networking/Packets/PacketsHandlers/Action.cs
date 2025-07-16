@@ -9,16 +9,17 @@ using Serilog;
 namespace MMORPGServer.Networking.Packets.PacketsHandlers
 {
     /// <summary>
-    /// Handles action-related packets in the game protocol.
+    /// Handles action-related packets in the game protocol using attribute-based routing.
     /// </summary>
     [PacketHandler(GamePackets.CMsgAction)]
     public sealed class Action : AuthenticatedHandler, IPacketHandler<ActionProto>
     {
+        private readonly ActionHandlerRegistry _handlerRegistry;
+
         public Action(Packet packet) : base(packet)
         {
-
+            _handlerRegistry = ActionHandlerRegistry.Instance;
         }
-
 
         public async override ValueTask ProcessAsync(GameClient client)
         {
@@ -27,12 +28,12 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
             if (actionProto == null)
             {
                 Log.Warning("Failed to read action packet for client {ClientId} (Player: {PlayerName})",
-                    client.ClientId, client.Player.Name);
+                    client.ClientId, client.Player?.Name ?? "Unknown");
                 return;
             }
 
             Log.Debug("Processing action {ActionType} for player {PlayerName} (ID: {PlayerId})",
-                actionProto.Type, client.Player.Name, client.Player.Id);
+                actionProto.Type, client.Player?.Name ?? "Unknown", client.Player?.Id ?? 0);
 
             await ProcessActionAsync(client, actionProto);
         }
@@ -53,11 +54,11 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
                     return null;
                 }
 
-                // Additional validation can be added here
+                // Additional validation
                 if (!Enum.IsDefined(typeof(ActionType), actionProto.Type))
                 {
                     Log.Warning("Invalid ActionType {ActionType} received", actionProto.Type);
-                    return actionProto;
+                    return null; // Return null for invalid action types
                 }
 
                 return actionProto;
@@ -70,64 +71,34 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         }
 
         /// <summary>
-        /// Processes different types of actions.
+        /// Processes actions using the attribute-based handler registry.
         /// </summary>
         private async ValueTask ProcessActionAsync(GameClient client, ActionProto action)
         {
-            switch (action.Type)
+            // Get handler from registry
+            var handler = _handlerRegistry.GetHandler(action.Type);
+
+            if (handler == null)
             {
-                case ActionType.SetLocation:
-                    Log.Debug("Handling SetLocation for player {PlayerId}", client.Player.Id);
-                    await HandleSetLocationAsync(client, action);
-                    break;
-
-                // Add more action types here as needed
-                // case ActionType.Attack:
-                //     await HandleAttackAsync(client, action);
-                //     break;
-
-                default:
-                    Log.Warning("Unhandled action type {ActionType} received from player {PlayerName} (ID: {PlayerId})",
-                        action.Type, client.Player.Name, client.Player.Id);
-                    break;
+                Log.Warning("No handler registered for action type {ActionType} received from player {PlayerName} (ID: {PlayerId})",
+                    action.Type, client.Player?.Name ?? "Unknown", client.Player?.Id ?? 0);
+                return;
             }
-        }
 
-        /// <summary>
-        /// Handles the set location action.
-        /// </summary>
-        private async ValueTask HandleSetLocationAsync(GameClient client, ActionProto action)
-        {
             try
             {
-                // Validate player state before processing
-                if (client.Player.Position == null)
+                var success = await handler.HandleAsync(client, action);
+                if (!success)
                 {
-                    Log.Warning("Player {PlayerId} has no position data for SetLocation action", client.Player.Id);
-                    return;
+                    Log.Warning("Handler for action type {ActionType} failed for player {PlayerName} (ID: {PlayerId})",
+                        action.Type, client.Player?.Name ?? "Unknown", client.Player?.Id ?? 0);
                 }
-
-                // Create response packet
-                var responseAction = new ActionProto
-                {
-                    UID = client.Player.Id,
-                    Type = ActionType.SetLocation,
-                    dwParam = client.Player.MapId,
-                    wParam1 = client.Player.Position.X,
-                    wParam2 = client.Player.Position.Y,
-                };
-
-                await client.SendPacketAsync(PacketFactory.CreateActionPacket(responseAction));
-
-                Log.Debug("SetLocation response sent to player {PlayerId} - Map: {MapId}, Position: ({X}, {Y})",
-                    client.Player.Id, client.Player.MapId, client.Player.Position.X, client.Player.Position.Y);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error handling SetLocation action for player {PlayerId}", client.Player.Id);
+                Log.Error(ex, "Error processing action {ActionType} for player {PlayerId}",
+                    action.Type, client.Player?.Id ?? 0);
             }
         }
-
-
     }
 }

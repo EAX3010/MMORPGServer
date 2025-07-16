@@ -40,8 +40,6 @@ namespace MMORPGServer.Networking.Fluent
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => _packetType;
         }
-
-        // Write methods with aggressive inlining
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public FluentPacketWriter WriteUInt16(ushort value)
         {
