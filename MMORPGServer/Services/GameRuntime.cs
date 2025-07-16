@@ -1,4 +1,4 @@
-﻿using MMORPGServer.Networking.Packets;
+﻿using MMORPGServer.Networking.Packets.Core;
 using MMORPGServer.Networking.Security;
 using MMORPGServer.Networking.Server;
 using Serilog;

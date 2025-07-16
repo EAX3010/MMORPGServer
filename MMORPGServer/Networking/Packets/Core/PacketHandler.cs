@@ -4,10 +4,10 @@ using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Middleware;
 using Serilog;
 
-namespace MMORPGServer.Networking.Packets
+namespace MMORPGServer.Networking.Packets.Core
 {
     /// <summary>
-    /// Enhanced PacketHandler with comprehensive middleware pipeline
+    /// Enhanced PacketHandler with middleware pipeline running in registration order
     /// </summary>
     public sealed class PacketHandler : IDisposable
     {
@@ -61,8 +61,8 @@ namespace MMORPGServer.Networking.Packets
         /// </summary>
         public async ValueTask HandlePacketAsync(GameClient client, Packet packet)
         {
-            var handler = PacketHandlerRegistry.GetHandler(packet.Type);
-            if (handler == null)
+            // Check if handler is registered
+            if (!PacketHandlerRegistry.IsHandlerRegistered(packet.Type))
             {
                 Log.Warning("No handler registered for packet type {PacketType} from client {ClientId} (Player: {PlayerName})",
                     packet.Type, client.ClientId, client.Player?.Name ?? "N/A");
@@ -71,7 +71,8 @@ namespace MMORPGServer.Networking.Packets
 
             try
             {
-                await ExecuteWithMiddleware(client, packet, handler);
+                // Execute through middleware pipeline
+                await ExecuteWithMiddleware(client, packet);
             }
             catch (Exception ex)
             {
@@ -84,39 +85,41 @@ namespace MMORPGServer.Networking.Packets
         }
 
         /// <summary>
-        /// Execute packet through middleware pipeline
+        /// Execute packet through middleware pipeline in registration order
         /// </summary>
-        private async ValueTask ExecuteWithMiddleware(GameClient client, Packet packet,
-            Func<GameClient, Packet, ValueTask> handler)
+        private async ValueTask ExecuteWithMiddleware(GameClient client, Packet packet)
         {
             if (_middlewares.Count == 0)
             {
                 // No middleware registered, execute handler directly
-                await handler(client, packet);
+                await PacketHandlerRegistry.HandlePacketAsync(client, packet);
                 return;
             }
 
-            // Build middleware pipeline from end to start
-            Func<ValueTask> pipeline = () => handler(client, packet);
+            // Execute middleware in registration order (not reversed)
+            var currentIndex = 0;
 
-            // Build pipeline in reverse order (last middleware wraps first)
-            for (int i = _middlewares.Count - 1; i >= 0; i--)
+            async ValueTask ProcessNext()
             {
-                var middleware = _middlewares[i];
-                var next = pipeline;
-
-                pipeline = async () =>
+                if (currentIndex >= _middlewares.Count)
                 {
-                    var shouldContinue = await middleware.InvokeAsync(client, packet, next);
-                    if (!shouldContinue)
-                    {
-                        Log.Debug("Middleware {MiddlewareType} blocked packet {PacketType} from client {ClientId}",
-                            middleware.GetType().Name, packet.Type, client.ClientId);
-                    }
-                };
+                    // All middleware processed, execute the actual handler
+                    await PacketHandlerRegistry.HandlePacketAsync(client, packet);
+                    return;
+                }
+
+                var middleware = _middlewares[currentIndex];
+                currentIndex++;
+
+                var shouldContinue = await middleware.InvokeAsync(client, packet, ProcessNext);
+                if (!shouldContinue)
+                {
+                    Log.Debug("Middleware {MiddlewareType} blocked packet {PacketType} from client {ClientId}",
+                        middleware.GetType().Name, packet.Type, client.ClientId);
+                }
             }
 
-            await pipeline();
+            await ProcessNext();
         }
 
         /// <summary>
@@ -220,9 +223,9 @@ namespace MMORPGServer.Networking.Packets
                 Log.Information("Disposing PacketHandler and middleware components...");
 
                 // Dispose middleware that implement IDisposable
-                _rateLimitingMiddleware.Dispose();
-                _slowPacketMiddleware.Dispose();
-                _metricsMiddleware.Dispose();
+                _rateLimitingMiddleware?.Dispose();
+                _slowPacketMiddleware?.Dispose();
+                _metricsMiddleware?.Dispose();
                 Log.Information("PacketHandler disposed successfully");
             }
             catch (Exception ex)

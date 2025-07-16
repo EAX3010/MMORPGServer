@@ -1,5 +1,5 @@
 ﻿using MMORPGServer.Networking.Clients;
-using MMORPGServer.Networking.Packets;
+using MMORPGServer.Networking.Packets.Core;
 
 namespace MMORPGServer.Common.Interfaces
 {

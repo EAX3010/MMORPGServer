@@ -1,6 +1,6 @@
 ﻿using MMORPGServer.Common.ValueObjects;
 using MMORPGServer.Networking.Clients;
-using MMORPGServer.Networking.Packets;
+using MMORPGServer.Networking.Packets.Core;
 using MMORPGServer.Networking.Security;
 using MMORPGServer.Services;
 using Serilog;

@@ -1,5 +1,5 @@
 ﻿using MMORPGServer.Database;
-using MMORPGServer.Networking.Packets;
+using MMORPGServer.Networking.Packets.Core;
 using MMORPGServer.Services;
 using Serilog;
 using Serilog.Events;
@@ -30,8 +30,7 @@ partial class Program
 
             // Initialize packet handler registry (auto-discovery)
             PacketHandlerRegistry.Initialize();
-            Log.Information("Packet handlers auto-discovered: {HandlerCount} handlers registered",
-                PacketHandlerRegistry.GetHandlerCount());
+            PacketHandlerRegistry.LogRegistryDetails();
 
             // Initialize all game systems (includes infrastructure)
             await GameRuntime.InitializeAsync();

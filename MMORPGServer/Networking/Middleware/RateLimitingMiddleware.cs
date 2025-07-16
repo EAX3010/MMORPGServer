@@ -1,7 +1,7 @@
 ﻿using MMORPGServer.Common.Enums;
 using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Networking.Clients;
-using MMORPGServer.Networking.Packets;
+using MMORPGServer.Networking.Packets.Core;
 using Serilog;
 using System.Collections.Concurrent;
 using System.Threading.RateLimiting;

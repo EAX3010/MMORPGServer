@@ -1,7 +1,7 @@
 ﻿using MMORPGServer.Common.Enums;
 using ProtoBuf;
 
-namespace MMORPGServer.Networking.Packets.PacketsProto
+namespace MMORPGServer.Networking.Packets.Structures
 {
     [ProtoContract]
     public class ActionProto

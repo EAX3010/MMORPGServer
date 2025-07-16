@@ -1,6 +1,7 @@
+using MMORPGServer.Entities;
 using ProtoBuf;
 
-namespace MMORPGServer.Networking.Packets.PacketsProto
+namespace MMORPGServer.Networking.Packets.Structures
 {
     [ProtoContract]
     public class HeroInfoProto
@@ -111,7 +112,64 @@ namespace MMORPGServer.Networking.Packets.PacketsProto
         public int u52;
         [ProtoMember(53, IsRequired = true)]
         public int u53;
+        public static HeroInfoProto FromPlayer(Player player)
+        {
+            return new HeroInfoProto
+            {
+                Id = player.Id,
+                Name = player.Name,
+                Level = player.Level,
+                Strength = player.Strength,
+                Agility = player.Agility,
+                Vitality = player.Vitality,
+                Spirit = player.Spirit,
+                Mesh = player.Mesh,
+                Hair = player.Hair,
+                Gold = player.Gold,
+                ConquerPoints = player.ConquerPoints,
+                Experience = player.Experience,
+                ServerInfo = 0,
+                SetLocationType = 0,
+                SpecialTitleID = 0,
+                SpecialWingID = 0,
+                HeavenBlessing = 0,
+                Atributes = 0,
+                HitPoints = player.CurrentHealth,
+                Mana = player.MaxMana,
+                PKPoints = 0,
+                FullClass = (int)player.Class + player.ClassLevel,
+                FirstFullClass = 0,
+                SecondFullClass = 0,
+                NobilityRank = 0,
+                Reborn = 0,
+                u27 = 0,
+                QuizPoints = 0,
+                MainFlag = 0,
+                Enilghten = 0,
+                EnlightenReceive = 0,
+                u32 = 0,
+                u33 = 0,
+                VipLevel = 0,
+                MyTitle = 0,
+                BoundConquerPoints = player.BoundConquerPoints,
+                SubClass = 0,
+                ActiveSublass = 0,
+                RacePoints = 0,
+                CountryID = 0,
+                u41 = 0,
+                u42 = 0,
+                SacredClassEXP = 0,
+                u44 = 0,
+                u45 = 0,
+                SpouseName = string.Empty,
+                u48 = 0,
+                u49 = 0,
+                u50 = 0,
+                u51 = 0,
+                u52 = 0,
+                u53 = 0
+            };
+        }
     }
-
 
 }

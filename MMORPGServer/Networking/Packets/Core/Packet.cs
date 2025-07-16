@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace MMORPGServer.Networking.Packets
+namespace MMORPGServer.Networking.Packets.Core
 {
     /// <summary>
     /// High-performance network packet with unified reading and writing operations.

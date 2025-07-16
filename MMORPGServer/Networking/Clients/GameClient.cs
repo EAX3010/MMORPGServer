@@ -2,7 +2,7 @@
 using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Common.ValueObjects;
 using MMORPGServer.Entities;
-using MMORPGServer.Networking.Packets;
+using MMORPGServer.Networking.Packets.Core;
 using MMORPGServer.Networking.Security;
 using MMORPGServer.Services; // Add this using directive to access GameRuntime
 using Serilog;

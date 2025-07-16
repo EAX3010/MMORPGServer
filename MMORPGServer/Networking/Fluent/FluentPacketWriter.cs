@@ -1,5 +1,5 @@
 ﻿using MMORPGServer.Common.Enums;
-using MMORPGServer.Networking.Packets;
+using MMORPGServer.Networking.Packets.Core;
 using System.Runtime.CompilerServices;
 
 namespace MMORPGServer.Networking.Fluent
