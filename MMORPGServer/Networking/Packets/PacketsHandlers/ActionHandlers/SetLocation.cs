@@ -23,18 +23,17 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers.ActionHandlers
                 Log.Debug("Handling SetLocation for player {PlayerId}", client.Player.Id);
 
                 // Create response packet
-                var responseAction = new ActionProto
+
+                // Note: You'll need to pass the packet builder or create a new one
+                // This assumes you have access to a packet builder service
+                var packetData = Build(new ActionProto
                 {
                     UID = client.Player.Id,
                     Type = ActionType.SetLocation,
                     dwParam = client.Player.MapId,
                     wParam1 = client.Player.Position.X,
                     wParam2 = client.Player.Position.Y,
-                };
-
-                // Note: You'll need to pass the packet builder or create a new one
-                // This assumes you have access to a packet builder service
-                var packetData = Build(responseAction);
+                });
                 await client.SendPacketAsync(packetData);
 
                 Log.Debug("SetLocation response sent to player {PlayerId} - Map: {MapId}, Position: ({X}, {Y})",
