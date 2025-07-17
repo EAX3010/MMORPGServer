@@ -14,7 +14,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         {
             Log.Debug("Client {ClientId} is handling CMsgLoginGame", client.ClientId);
             await client.SendPacketAsync(this.Build());
-            Log.Information("CMsgLoginGame response sent to client {ClientId}", client.ClientId);
+            Log.Debug("CMsgLoginGame response sent to client {ClientId}", client.ClientId);
         }
         public ReadOnlyMemory<byte> Build()
         {

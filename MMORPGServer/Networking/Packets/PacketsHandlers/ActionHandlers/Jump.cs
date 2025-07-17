@@ -1,4 +1,5 @@
 ﻿using MMORPGServer.Common.Enums;
+using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Packets.Attributes;
 using MMORPGServer.Networking.Packets.Structures;

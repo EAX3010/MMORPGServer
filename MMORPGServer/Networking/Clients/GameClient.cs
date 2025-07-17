@@ -20,8 +20,8 @@ namespace MMORPGServer.Networking.Clients
         #region Constants
         // Increased buffer size for potentially fewer read/write calls, balancing memory and I/O
         private const int MAX_PACKET_SIZE = 1024;
-        private const int RECEIVE_BUFFER_SIZE = 16384; // Doubled from 8192 for fewer socket reads
-        private const int SEND_BUFFER_SIZE = 16384;   // Doubled from 8192 for fewer socket writes
+        private const int RECEIVE_BUFFER_SIZE = 8192;
+        private const int SEND_BUFFER_SIZE = 8192;
         private const int PACKET_LENGTH_SIZE = 2;
         private const int PACKET_SIGNATURE_SIZE = 8;
         private const int MIN_PACKET_SIZE = PACKET_LENGTH_SIZE + PACKET_SIGNATURE_SIZE;
@@ -706,7 +706,7 @@ namespace MMORPGServer.Networking.Clients
         /// <param name="consumedLength">Output: The number of bytes consumed by the packet.</param>
         /// <param name="onPacketProcessed">Action to execute after successful packet processing.</param>
         /// <returns>True if the packet was successfully processed, false otherwise.</returns>
-        private bool TryProcessSimplePacket(ReadOnlySpan<byte> buffer, out int consumedLength, Action onPacketProcessed)
+        private bool TryProcessSimplePacket(ReadOnlySpan<byte> buffer, out int consumedLength, System.Action onPacketProcessed)
         {
             consumedLength = 0;
             // A simple packet must at least contain the length field
@@ -795,15 +795,14 @@ namespace MMORPGServer.Networking.Clients
                 buffer.Slice(0, bytesToDecrypt),
                 _decryptedBuffer.Span.Slice(_decryptedBufferOffset, bytesToDecrypt)
             );
-
+            _decryptedBufferOffset = 0;
             // Create a Packet object from the complete decrypted data
             // Use ToArray() to create a copy, as the _decryptedBuffer is reused
-            using Packet packet = new Packet(_decryptedBuffer.Slice(0, totalPacketSize).ToArray());
-            _decryptedBufferOffset = 0; // Reset decrypted buffer offset for the next packet
-
+            using Packet packet = new Packet(_decryptedBuffer.Slice(0, totalPacketSize).ToArray(), totalPacketSize);
             // Validate the packet's completeness and type (client vs. server)
             if (packet.IsComplete && packet.IsClientPacket())
             {
+
                 // Try to write the client message to the message channel
                 if (!_messageWriter.TryWrite(new ClientMessage(this, packet)))
                 {
@@ -811,7 +810,7 @@ namespace MMORPGServer.Networking.Clients
                 }
                 else
                 {
-                    Interlocked.Increment(ref _packetsReceived); // Increment received packet count
+                    _ = Interlocked.Increment(ref _packetsReceived); // Increment received packet count
                 }
             }
             else

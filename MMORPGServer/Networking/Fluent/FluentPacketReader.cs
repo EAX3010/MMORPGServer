@@ -18,26 +18,6 @@ namespace MMORPGServer.Networking.Fluent
             _packet = packet ?? throw new ArgumentNullException(nameof(packet));
         }
 
-        // Factory methods for creating readers
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static FluentPacketReader CreateFromData(ReadOnlySpan<byte> data)
-        {
-            return new FluentPacketReader(new Packet(data));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static FluentPacketReader CreateFromData(byte[] data)
-        {
-            if (data == null) throw new ArgumentNullException(nameof(data));
-            return new FluentPacketReader(new Packet(data));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static FluentPacketReader CreateFromData(byte[] data, int offset, int length)
-        {
-            if (data == null) throw new ArgumentNullException(nameof(data));
-            return new FluentPacketReader(new Packet(data, offset, length));
-        }
 
         // Properties with aggressive inlining for performance
         public short Length

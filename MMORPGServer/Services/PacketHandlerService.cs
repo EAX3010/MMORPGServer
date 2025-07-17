@@ -2,14 +2,15 @@
 using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Middleware;
+using MMORPGServer.Networking.Packets.Core;
 using Serilog;
 
-namespace MMORPGServer.Networking.Packets.Core
+namespace MMORPGServer.Services
 {
     /// <summary>
     /// Enhanced PacketHandler with middleware pipeline running in registration order
     /// </summary>
-    public sealed class PacketHandler : IDisposable
+    public sealed class PacketHandlerService : IDisposable
     {
         private readonly List<IPacketMiddleware> _middlewares = new();
 
@@ -20,31 +21,35 @@ namespace MMORPGServer.Networking.Packets.Core
         private readonly MetricsMiddleware _metricsMiddleware;
         private readonly LoggingMiddleware _loggingMiddleware;
 
-        public PacketHandler(bool enableDebugLogging = false, bool enableSlowPacketDetection = false)
+        public PacketHandlerService(bool enableDebugLogging = false, bool enableSlowPacketDetection = false, bool enableMetrics = false, bool disableAll = false)
         {
             // Initialize middleware instances
-            _rateLimitingMiddleware = new RateLimitingMiddleware();
-            _authMiddleware = new AuthenticationMiddleware();
-            _slowPacketMiddleware = new SlowPacketMiddleware();
-            _metricsMiddleware = new MetricsMiddleware();
-            _loggingMiddleware = new LoggingMiddleware(
-                logAllPackets: enableDebugLogging,
-                logPacketContent: enableDebugLogging,
-                logClientInfo: true
-            );
+            if (!disableAll)
+            {
+                _rateLimitingMiddleware = new RateLimitingMiddleware();
+                _authMiddleware = new AuthenticationMiddleware();
+                _slowPacketMiddleware = new SlowPacketMiddleware();
+                _metricsMiddleware = new MetricsMiddleware();
+                _loggingMiddleware = new LoggingMiddleware(
+                    logAllPackets: enableDebugLogging,
+                    logPacketContent: enableDebugLogging,
+                    logClientInfo: true
+                );
 
-            // Register middleware in execution order
-            RegisterMiddleware(_rateLimitingMiddleware);
-            RegisterMiddleware(_authMiddleware);
-            if (enableDebugLogging)
-                RegisterMiddleware(_loggingMiddleware);
-            if (enableSlowPacketDetection)
-                RegisterMiddleware(_slowPacketMiddleware);
+                // Register middleware in execution order
+                RegisterMiddleware(_rateLimitingMiddleware);
+                RegisterMiddleware(_authMiddleware);
+                if (enableDebugLogging)
+                    RegisterMiddleware(_loggingMiddleware);
+                if (enableSlowPacketDetection)
+                    RegisterMiddleware(_slowPacketMiddleware);
+                if (enableMetrics)
+                    RegisterMiddleware(_metricsMiddleware);
 
-            RegisterMiddleware(_metricsMiddleware);
 
-            Log.Information("PacketHandler initialized with {MiddlewareCount} middleware components (Debug: {Debug}, SlowPacketDetection: {SlowDetection})",
-                _middlewares.Count, enableDebugLogging, enableSlowPacketDetection);
+            }
+            Log.Information("PacketHandler initialized with {MiddlewareCount}",
+                    _middlewares.Count);
         }
 
         /// <summary>
@@ -243,37 +248,26 @@ namespace MMORPGServer.Networking.Packets.Core
         /// <summary>
         /// Create a production PacketHandler with standard middleware
         /// </summary>
-        public static PacketHandler CreateProduction()
+        public static PacketHandlerService CreateProduction()
         {
-            return new PacketHandler(enableDebugLogging: false, enableSlowPacketDetection: true);
+            return new PacketHandlerService(false, true, false);
         }
 
         /// <summary>
         /// Create a development PacketHandler with debug logging enabled
         /// </summary>
-        public static PacketHandler CreateDevelopment()
+        public static PacketHandlerService CreateDevelopment()
         {
-            return new PacketHandler(enableDebugLogging: true, enableSlowPacketDetection: true);
-        }
-
-        /// <summary>
-        /// Create a lightweight PacketHandler for testing
-        /// </summary>
-        public static PacketHandler CreateTesting()
-        {
-            var handler = new PacketHandler(enableDebugLogging: false, enableSlowPacketDetection: false);
-            // Could add test-specific middleware here
-            return handler;
+            return new PacketHandlerService(true, true, true);
         }
 
         /// <summary>
         /// Create a high-performance PacketHandler with minimal middleware
         /// </summary>
-        public static PacketHandler CreateHighPerformance()
+        public static PacketHandlerService CreateHighPerformance()
         {
             // Create with minimal middleware for maximum performance
-            var handler = new PacketHandler(enableDebugLogging: false, enableSlowPacketDetection: false);
-
+            var handler = new PacketHandlerService(enableDebugLogging: false, enableSlowPacketDetection: false, enableMetrics: false, disableAll: true);
             Log.Information("Created high-performance PacketHandler with minimal middleware");
             return handler;
         }

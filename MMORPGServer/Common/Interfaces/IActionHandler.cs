@@ -1,7 +1,7 @@
 ﻿using MMORPGServer.Networking.Clients;
 using MMORPGServer.Networking.Packets.Structures;
 
-namespace MMORPGServer.Networking.Packets.PacketsHandlers.ActionHandlers
+namespace MMORPGServer.Common.Interfaces
 {
     public interface IActionHandler
     {

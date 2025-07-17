@@ -1,5 +1,4 @@
-﻿using MMORPGServer.Networking.Packets.Core;
-using MMORPGServer.Networking.Security;
+﻿using MMORPGServer.Networking.Security;
 using MMORPGServer.Networking.Server;
 using Serilog;
 
@@ -9,7 +8,7 @@ namespace MMORPGServer.Services
     /// Manages the lifecycle and provides access to core game systems and services.
     /// This static class ensures a single point of control for initialization and disposal.
     /// </summary>
-    public static class GameRuntime
+    public static partial class GameRuntime
     {
         private static bool _isInitialized = false;
 
@@ -18,22 +17,6 @@ namespace MMORPGServer.Services
         public static NetworkManager NetworkManager { get; private set; } = default!;
         public static GameServer GameServer { get; private set; } = default!;
 
-        /// <summary>
-        /// Defines the mode for initializing the PacketHandler.
-        /// </summary>
-        public enum PacketHandlerMode
-        {
-            Development,
-            Production,
-            HighPerformance,
-            Testing
-        }
-
-        /// <summary>
-        /// Initializes all core game systems and services.
-        /// This method should be called once at application startup.
-        /// </summary>
-        /// <param name="handlerMode">Specifies the mode for the PacketHandler, enabling different logging/security levels.</param>
         public static async Task InitializeAsync(PacketHandlerMode handlerMode = PacketHandlerMode.Development)
         {
             if (_isInitialized)
@@ -50,8 +33,6 @@ namespace MMORPGServer.Services
                 Log.Debug("Initializing TransferCipher...");
                 GameRuntime.TransferCipher = new TransferCipher(GameServerConfig.Configuration);
 
-
-
                 Log.Debug("Initializing GameWorld...");
                 GameWorld.Instance = new GameWorld();
 
@@ -59,7 +40,7 @@ namespace MMORPGServer.Services
                 GameRuntime.NetworkManager = new NetworkManager();
 
                 Log.Debug("Creating PacketHandler with mode: {HandlerMode}...", handlerMode);
-                PacketHandler packetHandler;
+                PacketHandlerService packetHandler;
                 switch (handlerMode)
                 {
                     case PacketHandlerMode.Development:
@@ -70,9 +51,6 @@ namespace MMORPGServer.Services
                         break;
                     case PacketHandlerMode.HighPerformance:
                         packetHandler = PacketHandlerFactory.CreateHighPerformance();
-                        break;
-                    case PacketHandlerMode.Testing:
-                        packetHandler = PacketHandlerFactory.CreateTesting();
                         break;
                     default:
                         Log.Warning("Unknown PacketHandlerMode '{HandlerMode}'. Defaulting to Development.", handlerMode);
@@ -89,7 +67,6 @@ namespace MMORPGServer.Services
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Failed to initialize game systems");
-                // Attempt to clean up even on partial failure
                 await DisposeAsync();
                 throw;
             }

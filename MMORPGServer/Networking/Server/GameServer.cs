@@ -1,6 +1,5 @@
 ﻿using MMORPGServer.Common.ValueObjects;
 using MMORPGServer.Networking.Clients;
-using MMORPGServer.Networking.Packets.Core;
 using MMORPGServer.Networking.Security;
 using MMORPGServer.Services;
 using Serilog;
@@ -14,7 +13,7 @@ namespace MMORPGServer.Networking.Server
     public sealed class GameServer : IDisposable
     {
         private readonly NetworkManager _networkManager;
-        private readonly PacketHandler _packetHandler;
+        private readonly PacketHandlerService _packetHandler;
 
         // Per-client channels for sequential processing
         private readonly ConcurrentDictionary<int, Channel<ClientMessage>> _clientChannels = new();
@@ -28,7 +27,7 @@ namespace MMORPGServer.Networking.Server
         private long _totalMessagesProcessed = 0;
         private DateTime _serverStartTime;
 
-        public GameServer(NetworkManager networkManager, PacketHandler packetHandler)
+        public GameServer(NetworkManager networkManager, PacketHandlerService packetHandler)
         {
             _networkManager = networkManager ?? throw new ArgumentNullException(nameof(networkManager));
             _packetHandler = packetHandler ?? throw new ArgumentNullException(nameof(packetHandler));
