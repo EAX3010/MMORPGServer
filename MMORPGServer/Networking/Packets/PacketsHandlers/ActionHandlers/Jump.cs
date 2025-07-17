@@ -13,34 +13,31 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers.ActionHandlers
         {
             try
             {
-                // Validate player state before processing
-                if (client.Player.Position == null)
-                {
-                    Log.Warning("Player {PlayerId} has no position data for SetLocation action", client.Player.Id);
-                    return false;
-                }
 
                 Log.Debug("Handling SetLocation for player {PlayerId}", client.Player.Id);
 
-                var Newposition = new Common.ValueObjects.Position((short)action.dwParam_Lo, (short)action.dwParam_Hi);
-                if (await client.Player.Map.MovePlayerAsync(client.Player.Id, Newposition))
+                Common.ValueObjects.Position newPosition = new Common.ValueObjects.Position(action.dwParam_Lo, (short)action.dwParam_Hi);
+                if (client.Player.Position.InRange(newPosition, 18))
                 {
-                    // Create response packet
-                    client.Player.Position = Newposition;
-                    var responseAction = new ActionProto
+                    if (await client.Player.Map.MovePlayerAsync(client.Player.Id, newPosition))
                     {
-                        UID = client.Player.Id,
-                        Type = ActionType.Jump,
-                        dwParam_Lo = client.Player.Position.X,
-                        dwParam_Hi = client.Player.Position.Y,
-                    };
+                        // Create response packet
+                        client.Player.Position = newPosition;
+                        ActionProto responseAction = new ActionProto
+                        {
+                            UID = client.Player.Id,
+                            Type = ActionType.Jump,
+                            dwParam_Lo = client.Player.Position.X,
+                            dwParam_Hi = client.Player.Position.Y,
+                        };
 
-                    var packetData = Build(responseAction);
-                    await client.SendPacketAsync(packetData);
+                        ReadOnlyMemory<byte> packetData = Build(responseAction);
+                        await client.SendPacketAsync(packetData);
 
-                    Log.Debug("Jump response sent to player {PlayerId} - Map: {MapId}, Position: ({X}, {Y})",
-                        client.Player.Id, client.Player.MapId, client.Player.Position.X, client.Player.Position.Y);
-                    return true;
+                        Log.Debug("Jump response sent to player {PlayerId} - Map: {MapId}, Position: ({X}, {Y})",
+                            client.Player.Id, client.Player.MapId, client.Player.Position.X, client.Player.Position.Y);
+                        return true;
+                    }
                 }
                 return false;
 

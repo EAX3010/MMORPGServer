@@ -58,6 +58,8 @@ namespace MMORPGServer.Entities
         public uint CreatedFingerPrint { get; set; } = 0;
         public DateTime LastLogin { get; set; }
         public int Mesh => TransformationID * 10000000 + Face * 10000 + Body;
+
+        public uint Ping { get; set; }
         #endregion
         public bool UpdateAllotPoints()
         {

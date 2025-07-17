@@ -41,19 +41,13 @@ namespace MMORPGServer.Entities
         /// <summary>
         /// Adds a player to the map
         /// </summary>
-        public async Task<bool> AddPlayerAsync(Player player)
+        public async ValueTask<bool> AddPlayerAsync(Player player)
         {
             if (player == null) return false;
 
-            // Get spawn position if player doesn't have valid position
-            if (!MapData.IsValidPosition(player.Position))
-            {
-
-                player.Position = this.SpawnPoint();
-            }
-
             // Add to map data first
-            if (!MapData.AddEntity(player)) return false;
+            if (!MapData.AddEntity(player))
+                return false;
 
             // Add to players collection
             if (_players.TryAdd(player.Id, player))
@@ -72,12 +66,11 @@ namespace MMORPGServer.Entities
         /// <summary>
         /// Removes a player from the map
         /// </summary>
-        public async Task<bool> RemovePlayerAsync(int playerId)
+        public async ValueTask<bool> RemovePlayerAsync(int playerId)
         {
             if (_players.TryRemove(playerId, out Player player))
             {
                 MapData.RemoveEntity(playerId);
-                player.Map = null;
                 LastActivity = DateTime.UtcNow;
                 return true;
             }
@@ -87,7 +80,7 @@ namespace MMORPGServer.Entities
         /// <summary>
         /// Moves a player to a new position
         /// </summary>
-        public async Task<bool> MovePlayerAsync(int playerId, Position newPosition)
+        public async ValueTask<bool> MovePlayerAsync(int playerId, Position newPosition)
         {
             if (!_players.TryGetValue(playerId, out Player player))
                 return false;

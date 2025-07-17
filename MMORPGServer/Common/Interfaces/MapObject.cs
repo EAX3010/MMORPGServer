@@ -6,7 +6,6 @@ namespace MMORPGServer.Common.Interfaces
 {
     public abstract partial class MapObject
     {
-        public int IndexID { get; set; }
         public int Id { get; set; }
         private Map _map;
 

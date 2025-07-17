@@ -31,7 +31,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
 
             client.PlayerId = data.Id;
 
-            Player? player = await GameRuntime.GameWorld.PlayerManager.LoadPlayerAsync(data.Id);
+            Player? player = await GameWorld.Instance.PlayerManager.LoadPlayerAsync(data.Id);
             if (player != null)
             {
                 await HandleExistingPlayerAsync(client, player);
@@ -72,7 +72,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         private async ValueTask HandleExistingPlayerAsync(GameClient client, Player player)
         {
             client.PlayerContext = player;
-            _ = await GameRuntime.GameWorld.AddPlayerAsync(client.Player, client.Player.MapId);
+            _ = await GameWorld.Instance.AddPlayerAsync(client.Player, client.Player.MapId);
 
             await client.SendPacketAsync(PacketFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
             await client.SendPacketAsync(PacketFactory.CreateHeroInfoPacket(client.Player));

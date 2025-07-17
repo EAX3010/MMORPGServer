@@ -48,14 +48,14 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
                 data.Name,
                 data.Body,
                 (ClassType)data.Class,
-                GameRuntime.GameWorld.TwinCity,
+                GameWorld.Instance.TwinCity,
                 data.CreatedAtFingerPrint,
                 data.CreatedAtMacAddress);
 
             _ = client.Player?.UpdateAllotPoints();
 
             // Save player
-            bool success = await GameRuntime.GameWorld.PlayerManager.SavePlayerAsync(client.Player!);
+            bool success = await GameWorld.Instance.PlayerManager.SavePlayerAsync(client.Player!);
 
             if (success)
             {
@@ -116,7 +116,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
             Log.Debug("Sending ANSWER_OK and HeroInfo to client {ClientId}", client.ClientId);
             await client.SendPacketAsync(PacketFactory.CreateTalkPacket("SYSTEM", "ALLUSERS", "", "ANSWER_OK", ChatType.Dialog, 0));
             await client.SendPacketAsync(PacketFactory.CreateHeroInfoPacket(client.Player));
-            _ = await GameRuntime.GameWorld.AddPlayerAsync(client.Player, client.Player.MapId);
+            _ = await GameWorld.Instance.AddPlayerAsync(client.Player, client.Player.MapId);
         }
 
         private async ValueTask HandlePlayerCreationFailureAsync(GameClient client)

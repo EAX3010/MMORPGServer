@@ -245,15 +245,9 @@ namespace MMORPGServer.Networking.Clients
                     try
                     {
                         Log.Debug("Saving player {PlayerName} (ID: {PlayerId}) on disconnect...", Player.Name, Player.Id);
-                        if (GameRuntime.IsInitialized)
-                        {
-                            await GameRuntime.GameWorld.PlayerManager.UpdatePlayerAsync(Player);
-                            Log.Information("Player {PlayerName} (ID: {PlayerId}) successfully saved on disconnect.", Player.Name, Player.Id);
-                        }
-                        else
-                        {
-                            Log.Warning("GameRuntime not initialized, skipping player save for {PlayerName} on disconnect.", Player.Name);
-                        }
+                        _ = await GameWorld.Instance.PlayerManager.UpdatePlayerAsync(Player);
+                        _ = await GameWorld.Instance.RemovePlayerAsync(Player);
+                        Log.Information("Player {PlayerName} (ID: {PlayerId}) successfully saved on disconnect.", Player.Name, Player.Id);
                     }
                     catch (Exception ex)
                     {

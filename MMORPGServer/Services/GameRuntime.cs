@@ -14,7 +14,6 @@ namespace MMORPGServer.Services
         private static bool _isInitialized = false;
 
         // Publicly accessible core services. Set once during initialization.
-        public static GameWorld GameWorld { get; private set; } = default!;
         public static TransferCipher TransferCipher { get; private set; } = default!;
         public static NetworkManager NetworkManager { get; private set; } = default!;
         public static GameServer GameServer { get; private set; } = default!;
@@ -51,12 +50,10 @@ namespace MMORPGServer.Services
                 Log.Debug("Initializing TransferCipher...");
                 GameRuntime.TransferCipher = new TransferCipher(GameServerConfig.Configuration);
 
-                Log.Debug("Initializing MapManager and PlayerManager...");
-                var mapManager = new MapManager();
-                var playerManager = new PlayerManager();
+
 
                 Log.Debug("Initializing GameWorld...");
-                GameRuntime.GameWorld = new GameWorld(mapManager, playerManager);
+                GameWorld.Instance = new GameWorld();
 
                 Log.Debug("Initializing NetworkManager...");
                 GameRuntime.NetworkManager = new NetworkManager();
@@ -131,14 +128,6 @@ namespace MMORPGServer.Services
                     Log.Debug("NetworkManager disposed");
                 }
 
-                // Dispose GameWorld components if they implement IDisposable and were initialized
-                if (GameWorld != null)
-                {
-                    // Assuming MapManager and PlayerManager are disposed as part of GameWorld or separately if needed
-                    // (Current GameWorld doesn't have Dispose, so map cleanup is handled there implicitly via DMap.Dispose)
-                    GameWorld = null!;
-                    Log.Debug("GameWorld reference cleared");
-                }
 
                 // Clear TransferCipher if it holds significant resources
                 if (TransferCipher != null)
@@ -203,7 +192,7 @@ namespace MMORPGServer.Services
                 Log.Information("Listening on Port: {Port}", GameServerConfig.ServerPort);
             }
             Log.Information("Connected Players: {PlayerCount}/{MaxPlayers}", NetworkManager.ConnectionCount, GameServerConfig.MaxPlayers);
-            Log.Information("Maps Loaded: {MapCount}", GameWorld.MapManager?.GetTotalMaps() ?? 0); // Use GameWorld directly
+            Log.Information("Maps Loaded: {MapCount}", GameWorld.Instance.MapManager?.GetTotalMaps() ?? 0); // Use GameWorld directly
 
             var stats = NetworkManager.GetNetworkStatistics();
             Log.Information("Network Stats - Packets Sent: {Packets:N0}, Data Sent: {MB:F2} MB",

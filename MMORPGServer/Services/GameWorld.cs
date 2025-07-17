@@ -5,15 +5,15 @@ namespace MMORPGServer.Services
 {
     public class GameWorld
     {
-
+        public static GameWorld Instance;
         public MapManager MapManager { get; }
         public PlayerManager PlayerManager { get; }
 
         public Map TwinCity;
-        public GameWorld(MapManager mapManager, PlayerManager playerManager)
+        public GameWorld()
         {
-            MapManager = mapManager;
-            PlayerManager = playerManager;
+            MapManager = new MapManager();
+            PlayerManager = new PlayerManager();
             TwinCity = MapManager?.GetMap(1002)!;
             Log.Information("GameWorld initialized successfully");
 
@@ -57,7 +57,7 @@ namespace MMORPGServer.Services
                 return null;
             }
         }
-        public async ValueTask<Player?> RemovePlayerAsync(Player player, int mapId)
+        public async ValueTask<Player?> RemovePlayerAsync(Player player)
         {
             try
             {
@@ -66,12 +66,12 @@ namespace MMORPGServer.Services
                     if (await player.Map.RemovePlayerAsync(player.Id))
                     {
                         Log.Information("Player {PlayerName} (ID: {PlayerId}) removed from map {MapId}",
-                            player.Name, player.Id, mapId);
+                            player.Name, player.Id, player.MapId);
                         return player;
                     }
                     else
                     {
-                        Log.Warning("Failed to remove player {PlayerName} from map {MapId}", player.Name, mapId);
+                        Log.Warning("Failed to remove player {PlayerName} from map {MapId}", player.Name, player.MapId);
                         return null;
                     }
                 }
@@ -83,7 +83,7 @@ namespace MMORPGServer.Services
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to remove player {PlayerName} from map {MapId}", player?.Name ?? "N/A", mapId);
+                Log.Error(ex, "Failed to remove player {PlayerName} from map {MapId}", player?.Name ?? "N/A", player.MapId);
                 return null;
             }
         }

@@ -9,7 +9,7 @@ namespace MMORPGServer.Services
     {
         public PlayerManager()
         {
-            Log.Debug("PlayerManager initialized");
+            Log.Information("PlayerManager initialized");
         }
         private readonly ConcurrentDictionary<int, Player> _players = new();
 
