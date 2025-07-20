@@ -8,7 +8,7 @@ using MMORPGServer.Networking.Packets.Structures;
 using MMORPGServer.Services;
 using Serilog;
 
-namespace MMORPGServer.Networking.Packets.PacketsHandlers
+namespace MMORPGServer.Networking.Packets.PacketsHandlers.Login
 {
 
     [PacketHandler(GamePackets.CMsgRegister)]

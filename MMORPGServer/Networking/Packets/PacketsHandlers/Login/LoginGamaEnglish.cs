@@ -8,7 +8,7 @@ using MMORPGServer.Networking.Packets.Structures;
 using MMORPGServer.Services;
 using Serilog;
 
-namespace MMORPGServer.Networking.Packets.PacketsHandlers
+namespace MMORPGServer.Networking.Packets.PacketsHandlers.Login
 {
 
     [PacketHandler(GamePackets.LoginGamaEnglish)]
@@ -52,8 +52,6 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
                 ]);
 
                 var data = new LoginGamaEnglishData((int)outputDecrypted[0], (int)outputDecrypted[1]);
-
-                // Basic validation
                 if (data.Id <= 0)
                 {
                     Log.Warning("Invalid player ID in login data: {Id}", data.Id);

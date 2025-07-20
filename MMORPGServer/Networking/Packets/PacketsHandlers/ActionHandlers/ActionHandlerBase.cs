@@ -1,5 +1,5 @@
 ﻿using MMORPGServer.Common.Enums;
-using MMORPGServer.Networking.Fluent;
+using MMORPGServer.Networking.Packets.Core;
 using MMORPGServer.Networking.Packets.Structures;
 
 namespace MMORPGServer.Networking.Packets.PacketsHandlers.ActionHandlers
@@ -8,9 +8,9 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers.ActionHandlers
     {
         public ReadOnlyMemory<byte> Build(ActionProto proto)
         {
-            return new FluentPacketWriter(GamePackets.CMsgAction)
-               .Seek(4).SerializeProto(proto)
-               .BuildAndFinalize();
+            return new Packet(GamePackets.CMsgAction)
+                .SerializeProto(proto).Build(GamePackets.CMsgAction);
+
         }
     }
 }

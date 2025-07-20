@@ -20,10 +20,8 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers.ActionHandlers
                 Common.ValueObjects.Position newPosition = new Common.ValueObjects.Position(action.dwParam_Lo, (short)action.dwParam_Hi);
                 if (client.Player.Position.InRange(newPosition, 18))
                 {
-                    if (await client.Player.Map.MovePlayerAsync(client.Player.Id, newPosition))
+                    if (await client.Player.Map.MovePlayerAsync(client.Player, newPosition))
                     {
-                        // Create response packet
-                        client.Player.Position = newPosition;
                         ActionProto responseAction = new ActionProto
                         {
                             UID = client.Player.Id,
@@ -49,7 +47,6 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers.ActionHandlers
                 return false;
             }
         }
-
 
     }
 }

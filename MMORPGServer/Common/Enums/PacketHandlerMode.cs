@@ -1,4 +1,4 @@
-﻿namespace MMORPGServer.Services
+﻿namespace MMORPGServer.Common.Enums
 {
 
     public enum PacketHandlerMode

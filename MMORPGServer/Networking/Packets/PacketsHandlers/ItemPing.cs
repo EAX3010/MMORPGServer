@@ -1,7 +1,6 @@
 ﻿using MMORPGServer.Common.Enums;
 using MMORPGServer.Common.Interfaces;
 using MMORPGServer.Networking.Clients;
-using MMORPGServer.Networking.Fluent;
 using MMORPGServer.Networking.Packets.Attributes;
 using MMORPGServer.Networking.Packets.Core;
 using Serilog;
@@ -24,20 +23,13 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
             client.Player.Ping = NewPing;
             Log.Debug("CMsgItemPing response sent to client {ClientId}", Ping);
         }
-        public uint NewPing
-        {
-            get
-            {
-                packet.Seek(8);
-                return packet.ReadUInt32();
-            }
-        }
+        public uint NewPing => packet.ReadUInt32(8);
         public ReadOnlyMemory<byte> Build(uint Ping)
         {
-            return new FluentPacketWriter(GamePackets.CMsgItemPing)
+            return new Packet(GamePackets.CMsgItemPing)
             .WriteUInt32(0)
             .WriteUInt32(Ping)
-            .BuildAndFinalize();
+            .Build();
         }
     }
 }

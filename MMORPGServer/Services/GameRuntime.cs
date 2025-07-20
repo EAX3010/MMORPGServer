@@ -1,4 +1,5 @@
-﻿using MMORPGServer.Networking.Security;
+﻿using MMORPGServer.Common.Enums;
+using MMORPGServer.Networking.Security;
 using MMORPGServer.Networking.Server;
 using Serilog;
 

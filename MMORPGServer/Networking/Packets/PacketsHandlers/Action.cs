@@ -45,7 +45,7 @@ namespace MMORPGServer.Networking.Packets.PacketsHandlers
         {
             try
             {
-                var actionProto = Packet.DeserializeProto<ActionProto>();
+                ActionProto actionProto = Packet.DeserializeProto<ActionProto>();
 
                 // Validate the deserialized data
                 if (actionProto == null)

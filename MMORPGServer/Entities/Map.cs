@@ -80,13 +80,14 @@ namespace MMORPGServer.Entities
         /// <summary>
         /// Moves a player to a new position
         /// </summary>
-        public async ValueTask<bool> MovePlayerAsync(int playerId, Position newPosition)
+        public async ValueTask<bool> MovePlayerAsync(Player player, Position newPosition)
         {
-            if (!_players.TryGetValue(playerId, out Player player))
+            if (!_players.ContainsKey(player.Id))
                 return false;
 
             if (MapData.TryMoveEntity(player, newPosition))
             {
+                player.Position = newPosition;
                 LastActivity = DateTime.UtcNow;
                 return true;
             }
